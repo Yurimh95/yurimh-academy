@@ -1,0 +1,9 @@
+{
+  "name": "yurimh-academy-tests",
+  "private": true,
+  "scripts": {
+    "build": "node build-test.js",
+    "test": "node build-test.js && node test-core.js && node test-social.js"
+  },
+  "devDependencies": { "playwright": "^1.48.0" }
+}
