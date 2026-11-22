@@ -1593,7 +1593,8 @@ document.addEventListener('submit', async e => {
       // si todo va bien, onAuthStateChange(SIGNED_IN) hace el resto
     } else {
       const name = f.name.value.trim();
-      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name } } });
+      // emailRedirectTo: sin él, Supabase vuelve al dominio sin la ruta /yurimh-academy/ (404 de GitHub)
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name }, emailRedirectTo: location.href.split('#')[0] } });
       if (error) viewAuth('register', { type: 'bad', text: error.message });
       else if (!data.session) viewAuth('login', { type: 'ok', text: 'Cuenta creada. Revisa tu email para confirmarla y después entra.' });
     }
