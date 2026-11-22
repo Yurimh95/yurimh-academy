@@ -94,6 +94,13 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
   - **Alumno**: algunos cambios llegan incompletos y la app pide lo que falta, como `board_recipients` → el aviso, o `listening_assignments` → el elemento.
   - **Reconexión**: al reconectar, o al volver a la pestaña tras más de 1 minuto, `rtResync()` recarga en silencio.
   - Realtime respeta RLS en INSERT/UPDATE; los DELETE llegan a todos, pero solo con la clave primaria.
+- **Fase 2 (2026-11-23, publicada)**:
+  - **Perfiles**: `bio`, `instrument`, `level`, `favorites`, `learning` y `gear` son públicos; se ven con `get_profile()` desde `profileModal`, y los nombres y fotos son pulsables con `whoLink`. `birth_date` y `family_dm_ok` son privados: los ven el alumno y el profesor, y solo el profesor los cambia (`profiles_guard`). La fecha se pide al registrarse (metadato `birth_date`, que guarda `handle_new_user`). Sin fecha, la persona cuenta como menor.
+  - **Mensajes** (`dm_messages`, `user_blocks`, sección `messages`): `can_dm(a,b)` deja hablar siempre con el profesor; entre alumnos, ambos deben pasar `dm_ok` (adulto o con permiso familiar) y no estar bloqueados. El profesor **no** lee conversaciones ajenas, salvo los mensajes denunciados (`target_type 'dm_message'`). Los bloqueos solo los ve quien bloquea.
+  - **Notificaciones** (`notifications`): las crean los triggers `notify_trg`/`notify()` y se ven en la campanita (`notifsModal`). La columna `pushed_at` está reservada para el push.
+  - **Escucha analítica en lista** (`.tracklist`/`.track`), con portada en `listening_items.thumb_url`: se saca del oEmbed público de Spotify o de la miniatura de YouTube (`fetchThumb`). La app del profesor rellena las que faltan (`backfillThumbs`). En pruebas, `APP_CONFIG.NO_EXTERNAL` desactiva las llamadas a internet.
+  - **Botón Atrás**: las secciones y los modales se guardan en `history` (`histSync`, `popstate`, `histSkip`).
+  - **PWA**: `manifest.webmanifest`, `sw.js` (sin caché), `icon-180/192/512.png` y el panel de instalar en Perfil (`installPanelHtml`).
 - **Navegador**: guarda la sesión de Supabase Auth y la preferencia de tema en localStorage (`ya-theme`, con try/catch). Ningún dato de la app va a localStorage.
 
 ## Modelo de datos y seguridad (`supabase.sql`)
@@ -137,7 +144,7 @@ No empieces un módulo nuevo sin confirmar el alcance con Yuri mediante pregunta
 cd tests && npm install && npx playwright install chromium && npm test
 ```
 
-- Yuri no quiere nada instalado en C:. **No uses `npx playwright install`** (descarga Chromium en C:). Instala con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` y lanza las pruebas con su Chrome: `CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe" npm test`. En la última ejecución pasaron 140 comprobaciones. `test-realtime.js` simula cambios de otras personas con `window.__rtExternal(tabla, fila)`, `__rtExternalUpdate` y `__rtExternalDelete`. El falso Supabase emite eventos imitando RLS.
+- Yuri no quiere nada instalado en C:. **No uses `npx playwright install`** (descarga Chromium en C:). Instala con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` y lanza las pruebas con su Chrome: `CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe" npm test`. En la última ejecución pasaron 184 comprobaciones (`test-fase2.js` usa `window.__DB_OVERRIDE` para continuar con el estado de otra sesión). `test-realtime.js` simula cambios de otras personas con `window.__rtExternal(tabla, fila)`, `__rtExternalUpdate` y `__rtExternalDelete`. El falso Supabase emite eventos imitando RLS.
 - Para verlo en el navegador integrado: `.claude/launch.json` → "pruebas" sirve `tests/` con un servidor estático; `test.html?me=s1` (alumna) o `?me=t1` (profesor) simula la sesión. El servidor está en el scratchpad de la sesión: si no existe, vuelve a crearlo.
 - `build-test.js` genera `tests/test.html` a partir de `../index.html`, sustituyendo supabase-js y `config.js` por `seed.js`, `fake-supabase.js` y `config.test.js`.
 - `test-core.js` tiene 48 comprobaciones y `test-social.js` tiene 68. Las capturas se guardan en `tests/shots/`. **Mira las capturas** después de cambiar la interfaz.

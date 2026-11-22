@@ -6,6 +6,14 @@
 <meta name="color-scheme" content="dark light">
 <title>Yurimh Academy</title>
 <link rel="icon" type="image/png" href="icon-round.png">
+<!-- Instalable como app en el móvil (PWA) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#050b1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Yurimh">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
 /* Tema claro/oscuro: se aplica antes de pintar para que no haya parpadeo.
    La preferencia se guarda solo en este navegador (es una comodidad, no un dato de la app). */
@@ -362,6 +370,119 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .exports{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .exports-title{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:18px}
 
+/* ---------- Escucha analítica: lista tipo "tracklist" ---------- */
+.tracklist{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:6px}
+.track-head,.track{display:grid;grid-template-columns:32px 48px minmax(0,1fr) 130px 150px 40px;align-items:center;gap:14px;padding:8px 12px}
+.track-head{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);margin-bottom:4px}
+.track{border-radius:11px;cursor:pointer;transition:background .15s}
+.track:hover{background:var(--hover)}
+.track.done .tmain b{color:var(--muted)}
+.tnum{text-align:center;color:var(--faint);font-variant-numeric:tabular-nums;font-size:14px}
+.tdone{color:var(--ok);display:inline-grid}.tdone svg{width:18px;height:18px}
+.tmain{min-width:0}
+.tmain b{display:block;color:var(--strong);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tsub{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.kicon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:rgba(var(--accent-rgb),.14);color:var(--accent-hi);flex:none}
+.kicon svg{width:12px;height:12px}
+.tans{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;white-space:nowrap}
+.tans svg{width:15px;height:15px;vertical-align:-3px}
+.meter{flex:1;max-width:70px;height:6px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--neon))}
+.meter-n{font-variant-numeric:tabular-nums;font-size:12.5px}
+.tdue{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdue.bad{color:var(--bad);font-weight:600}.tdue.warn{color:var(--warn);font-weight:600}.tdue.ok{color:var(--ok)}
+.cover{position:relative;display:grid;place-items:center;border-radius:8px;overflow:hidden;flex:none;color:#fff;
+  background:linear-gradient(135deg,#1d4ed8,#3ff0ff)}
+.cover.k-album{background:linear-gradient(135deg,#7c3aed,#2f86ff)}
+.cover.k-song{background:linear-gradient(135deg,#0ea5e9,#22d3ee)}
+.cover.k-playlist{background:linear-gradient(135deg,#2563eb,#14b8a6)}
+.cover svg{width:46%;height:46%;opacity:.9}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.playbtn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--accent);text-decoration:none;justify-self:end;transition:transform .12s,filter .15s;box-shadow:var(--glow-sm)}
+.playbtn svg{width:16px;height:16px;margin-left:2px}
+.playbtn.sp{background:#1ed760;color:#0b2a16;box-shadow:0 0 12px rgba(30,215,96,.35)}
+.playbtn.yt{background:#ff2a2a;box-shadow:0 0 12px rgba(255,42,42,.3)}
+.playbtn:hover{transform:scale(1.08);filter:brightness(1.05)}
+.mhead-cover{display:flex;gap:14px;align-items:center;min-width:0}
+.mhead-cover .badge{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:900px){ .track-head,.track{grid-template-columns:24px 48px minmax(0,1fr) 110px 40px} .track-head span:nth-child(5),.track .tdue{display:none} }
+@media (max-width:560px){
+  .track-head{display:none}
+  .track,.tracklist.teacher .track{grid-template-columns:48px minmax(0,1fr) 36px;gap:12px;padding:8px}
+  .track .tnum,.track .tans{display:none}
+}
+
+/* ---------- Nombres y fotos pulsables, ficha pública ---------- */
+.wholink{cursor:pointer;display:inline-flex;align-items:center;gap:8px;border-radius:999px}
+.wholink:hover b{text-decoration:underline;text-underline-offset:3px}
+.wholink:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pf-head{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin:-10px 0 14px}
+.pf-head h2{font-size:21px}
+.pf-bio{margin:2px 0 0;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+.pf-field{border-top:1px solid var(--line);padding:11px 2px}
+.pf-label{display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.pf-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.agebox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.agebox input[type=date]{max-width:200px}
+
+/* ---------- Campanita y contadores ---------- */
+.bell{position:relative}
+.dotn.static{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:10.5px;font-weight:700;line-height:18px;font-style:normal;text-align:center;box-shadow:var(--glow-sm)}
+.avbtn{padding:0;overflow:hidden;border-radius:50%}
+.avbtn .av{width:100%!important;height:100%!important}
+.nlist{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
+.nrow{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;cursor:pointer;transition:background .15s}
+.nrow:hover{background:var(--hover)}
+.nrow.unread{background:rgba(var(--accent-rgb),.07)}
+.nrow .ic{width:38px;height:38px;border-radius:50%;background:rgba(var(--accent-rgb),.13);color:var(--accent-hi);display:grid;place-items:center;flex:none}
+.nrow .ic svg{width:18px;height:18px}
+.nrow .t{flex:1;min-width:0;font-size:14px}
+.nrow b{color:var(--strong)}
+.udot{width:9px;height:9px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);flex:none}
+
+/* ---------- Mensajes privados ---------- */
+.dm{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;height:calc(100vh - 110px);min-height:440px}
+.dm-list,.dm-pane{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.dm-list{overflow-y:auto}
+.dm-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 10px;position:sticky;top:0;background:var(--panel);z-index:1}
+.dm-list-head b{color:var(--strong)}
+.dm-conv{display:flex;align-items:center;gap:11px;padding:10px 14px;cursor:pointer;transition:background .15s;position:relative}
+.dm-conv:hover{background:var(--hover)}
+.dm-conv.on{background:rgba(var(--accent-rgb),.12)}
+.dm-conv .t{flex:1;min-width:0}
+.dm-conv b{display:block;color:var(--strong);font-size:14.5px}
+.dm-conv .sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.dm-meta .dotn.static{position:static}
+.dm-empty{margin:auto;color:var(--faint);padding:20px;text-align:center}
+.dm-thread-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dm-thread-head b{color:var(--strong)}
+.dm-back{display:none;width:34px;height:34px;font-size:18px}
+.dm-thread{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:8px}
+.msg-row{display:flex}
+.msg-row.mine{justify-content:flex-end}
+.msg{max-width:min(78%,520px);background:var(--panel2);border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 12px}
+.msg-row.mine .msg{background:var(--accent);border-color:transparent;color:#fff;border-radius:16px 16px 4px 16px;box-shadow:var(--glow-sm)}
+.msg-row.mine .msg a{color:#fff;text-decoration:underline}
+.msg-body{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg .linkcard{margin-top:8px;background:rgba(0,0,0,.12)}
+.msg-row.mine .linkcard .lk,.msg-row.mine .linkcard .lu,.msg-row.mine .linkcard .go{color:#fff}
+.msg-foot{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:3px;font-size:11.5px;opacity:.75}
+.msg-row.mine .msg-foot .linkbtn{color:#fff}
+.msg-foot .linkbtn{font-size:11.5px}
+.seen{font-weight:600}
+.dm-compose{display:flex;gap:8px;align-items:flex-end;padding:12px;border-top:1px solid var(--line)}
+.dm-compose textarea{min-height:44px;max-height:140px;resize:none}
+.dm-cant{padding:14px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;text-align:center}
+@media (max-width:760px){
+  .dm{display:block;height:auto;min-height:0}
+  .dm-list{max-height:none}
+  .dm.open .dm-list{display:none}
+  .dm:not(.open) .dm-pane{display:none}
+  .dm-pane{height:calc(100vh - 170px);min-height:380px}
+  .dm-back{display:inline-grid}
+}
+
 /* ---------- Encuadre de la foto de perfil ---------- */
 .crop{display:flex;flex-direction:column;align-items:center;gap:14px}
 .crop-stage{position:relative;width:260px;height:260px;max-width:100%;border-radius:16px;overflow:hidden;background:var(--panel2);touch-action:none;cursor:grab;user-select:none}
@@ -432,6 +553,13 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
   <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/></symbol>
   <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-song" viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13a3 3 0 1 1-2-2.8V6.3L11 7.6V18a3 3 0 1 1-2-2.8z"/></symbol>
+  <symbol id="i-playlist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h12M3 11h12M3 16h7"/><path d="M18 8v9.2a2.3 2.3 0 1 1-1.5-2.1V8z" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
@@ -479,6 +607,7 @@ const S = {
   items: [], assigns: [], students: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
+  dms: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [],
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -560,8 +689,8 @@ const REACTIONS = [
   { k: 'like', e: '👍🏼' }, { k: 'love', e: '❤️' }, { k: 'laugh', e: '😂' },
   { k: 'wow', e: '😮' }, { k: 'sad', e: '😢' }, { k: 'angry', e: '😡' }
 ];
-const TARGET_TABLE = { feed_post: 'feed_posts', feed_comment: 'feed_comments', listening_comment: 'listening_comments' };
-const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha' };
+const TARGET_TABLE = { feed_post: 'feed_posts', feed_comment: 'feed_comments', listening_comment: 'listening_comments', dm_message: 'dm_messages' };
+const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha', dm_message: 'Mensaje privado' };
 const CM = {
   feed: { table: 'feed_comments', key: 'post_id', type: 'feed_comment' },
   listening: { table: 'listening_comments', key: 'item_id', type: 'listening_comment' }
@@ -610,8 +739,8 @@ function updateRx(type, id) { $$(`[data-rx="${type}:${id}"]`).forEach(n => { n.o
 function commentRow(kind, x) {
   const c = CM[kind], mine = x.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
-  return `<div class="cmt">${avatarHtml(x.author_id, 32)}<div class="cmt-main">
-    <div class="cmt-bubble"><div class="cmt-head"><b>${esc(whoName(x.author_id))}</b>${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
+  return `<div class="cmt">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
+    <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
     <div class="cmt-body">${linkify(x.body)}</div></div>
     <div class="cmt-foot">${rxBar(c.type, x.id)}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
@@ -647,7 +776,10 @@ function linkCard(url) {
 }
 
 /* ---- Moderación (profesor) ---- */
-function targetOf(type, id) { return ({ feed_post: S.fposts, feed_comment: S.fcomments, listening_comment: S.lcomments }[type] || []).find(y => y.id === id) || null; }
+function targetOf(type, id) {
+  const x = ({ feed_post: S.fposts, feed_comment: S.fcomments, listening_comment: S.lcomments, dm_message: S.dms }[type] || []).find(y => y.id === id) || null;
+  return x && type === 'dm_message' ? { ...x, author_id: x.sender_id } : x; // en los mensajes, el "autor" es quien lo envía
+}
 function reportRow(r) {
   const x = targetOf(r.target_type, r.target_id);
   return `<div class="row rep"><div style="min-width:0;flex:1">
@@ -661,6 +793,7 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
   if (type === 'feed_post') { const cs = S.fcomments.filter(c => c.post_id === id).map(c => c.id); S.fcomments = S.fcomments.filter(c => c.post_id !== id); S.fposts = S.fposts.filter(x => x.id !== id); ids = ids.concat(cs); S.reactions = S.reactions.filter(r => !(r.target_type === 'feed_comment' && cs.includes(r.target_id))); S.reports = S.reports.filter(r => !(r.target_type === 'feed_comment' && cs.includes(r.target_id))); }
   if (type === 'feed_comment') S.fcomments = S.fcomments.filter(x => x.id !== id);
   if (type === 'listening_comment') S.lcomments = S.lcomments.filter(x => x.id !== id);
+  if (type === 'dm_message') S.dms = S.dms.filter(x => x.id !== id);
   S.reactions = S.reactions.filter(r => !(r.target_type === type && r.target_id === id));
   S.reports = S.reports.filter(r => !(r.target_type === type && r.target_id === id));
 }
@@ -669,7 +802,7 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
    La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
 const RT_TABLES = ['feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
-  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports'];
+  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications'];
 const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
   : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id : r.id;
@@ -714,6 +847,7 @@ function uiBusy() {
 }
 function refreshChrome() {
   const secs = sections();
+  $$('.bell').forEach(b => { b.outerHTML = bellHtml(); });
   const nav = $('.sidebar .nav'); if (nav) nav.outerHTML = navHtml(secs);
   const tb = $('.tabbar'); if (tb) tb.outerHTML = tabbar(secs);
   const rl = $('.rail'); if (rl) rl.innerHTML = railView();
@@ -764,11 +898,45 @@ async function rtHandle(t, p) {
     }
     return;
   }
+  if (t === 'dm_messages') {
+    if (ev === 'DELETE') {
+      if (!S.dms.some(m => m.id === old.id)) return;
+      S.dms = S.dms.filter(m => m.id !== old.id); updateThread(); refreshChrome(); return;
+    }
+    if (ev === 'UPDATE') { // "visto"
+      const m = S.dms.find(x => x.id === row.id); if (!m) return;
+      Object.assign(m, row); updateThread(); refreshChrome(); return;
+    }
+    if (!addUnique(S.dms, row, t)) return;
+    const from = dmPartner(row);
+    if (!S.dir[from]) await loadDirectory();
+    const viewing = S.section === 'messages' && S.dmWith === from && !document.hidden;
+    if (viewing) { updateThread(); if (row.recipient_id === me) await markDmRead(from); }
+    if (S.section === 'messages' && !uiBusy()) { softRender(); scrollThread(); } else { refreshChrome(); updateDmList(); }
+    return;
+  }
+  if (t === 'notifications') {
+    if (ev === 'DELETE') S.notifs = S.notifs.filter(n => n.id !== old.id);
+    else {
+      const isNew = !S.notifs.some(n => n.id === row.id);
+      S.notifs = rtApply(S.notifs, t, ev, row, old);
+      const inOpenChat = row.kind === 'dm' && S.section === 'messages' && S.dmWith === row.actor_id && !document.hidden;
+      if (ev === 'INSERT' && isNew && inOpenChat) await markNotifsRead([row.id]); // ya lo estás leyendo
+      // Aviso discreto de lo nuevo (salvo un mensaje de la conversación que ya tienes abierta)
+      if (ev === 'INSERT' && isNew && !inOpenChat) {
+        if (row.actor_id && !S.dir[row.actor_id]) await loadDirectory();
+        toast(notifText(row).replace(/<[^>]+>/g, ''));
+      }
+    }
+    return refreshChrome();
+  }
   if (t === 'profiles') {
     if (row.id === me || old.id === me) {
       if (ev === 'DELETE') return;
+      const permsChanged = row.family_dm_ok !== undefined && row.family_dm_ok !== S.profile.family_dm_ok;
       S.profile = { ...S.profile, ...row };
       if (!S.profile.approved) { rtStop(); return route(); } // le han retirado el acceso
+      if (permsChanged) await refreshDmContacts(); // el profe ha cambiado su permiso de mensajes
     }
     if (teacher) {
       const { avatar_src, avatar_crop, ...lite } = row; // la copia grande de la foto no hace falta en la lista
@@ -807,6 +975,11 @@ async function rtHandle(t, p) {
     }
     if (t === 'board_posts' && ev === 'DELETE') { S.posts = S.posts.filter(x => x.id !== old.id); return softRender(); }
   }
+  if (t === 'moderation_reports' && teacher && ev === 'INSERT' && row.target_type === 'dm_message' && !S.dms.some(m => m.id === row.target_id)) {
+    // denuncia de un mensaje privado: ahora el profesor puede leer ESE mensaje (y solo ese)
+    const { data } = await sb.from('dm_messages').select('*').eq('id', row.target_id).maybeSingle();
+    if (data) addUnique(S.dms, data, 'dm_messages');
+  }
   const key = RT_LIST[t]; if (!key) return;
   S[key] = rtApply(S[key], t, ev, row, old);
   softRender();
@@ -820,16 +993,54 @@ function toast(msg, type = '') {
   setTimeout(() => el.remove(), 3200);
 }
 
+/* ---- Botón "Atrás" (lateral del ratón, móvil o navegador) ----
+   Cada sección y cada ventana abierta es una entrada del historial: "Atrás" cierra la ventana
+   o vuelve a la sección anterior, sin salir de la app. */
+// histSkip: "atrás" internos pendientes (al cerrar una ventana). Mientras haya alguno, lo nuevo espera.
+let histSkip = 0, histModalPending = false, histRestoring = false;
+const histState = () => ({ app: 1, s: S.section, dm: S.section === 'messages' ? (S.dmWith || null) : null });
+function histSync() { // la llama render(): si cambió la sección, añade una entrada
+  if (histRestoring || !S.profile || histSkip) return; // con un "atrás" pendiente, se sincroniza al terminar
+  const st = history.state || {}, want = histState();
+  if (st.modal) return;
+  if (!st.app) { history.replaceState(want, ''); return; }
+  if (st.s === want.s && (st.dm || null) === want.dm) return;
+  history.pushState(want, '');
+}
+window.addEventListener('popstate', async e => {
+  if (histSkip) { // es el "atrás" que hicimos nosotros al cerrar una ventana
+    if (--histSkip === 0) {
+      histSync(); // la sección a la que se fue mientras tanto
+      if (histModalPending && $('#modalRoot').firstChild) history.pushState({ ...histState(), modal: 1 }, '');
+      histModalPending = false;
+    }
+    return;
+  }
+  if ($('#modalRoot').firstChild) { await closeModal(true); return; }
+  const st = e.state || {};
+  if (!S.profile || !st.app) return;
+  histRestoring = true;
+  S.section = st.s || 'feed'; S.dmWith = st.dm || null;
+  render(); window.scrollTo(0, 0);
+  histRestoring = false;
+});
+
 /* ------------------------------ Modal ------------------------------- */
 function openModal(html, onClose) {
+  if (!$('#modalRoot').firstChild && S.profile) { // para que "Atrás" la cierre
+    if (histSkip) histModalPending = true; else history.pushState({ ...histState(), modal: 1 }, '');
+  }
   $('#modalRoot').innerHTML = `<div class="backdrop" data-action="backdrop"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
   document.body.classList.add('noscroll');
   modalOnClose = onClose || null;
 }
-async function closeModal() {
+async function closeModal(fromHistory = false) {
+  const wasOpen = !!$('#modalRoot').firstChild;
   if (modalOnClose) { const f = modalOnClose; modalOnClose = null; await f(); }
   $('#modalRoot').innerHTML = '';
   document.body.classList.remove('noscroll');
+  // Cerrada con la ✕, Esc o al pulsar fuera: quitamos su entrada del historial
+  if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
   if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
@@ -856,7 +1067,9 @@ function viewAuth(mode = 'login', msg = null) {
     <p class="lead">${reg ? 'Crea tu cuenta de alumno. Tu profesor tendrá que aprobarla antes de que veas nada.' : 'Entra con tu cuenta.'}</p>
     ${msg ? `<div class="msg ${msg.type}">${esc(msg.text)}</div>` : ''}
     <form id="authForm" data-mode="${mode}" class="stack" autocomplete="on">
-      ${reg ? `<label class="f">Nombre<input type="text" name="name" required maxlength="60" autocomplete="name" placeholder="Cómo quieres que te vea tu profesor"></label>` : ''}
+      ${reg ? `<label class="f">Nombre<input type="text" name="name" required maxlength="60" autocomplete="name" placeholder="Cómo quieres que te vea tu profesor"></label>
+      <label class="f">Fecha de nacimiento<input type="date" name="birth" required min="1920-01-02" max="${new Date().toISOString().slice(0, 10)}" autocomplete="bday">
+        <span class="sub" style="display:block;margin-top:5px">Solo la veis tú y tu profesor. Si tienes menos de 14 años, necesitas el permiso de tu madre, padre o tutor para registrarte.</span></label>` : ''}
       <label class="f">Email<input type="email" name="email" required autocomplete="email"></label>
       <label class="f">Contraseña${reg ? ' (mínimo 8 caracteres)' : ''}<input type="password" name="password" required minlength="${reg ? 8 : 1}" autocomplete="${reg ? 'new-password' : 'current-password'}"></label>
       <button class="btn" type="submit" id="authBtn">${reg ? 'Crear cuenta' : 'Entrar'}</button>
@@ -915,7 +1128,7 @@ async function route() {
   if (!prof.approved) return viewPending();
   $('#app').innerHTML = '<div class="loading">Cargando…</div>';
   const ok = await loadData();
-  if (ok) { render(); rtStart(); }
+  if (ok) { render(); rtStart(); backfillThumbs(); }
 }
 
 // quiet = true: resincronización en segundo plano (si falla, no muestra la pantalla de error)
@@ -929,12 +1142,24 @@ async function loadData(quiet = false) {
       sb.from('reactions').select('*'),
       sb.rpc('get_directory')
     ];
+    // Mensajes privados, bloqueos propios, contactos y notificaciones (iguales para profe y alumno)
+    const extra = await Promise.all([
+      sb.from('dm_messages').select('*').order('created_at', { ascending: true }).limit(1000),
+      sb.from('user_blocks').select('*'),
+      sb.rpc('get_dm_contacts'),
+      sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(60)
+    ]);
+    const exErr = extra.map(x => x.error).find(Boolean);
+    if (exErr) throw exErr;
+    S.dms = extra[0].data || []; S.blocks = extra[1].data || []; S.notifs = extra[3].data || [];
+    S.dmContacts = (extra[2].data || []).map(x => typeof x === 'string' ? x : x.get_dm_contacts || x.id);
+    S.dmCan = {}; S.dmContacts.forEach(id => { S.dmCan[id] = true; });
     if (S.profile.role === 'teacher') {
       const [i, a, p, bp, br, bd, rp, fp, fc, lc, rx, dr] = await Promise.all([
         sb.from('listening_items').select('*').order('created_at', { ascending: false }),
         sb.from('listening_assignments').select('*'),
         // sin avatar_src (la copia grande de la foto): no hace falta y pesa. Al añadir campos al perfil, añádelos aquí.
-        sb.from('profiles').select('id, display_name, nickname, avatar, email, role, approved, created_at').eq('role', 'student').order('display_name'),
+        sb.from('profiles').select('id, display_name, nickname, avatar, email, role, approved, created_at, birth_date, family_dm_ok').eq('role', 'student').order('display_name'),
         sb.from('board_posts').select('*'),
         sb.from('board_recipients').select('*'),
         sb.from('board_reads').select('*'),
@@ -966,7 +1191,7 @@ async function loadData(quiet = false) {
   } catch (e) {
     const m = String(e.message || e);
     if (quiet) { console.warn('Resincronización fallida:', m); return false; }
-    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|relation|schema cache|function/i.test(m)
+    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|relation|schema cache|function/i.test(m)
       ? 'Falta ejecutar la última versión de supabase.sql en el SQL Editor de Supabase. (' + m + ')'
       : 'Error cargando los datos: ' + m);
     return false;
@@ -981,9 +1206,10 @@ function render() {
   if (!S.profile) return;
   const t = isTeacher();
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
-  if (!['feed', 'board', 'listening', 'profile'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
+  if (!['feed', 'messages', 'board', 'listening', 'profile'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
   switch (S.section) {
+    case 'messages': body = messagesView(); break;
     case 'board': body = t ? boardTeacher() : boardStudent(); break;
     case 'listening': body = t ? teacherCatalog() : studentListening(); break;
     case 'students': body = teacherStudents(); break;
@@ -992,13 +1218,14 @@ function render() {
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = S.section === 'mod' ? '' : railView(); // en Moderación ya está todo resumido
+  const rail = ['mod', 'messages'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, más sitio
   $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
     ${rail ? `<aside class="rail">${rail}</aside>` : ''}
   </div>
   ${tabbar(secs)}`;
+  histSync();
 }
 
 /* ---------- Navegación: menú lateral (escritorio) y barra inferior (móvil) ---------- */
@@ -1010,13 +1237,16 @@ function sections() {
   const reps = t ? S.reports.filter(r => !r.resolved).length : 0;
   // Cada módulo nuevo (Pagos, Deberes semanales, Chat…) se añade aquí como una sección más.
   // icon: nombre del icono (si no, el id). mob: false = no sale en la barra inferior del móvil.
+  const dmu = unreadDms();
   const list = [
     { id: 'feed', label: 'Inicio', short: 'Inicio', icon: 'home' },
+    { id: 'messages', label: 'Mensajes', short: 'Mensajes', icon: 'chat', n: dmu, badge: dmu ? `${dmu} sin leer` : '' },
     { id: 'board', label: 'Avisos', short: 'Avisos', n: unread, badge: unread ? `${unread} nuevo${unread > 1 ? 's' : ''}` : '' },
     { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' }
   ];
   if (t) list.push({ id: 'students', label: 'Alumnos', short: 'Alumnos', n: pending, badge: pending ? `${pending} por aprobar` : '', cls: 'warn' });
-  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil' });
+  // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
+  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
   return list;
 }
@@ -1044,12 +1274,14 @@ function topbar(cur) {
   return `<header class="top">
     <div class="mbrand"><img src="logo.png" alt="">${esc(APP_NAME)}</div>
     ${S.section !== 'feed' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
-    <div class="top-r only-m">
-      <button class="iconbtn" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
-      <button class="iconbtn" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button>
+    <div class="top-r">
+      <button class="iconbtn only-m" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
+      ${bellHtml()}
+      <button class="iconbtn only-m avbtn" data-action="section" data-s="profile" title="Tu perfil" aria-label="Tu perfil">${avatarHtml(S.user.id, 30)}</button>
     </div>
   </header>`;
 }
+const bellHtml = () => { const n = unreadNotifs(); return `<button class="iconbtn bell" data-action="notifs" title="Notificaciones" aria-label="Notificaciones${n ? ` (${n} sin leer)` : ''}">${ic('bell')}${n ? `<i class="dotn static">${n > 9 ? '9+' : n}</i>` : ''}</button>`; };
 function tabbar(secs) {
   return `<nav class="tabbar">${secs.filter(s => s.mob !== false).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.icon || s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
 }
@@ -1062,7 +1294,7 @@ function setTheme(t) {
 function railView() {
   const faces = Object.values(S.dir).filter(d => d.id !== S.user.id).slice(0, 24);
   const facesCard = faces.length ? `<section class="rail-card"><h3>${isTeacher() ? 'Tu grupo' : 'Compañeros'}</h3>
-    <div class="faces">${faces.map(d => `<span title="${esc(d.public_name)}">${avatarHtml(d.id, 34)}</span>`).join('')}</div></section>` : '';
+    <div class="faces">${faces.map(d => `<span title="${esc(d.public_name)}">${whoLink(d.id, avatarHtml(d.id, 34))}</span>`).join('')}</div></section>` : '';
   if (isTeacher()) {
     const pend = S.students.filter(s => !s.approved).length;
     const reps = S.reports.filter(r => !r.resolved).length;
@@ -1168,7 +1400,7 @@ function feedCard(p) {
   const mine = p.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
-    <div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
+    <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
     <div class="fbody">${linkify(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
@@ -1307,12 +1539,31 @@ function profileView() {
         </div></div>
       <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verá todo el grupo, así que elige una que quieras compartir.</p>
     </div>
+    <form id="aboutForm" class="panel">
+      <h2 class="h2" style="margin-top:0">Sobre ti</h2>
+      <p class="sub" style="margin:0 0 12px">Lo verán tus compañeros al pulsar en tu nombre o tu foto. Todo es opcional.</p>
+      <label class="f">Bio corta<textarea name="bio" maxlength="200" rows="2" placeholder="Un par de frases sobre ti y tu música">${esc(p.bio || '')}</textarea></label>
+      <div class="grid2" style="grid-template-columns:1fr 1fr">
+        <label class="f">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="f">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      </div>
+      <label class="f">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
+      <label class="f">Ahora estoy aprendiendo<input type="text" name="learning" maxlength="200" value="${esc(p.learning || '')}" placeholder="Ej.: el solo de Fade to Black, sweep picking"></label>
+      <label class="f">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
+      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
+    </form>
     <form id="passForm" class="panel">
       <h2 class="h2" style="margin-top:0">Cambiar contraseña</h2>
       <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
       <label class="f">Repite la contraseña<input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
       <button class="btn" type="submit">Cambiar contraseña</button>
     </form>
+    ${installPanelHtml()}
+    <div class="panel">
+      <h2 class="h2" style="margin-top:0">Sesión</h2>
+      <p class="sub" style="margin:0 0 12px">Conectado como ${esc(p.email || '')}</p>
+      <button class="btn ghost" data-action="logout">${ic('logout')} Cerrar sesión</button>
+    </div>
   </div>`;
 }
 
@@ -1431,6 +1682,49 @@ async function cropSave() {
 }
 
 /* ============================== ALUMNO ============================== */
+/* ---- Portadas: Spotify (oEmbed público, sin claves) y YouTube (miniatura por id de vídeo) ---- */
+const THUMB_OK = /^https:\/\/(i\.scdn\.co|image-cdn-[a-z0-9-]+\.spotifycdn\.com|mosaic\.scdn\.co|i\.ytimg\.com)\//;
+const safeThumb = u => typeof u === 'string' && u.length <= 300 && THUMB_OK.test(u) ? u : null;
+function ytId(url) {
+  const m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+const linkService = url => /spotify\.com/i.test(url) ? 'sp' : /youtu\.?be/i.test(url) ? 'yt' : '';
+async function fetchThumb(url) { // devuelve la URL de la portada o null
+  if (CFG.NO_EXTERNAL) return null; // pruebas: sin llamadas a internet
+  const id = ytId(url);
+  if (id) return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
+  if (!/open\.spotify\.com\//i.test(url)) return null;
+  try {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 5000);
+    const r = await fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(url.split('?')[0]), { signal: ctl.signal });
+    clearTimeout(tm);
+    return r.ok ? safeThumb((await r.json()).thumbnail_url) : null;
+  } catch { return null; }
+}
+// Profesor: rellena en segundo plano las portadas que falten (elementos creados antes de esta función)
+async function backfillThumbs() {
+  if (!isTeacher() || CFG.NO_EXTERNAL) return;
+  for (const it of S.items.filter(i => !i.thumb_url).slice(0, 30)) {
+    const th = await fetchThumb(it.url);
+    if (!th) continue;
+    const { error } = await sb.from('listening_items').update({ thumb_url: th }).eq('id', it.id);
+    if (!error) { it.thumb_url = th; S.assigns.forEach(a => { if (a.item && a.item.id === it.id) a.item.thumb_url = th; }); }
+  }
+  if (S.section === 'listening') softRender();
+}
+// Miniatura con el icono del tipo debajo: si la imagen no carga, se queda el icono
+function coverHtml(it, size = 48) {
+  const th = safeThumb(it.thumb_url);
+  return `<span class="cover k-${esc(it.kind)}" style="width:${size}px;height:${size}px">${ic(it.kind in KIND ? it.kind : 'song')}${th ? `<img src="${esc(th)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>`;
+}
+const kindIcon = k => `<span class="kicon" title="${esc(KIND[k] || k)}" aria-label="${esc(KIND[k] || k)}">${ic(k in KIND ? k : 'song')}</span>`;
+function playBtn(url) {
+  const sv = linkService(url);
+  return `<a class="playbtn ${sv}" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer" data-action="noop" title="${sv === 'sp' ? 'Escuchar en Spotify' : sv === 'yt' ? 'Ver en YouTube' : 'Abrir enlace'}" aria-label="Abrir enlace">${ic('play')}</a>`;
+}
+const answersMeter = n => `<span class="meter" title="${n}/6 respuestas"><i style="width:${Math.round(n / 6 * 100)}%"></i></span><span class="meter-n">${n}/6</span>`;
+
 function studentListening() {
   const all = S.assigns;
   const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
@@ -1441,20 +1735,22 @@ function studentListening() {
       <button class="tab ${S.filter === 'done' ? 'on' : ''}" data-action="filter" data-f="done">Escuchados<span class="n">${done.length}</span></button>
       <button class="tab ${S.filter === 'all' ? 'on' : ''}" data-action="filter" data-f="all">Todos<span class="n">${all.length}</span></button>
     </div>
-    ${list.length ? `<div class="grid">${list.map(studentCard).join('')}</div>`
+    ${list.length ? `<div class="tracklist">
+        <div class="track-head"><span>#</span><span></span><span>Título</span><span>Respuestas</span><span>Fecha</span><span></span></div>
+        ${list.map((a, i) => studentCard(a, i)).join('')}</div>`
       : `<div class="empty">${all.length ? 'No hay elementos en esta pestaña.' : 'Todavía no tienes nada asignado.'}</div>`}`;
 }
 
-function studentCard(a) {
+// Fila tipo "tracklist": número, portada, título con icono de tipo, progreso, fecha y botón ▶
+function studentCard(a, i = 0) {
   const it = a.item, d = dueInfo(a), n = answeredCount(a);
-  return `<article class="card ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
-    <div class="card-top"><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div>
-    <h3>${esc(it.title)}</h3>
-    ${it.brief ? `<p class="brief">${esc(it.brief)}</p>` : ''}
-    <div class="card-foot">
-      <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span></div>
-      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer" data-action="noop">Abrir enlace ↗</a>
-    </div>
+  return `<article class="track ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
+    <span class="tnum">${a.listened ? `<span class="tdone" title="Escuchado">${ic('check')}</span>` : i + 1}</span>
+    ${coverHtml(it)}
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></div>
+    <span class="tans">${answersMeter(n)}</span>
+    <span class="tdue ${d.cls}">${a.due_date ? esc(d.cls ? d.text : fmtDate(a.due_date)) : '—'}</span>
+    ${playBtn(it.url)}
   </article>`;
 }
 
@@ -1465,7 +1761,7 @@ function studentModal(id) {
   cur = { id, dirty: false, timer: null, saving: false };
   openModal(`
     <div class="modal-head">
-      <div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="chips" style="margin-bottom:6px"><span class="chip ${d.cls}">${esc(d.text)}</span></div>
@@ -1665,21 +1961,21 @@ const exportActions = {
 
 /* ============================= PROFESOR ============================= */
 function teacherCatalog() {
-  return `<div class="toolbar"><span class="sub" style="color:var(--muted)">Pulsa una tarjeta para ver respuestas y asignar alumnos.</span>
+  return `<div class="toolbar"><span class="sub" style="color:var(--muted)">Pulsa una fila para ver respuestas y asignar alumnos.</span>
       <button class="btn primary" data-action="new-item">+ Nuevo elemento</button></div>
-    ${S.items.length ? `<div class="grid">${S.items.map(it => {
+    ${S.items.length ? `<div class="tracklist teacher">
+      <div class="track-head"><span>#</span><span></span><span>Título</span><span>Alumnos</span><span>Estado</span><span></span></div>
+      ${S.items.map((it, i) => {
       const as = S.assigns.filter(a => a.item_id === it.id);
       const li = as.filter(a => a.listened).length, ov = as.filter(isOverdue).length;
       const ans = as.filter(a => answeredCount(a) > 0).length;
-      return `<article class="card" data-action="open-item" data-id="${it.id}">
-        <div class="card-top"><span class="badge">${esc(KIND[it.kind] || it.kind)}</span>${ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : ''}</div>
-        <h3>${esc(it.title)}</h3>
-        ${it.brief ? `<p class="brief">${esc(it.brief)}</p>` : ''}
-        <div class="card-foot"><div class="chips">
-          <span class="chip">${as.length} asignado${as.length === 1 ? '' : 's'}</span>
-          <span class="chip ${li ? 'ok' : ''}">${li} escuchado${li === 1 ? '' : 's'}</span>
-          <span class="chip ${ans ? 'acc' : ''}">${ans} con respuestas</span>
-        </div></div>
+      return `<article class="track" data-action="open-item" data-id="${it.id}">
+        <span class="tnum">${i + 1}</span>
+        ${coverHtml(it)}
+        <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></div>
+        <span class="tans" title="${as.length} asignado${as.length === 1 ? '' : 's'} · ${li} escuchado${li === 1 ? '' : 's'} · ${ans} con respuestas">${ic('students')} ${as.length} · ${ic('check')} ${li}</span>
+        <span class="tdue">${ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : ans ? `<span class="chip acc">${ans} con respuestas</span>` : '—'}</span>
+        ${playBtn(it.url)}
       </article>`;
     }).join('')}</div>` : `<div class="empty">El catálogo está vacío. Crea tu primer elemento.</div>`}`;
 }
@@ -1737,7 +2033,7 @@ function itemModal(id) {
   const free = S.students.filter(s => s.approved && !taken.has(s.id));
   openModal(`
     <div class="modal-head">
-      <div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="actions" style="margin:0 0 6px">
@@ -1783,6 +2079,15 @@ function studentDetailModal(id) {
     <div class="modal-head"><div><h2>${esc(s.display_name)}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
+    <h2 class="h2">Edad y mensajes privados</h2>
+    <div class="agebox">
+      <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
+        · <b>${isMinorProfile(s) ? 'Menor' : 'Mayor de edad'}</b></div>
+      <div class="rename" style="margin-top:8px"><input type="date" id="birthInput" value="${esc(s.birth_date || '')}" aria-label="Fecha de nacimiento"><button class="btn sm" data-action="save-birth" data-id="${s.id}">Corregir fecha</button></div>
+      ${isMinorProfile(s) ? `<label class="chk" style="margin-top:8px"><input type="checkbox" id="familyDm" data-id="${s.id}" ${s.family_dm_ok ? 'checked' : ''}> La familia autoriza mensajes privados con compañeros</label>
+        <p class="sub" style="margin:6px 0 0">Sin esta marca, solo puede escribirte a ti. Contigo siempre puede hablar.</p>`
+        : '<p class="sub" style="margin:6px 0 0">Al ser mayor de edad puede escribirse con otros compañeros que también puedan.</p>'}
+    </div>
     <h2 class="h2">${esc(MODULE_LISTENING)}</h2>
     ${as.length ? as.map(a => {
       const it = S.items.find(x => x.id === a.item_id);
@@ -1795,6 +2100,202 @@ function studentDetailModal(id) {
         <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
       </div>`;
     }).join('') : `<div class="empty">Este alumno no tiene nada asignado.</div>`}`, async () => render());
+}
+
+/* ========================= PERFILES COMPLETOS ========================= */
+const INSTRUMENTS = { electric: 'Guitarra eléctrica', acoustic: 'Guitarra acústica', classical: 'Guitarra clásica', bass: 'Bajo', other: 'Otro instrumento' };
+const LEVELS = { beginner: 'Iniciación', intermediate: 'Intermedio', advanced: 'Avanzado' };
+function ageOf(iso) { // edad en años a partir de 'AAAA-MM-DD'
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number), t = new Date();
+  return t.getFullYear() - y - ((t.getMonth() + 1 < m || (t.getMonth() + 1 === m && t.getDate() < d)) ? 1 : 0);
+}
+const isMinorProfile = p => { const a = ageOf(p.birth_date); return a === null || a < 18; }; // sin fecha = menor
+// Nombre y foto pulsables: abren la ficha pública de esa persona
+const whoLink = (id, inner) => `<span class="wholink" data-action="open-profile" data-id="${id}" role="button" tabindex="0">${inner}</span>`;
+
+async function profileModal(id) {
+  const { data, error } = await sb.rpc('get_profile', { p_id: id });
+  const p = data && data[0];
+  if (error || !p) return toast('No se pudo abrir el perfil', 'bad');
+  const field = (label, v) => v ? `<div class="pf-field"><span class="pf-label">${label}</span><div class="pf-text">${linkify(v)}</div></div>` : '';
+  const chips = [p.instrument && INSTRUMENTS[p.instrument], p.level && LEVELS[p.level]].filter(Boolean);
+  const mine = id === S.user.id;
+  openModal(`
+    <div class="modal-head"><span></span><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="pf-head">${avatarHtml(id, 96)}
+      <h2>${esc(isTeacher() ? whoName(id) : p.public_name)}${p.role === 'teacher' ? '<span class="tbadge">Profesor</span>' : ''}</h2>
+      ${chips.length ? `<div class="chips" style="justify-content:center">${chips.map(c => `<span class="chip acc">${esc(c)}</span>`).join('')}</div>` : ''}
+      ${p.bio ? `<p class="pf-bio">${linkify(p.bio)}</p>` : ''}
+    </div>
+    ${field('Grupos y estilos favoritos', p.favorites)}
+    ${field('Ahora está aprendiendo', p.learning)}
+    ${field('Su equipo', p.gear)}
+    ${!p.bio && !p.favorites && !p.learning && !p.gear && !chips.length ? `<p class="sub center">${mine ? 'Aún no has rellenado tu perfil.' : 'Todavía no ha rellenado su perfil.'}</p>` : ''}
+    <div class="actions" style="justify-content:center;margin-top:16px">
+      ${mine ? '<button class="btn" data-action="section" data-s="profile">Editar mi perfil</button>'
+        : p.can_message ? `<button class="btn primary" data-action="dm-open" data-id="${id}">Enviar mensaje</button>`
+        : '<span class="sub">No podéis escribiros en privado.</span>'}
+    </div>`);
+  $('.modal').classList.add('narrow');
+}
+
+/* ========================= MENSAJES PRIVADOS =========================
+   S.dms: mensajes en los que participo (y, si soy profesor, los denunciados).
+   S.dmWith: con quién tengo abierta la conversación. S.dmCan[id]: si puedo escribirle. */
+const dmPartner = m => m.sender_id === S.user.id ? m.recipient_id : m.sender_id;
+const myDms = () => S.dms.filter(m => m.sender_id === S.user.id || m.recipient_id === S.user.id);
+const unreadDms = () => S.dms.filter(m => m.recipient_id === S.user.id && !m.read_at).length;
+function dmConversations() { // [{ id, last, unread }] ordenadas por el último mensaje
+  const by = {};
+  myDms().forEach(m => {
+    const id = dmPartner(m), c = by[id] || (by[id] = { id, last: m, unread: 0 });
+    if (m.created_at > c.last.created_at) c.last = m;
+    if (m.recipient_id === S.user.id && !m.read_at) c.unread++;
+  });
+  return Object.values(by).sort((a, b) => b.last.created_at.localeCompare(a.last.created_at));
+}
+const isBlocked = id => S.blocks.some(b => b.blocked_id === id);
+
+function messagesView() {
+  const w = S.dmWith;
+  return `<div class="dm ${w ? 'open' : ''}">${dmListHtml()}<div class="dm-pane">${w ? threadView(w) : '<div class="dm-empty">Elige una conversación o empieza una nueva.</div>'}</div></div>`;
+}
+const updateDmList = () => { const l = $('.dm-list'); if (l) l.outerHTML = dmListHtml(); };
+function dmListHtml() {
+  const convs = dmConversations(), w = S.dmWith;
+  return `<div class="dm-list ${w ? 'has-open' : ''}">
+    <div class="dm-list-head"><b>Conversaciones</b><button class="btn sm primary" data-action="dm-new">+ Nuevo</button></div>
+    ${convs.length ? convs.map(c => `<div class="dm-conv ${c.id === w ? 'on' : ''}" data-action="dm-open" data-id="${c.id}">
+        ${avatarHtml(c.id, 42)}<div class="t"><b>${esc(whoName(c.id))}</b><span class="sub">${c.last.sender_id === S.user.id ? 'Tú: ' : ''}${esc(c.last.body.slice(0, 60))}</span></div>
+        <div class="dm-meta"><span class="sub">${timeAgo(c.last.created_at)}</span>${c.unread ? `<i class="dotn static">${c.unread}</i>` : ''}</div></div>`).join('')
+      : '<div class="sub" style="padding:14px">Aún no tienes conversaciones. Pulsa "+ Nuevo" para escribir a alguien.</div>'}
+  </div>`;
+}
+function threadInner(id) {
+  const msgs = myDms().filter(m => dmPartner(m) === id).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const lastMine = [...msgs].reverse().find(m => m.sender_id === S.user.id);
+  if (!msgs.length) return '<div class="sub center" style="margin:auto">Aún no os habéis escrito. ¡Saluda! 👋</div>';
+  return msgs.map(m => {
+    const mine = m.sender_id === S.user.id, url = (m.body.match(/https?:\/\/[^\s<]+/) || [])[0];
+    const reported = S.reports.some(r => r.target_type === 'dm_message' && r.target_id === m.id && r.reporter_id === S.user.id);
+    return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg">
+        <div class="msg-body">${linkify(m.body)}</div>${url ? linkCard(url.replace(/[.,;:!?)]+$/, '')) : ''}
+        <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
+          ${mine && m === lastMine && m.read_at ? '<span class="seen">· Visto</span>' : ''}
+          ${mine ? `<button class="linkbtn mute" data-action="dm-delete" data-id="${m.id}">Borrar</button>`
+            : isTeacherId(m.sender_id) || isTeacher() ? '' // los mensajes del profe no se denuncian; el profe no denuncia (borra o bloquea el acceso)
+            : (reported ? '<span>· Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="dm_message" data-id="${m.id}">Denunciar</button>`)}
+        </div></div></div>`;
+  }).join('');
+}
+function threadView(id) {
+  const can = S.dmCan[id], teacherOther = isTeacherId(id);
+  return `<div class="dm-thread-head">
+      <button class="iconbtn dm-back" data-action="dm-close" aria-label="Volver">←</button>
+      ${whoLink(id, `${avatarHtml(id, 38)}<b>${esc(whoName(id))}</b>${teacherTag(id)}`)}
+      ${!isTeacher() && !teacherOther ? `<button class="btn sm ghost" data-action="${isBlocked(id) ? 'unblock' : 'block'}" data-id="${id}" style="margin-left:auto">${isBlocked(id) ? 'Desbloquear' : 'Bloquear'}</button>` : ''}
+    </div>
+    <div class="dm-thread" id="dmThread">${threadInner(id)}</div>
+    ${can === false ? `<div class="dm-cant">${isBlocked(id) ? 'Has bloqueado a esta persona. Desbloquéala para escribirle.' : 'No podéis escribiros en privado. Si crees que es un error, habla con tu profesor.'}</div>`
+      : `<form id="dmForm" class="dm-compose" data-to="${id}"><textarea name="body" rows="1" maxlength="2000" placeholder="Escribe un mensaje…" required></textarea><button class="btn primary" type="submit">Enviar</button></form>`}`;
+}
+function updateThread() { // repinta solo los mensajes (no toca lo que estás escribiendo)
+  const t = $('#dmThread'); if (!t || !S.dmWith) return;
+  const atBottom = t.scrollHeight - t.scrollTop - t.clientHeight < 80;
+  t.innerHTML = threadInner(S.dmWith);
+  if (atBottom) t.scrollTop = t.scrollHeight;
+}
+const scrollThread = () => { const t = $('#dmThread'); if (t) t.scrollTop = t.scrollHeight; };
+async function markDmRead(id) {
+  const ids = S.dms.filter(m => m.sender_id === id && m.recipient_id === S.user.id && !m.read_at).map(m => m.id);
+  if (!ids.length) return;
+  const now = new Date().toISOString();
+  S.dms.forEach(m => { if (ids.includes(m.id)) m.read_at = now; });
+  await sb.from('dm_messages').update({ read_at: now }).eq('recipient_id', S.user.id).eq('sender_id', id).is('read_at', null);
+}
+async function openDm(id) {
+  S.dmWith = id; S.section = 'messages';
+  if (S.dmCan[id] === undefined) {
+    const { data } = await sb.rpc('can_dm', { a: S.user.id, b: id });
+    S.dmCan[id] = !!data;
+  }
+  await closeModal();
+  render(); scrollThread();
+  await markDmRead(id);
+  await markNotifsRead(S.notifs.filter(n => n.kind === 'dm' && n.actor_id === id && !n.read_at).map(n => n.id)); // sus avisos de mensaje
+  refreshChrome(); updateDmList();
+  const ta = $('#dmForm textarea'); if (ta && matchMedia('(min-width:761px)').matches) ta.focus();
+}
+async function refreshDmContacts() {
+  const { data } = await sb.rpc('get_dm_contacts');
+  S.dmContacts = (data || []).map(x => typeof x === 'string' ? x : x.get_dm_contacts || x.id);
+  S.dmCan = {}; S.dmContacts.forEach(id => { S.dmCan[id] = true; });
+}
+async function newDmModal() {
+  await refreshDmContacts();
+  const people = S.dmContacts.filter(id => S.dir[id]).sort((a, b) => whoName(a).localeCompare(whoName(b)));
+  openModal(`<div class="modal-head"><h2>Nuevo mensaje</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    ${people.length ? `<div class="list">${people.map(id => `<div class="row click" data-action="dm-open" data-id="${id}"><div class="rowav">${avatarHtml(id, 36)}<strong>${esc(whoName(id))}</strong>${teacherTag(id)}</div></div>`).join('')}</div>`
+      : '<div class="empty small">Ahora mismo no puedes escribir en privado a nadie más.</div>'}
+    ${!isTeacher() && !S.profile.family_dm_ok && isMinorProfile(S.profile) ? '<p class="sub" style="margin:14px 0 0">Como eres menor, solo puedes escribir a tu profesor. Si tu familia lo autoriza, él puede activarte los mensajes con compañeros.</p>' : ''}`);
+  $('.modal').classList.add('narrow');
+}
+
+/* =========================== NOTIFICACIONES =========================== */
+const unreadNotifs = () => S.notifs.filter(n => !n.read_at).length;
+const RX_EMOJI = Object.fromEntries(REACTIONS.map(r => [r.k, r.e]));
+function notifText(n) {
+  const who = n.actor_id ? `<b>${esc(whoName(n.actor_id))}</b>` : '';
+  switch (n.kind) {
+    case 'board_post': return `Nuevo aviso: <b>${esc(n.extra || '')}</b>`;
+    case 'assignment': return `Nueva escucha asignada: <b>${esc(n.extra || '')}</b>`;
+    case 'dm': return `${who} te ha enviado un mensaje`;
+    case 'comment': return `${who} ha comentado tu publicación${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'reaction': return `${who} ha reaccionado ${RX_EMOJI[n.extra] || ''} a tu publicación`;
+    case 'signup': return `<b>${esc(n.extra || 'Alguien')}</b> se ha registrado y espera tu aprobación`;
+    case 'report': return 'Hay una denuncia nueva para revisar';
+    default: return 'Novedad';
+  }
+}
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag' }[kind] || 'bell'; }
+function notifsModal() {
+  const list = S.notifs.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
+  openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    ${unreadNotifs() ? '<div style="margin:-4px 0 10px"><button class="linkbtn" data-action="notif-all-read">Marcar todas como leídas</button></div>' : ''}
+    ${list.length ? `<div class="nlist">${list.map(n => `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
+        ${n.actor_id && S.dir[n.actor_id] ? avatarHtml(n.actor_id, 38) : `<span class="ic">${ic(notifIcon(n.kind))}</span>`}
+        <div class="t"><div>${notifText(n)}</div><span class="sub">${timeAgo(n.created_at)}</span></div>${n.read_at ? '' : '<i class="udot"></i>'}</div>`).join('')}</div>`
+      : '<div class="empty small">No tienes notificaciones.</div>'}
+    ${pushPromptHtml()}`);
+  $('.modal').classList.add('narrow');
+}
+function pushPromptHtml() { return typeof pushSettingHtml === 'function' ? pushSettingHtml() : ''; }
+async function markNotifsRead(ids) {
+  if (!ids.length) return;
+  const now = new Date().toISOString();
+  S.notifs.forEach(n => { if (ids.includes(n.id)) n.read_at = now; });
+  await sb.from('notifications').update({ read_at: now }).in('id', ids);
+}
+async function openNotif(n) {
+  await markNotifsRead([n.id]);
+  await closeModal();
+  switch (n.kind) {
+    case 'board_post': S.section = 'board'; render(); if (S.posts.some(p => p.id === n.target_id)) postModal(n.target_id); break;
+    case 'assignment': S.section = 'listening'; render(); break;
+    case 'dm': await openDm(n.actor_id); break;
+    case 'comment': case 'reaction': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
+    case 'signup': S.section = 'students'; render(); break;
+    case 'report': S.section = 'mod'; render(); break;
+    default: render();
+  }
+}
+
+async function setFamilyDm(id, value) {
+  const { data, error } = await sb.from('profiles').update({ family_dm_ok: value }).eq('id', id).select('id, family_dm_ok');
+  if (error || !data.length) { toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad'); return studentDetailModal(id); }
+  S.students.find(s => s.id === id).family_dm_ok = data[0].family_dm_ok;
+  toast(value ? 'Mensajes con compañeros activados' : 'Mensajes con compañeros desactivados', 'ok');
 }
 
 /* ======================= Acciones (click delegado) ================== */
@@ -1827,6 +2328,44 @@ const actions = {
     if (b) { const th = el.dataset.t; b.dataset.t = th === 'light' ? 'dark' : 'light'; b.innerHTML = ic(th === 'light' ? 'moon' : 'sun'); }
   },
   'avatar-save'() { cropSave(); },
+  async 'install-app'() { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; render(); },
+  // ---- Perfiles ----
+  'open-profile'(el) { profileModal(el.dataset.id); },
+  // ---- Mensajes privados ----
+  'dm-new'() { newDmModal(); },
+  'dm-open'(el) { openDm(el.dataset.id); },
+  'dm-close'() { S.dmWith = null; render(); },
+  async 'dm-delete'(el) {
+    if (!confirm('¿Borrar este mensaje? Desaparecerá también para la otra persona.')) return;
+    const { error } = await sb.from('dm_messages').delete().eq('id', el.dataset.id);
+    if (error) return toast('No se pudo borrar: ' + error.message, 'bad');
+    S.dms = S.dms.filter(m => m.id !== el.dataset.id); updateThread(); refreshChrome();
+  },
+  async block(el) {
+    if (!confirm(`¿Bloquear a ${whoName(el.dataset.id)}? No podréis escribiros en privado. Esta persona no recibe ningún aviso, y tu profesor tampoco.`)) return;
+    const { error } = await sb.from('user_blocks').insert({ blocker_id: S.user.id, blocked_id: el.dataset.id });
+    if (error) return toast('No se pudo bloquear: ' + error.message, 'bad');
+    S.blocks.push({ blocker_id: S.user.id, blocked_id: el.dataset.id }); S.dmCan[el.dataset.id] = false;
+    render(); toast('Bloqueado', 'ok');
+  },
+  async unblock(el) {
+    const { error } = await sb.from('user_blocks').delete().eq('blocker_id', S.user.id).eq('blocked_id', el.dataset.id);
+    if (error) return toast('No se pudo desbloquear: ' + error.message, 'bad');
+    S.blocks = S.blocks.filter(b => b.blocked_id !== el.dataset.id);
+    delete S.dmCan[el.dataset.id]; await openDm(el.dataset.id); toast('Desbloqueado', 'ok');
+  },
+  // ---- Notificaciones ----
+  notifs() { notifsModal(); },
+  'notif-open'(el) { const n = S.notifs.find(x => x.id === el.dataset.id); if (n) openNotif(n); },
+  async 'notif-all-read'() { await markNotifsRead(S.notifs.filter(n => !n.read_at).map(n => n.id)); notifsModal(); refreshChrome(); },
+  // ---- Ficha del alumno (profesor): fecha de nacimiento y permiso familiar ----
+  async 'save-birth'(el) {
+    const v = $('#birthInput').value || null;
+    const { data, error } = await sb.from('profiles').update({ birth_date: v }).eq('id', el.dataset.id).select('id, birth_date');
+    if (error || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    S.students.find(s => s.id === el.dataset.id).birth_date = data[0].birth_date;
+    studentDetailModal(el.dataset.id); toast('Fecha guardada', 'ok');
+  },
   'new-item'() { itemFormModal(null); },
   'open-item'(el) { itemModal(el.dataset.id); },
   'edit-item'(el) { itemFormModal(el.dataset.id); },
@@ -2007,11 +2546,23 @@ document.addEventListener('click', async e => {
 });
 
 /* Autoguardado del modal de alumno */
-document.addEventListener('input', e => { if (cur && e.target.matches('[data-q]')) markDirty(); });
+document.addEventListener('input', e => {
+  if (cur && e.target.matches('[data-q]')) markDirty();
+  if (e.target.matches('#dmForm textarea')) { const t = e.target; t.style.height = ''; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } // crece al escribir
+});
+// Mensajes: Enter envía, Mayúsculas+Enter hace salto de línea (en móvil, el botón Enviar)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && e.target.matches('#dmForm textarea') && matchMedia('(hover:hover)').matches) {
+    e.preventDefault(); e.target.form.requestSubmit();
+  }
+  // Elementos pulsables que no son botones (nombre/foto): también con Enter o espacio
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role=button][data-action]')) { e.preventDefault(); e.target.click(); }
+});
 document.addEventListener('change', e => {
   if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); }
   if (e.target.id === 'avatarFile') { const f0 = e.target.files[0]; e.target.value = ''; processAvatar(f0); }
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }
+  if (e.target.id === 'familyDm') setFamilyDm(e.target.dataset.id, e.target.checked);
 });
 
 /* ------------------------------ Formularios ------------------------- */
@@ -2029,7 +2580,8 @@ document.addEventListener('submit', async e => {
     } else {
       const name = f.name.value.trim();
       // emailRedirectTo: sin él, Supabase vuelve al dominio sin la ruta /yurimh-academy/ (404 de GitHub)
-      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name }, emailRedirectTo: location.href.split('#')[0] } });
+      const birth = f.birth.value; // AAAA-MM-DD; la base de datos la valida al crear el perfil
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name, birth_date: birth }, emailRedirectTo: location.href.split('#')[0] } });
       if (error) viewAuth('register', { type: 'bad', text: error.message });
       else if (!data.session) viewAuth('login', { type: 'ok', text: 'Cuenta creada. Revisa tu email para confirmarla y después entra.' });
     }
@@ -2076,6 +2628,21 @@ document.addEventListener('submit', async e => {
     if (error) return toast('No se pudo publicar: ' + error.message, 'bad');
     if (!S.fposts.some(x => x.id === data.id)) S.fposts.unshift(data);
     render(); toast('Publicado', 'ok');
+  } else if (f.id === 'aboutForm') {
+    e.preventDefault();
+    const v = k => f.elements[k].value.trim() || null;
+    await saveProfileFields({ bio: v('bio'), instrument: v('instrument'), level: v('level'), favorites: v('favorites'), learning: v('learning'), gear: v('gear') }, 'Perfil guardado');
+  } else if (f.id === 'dmForm') {
+    e.preventDefault();
+    const ta = f.elements['body'], body = ta.value.trim(), to = f.dataset.to;
+    if (!body) return;
+    const btn = f.querySelector('button'); btn.disabled = true;
+    const { data, error } = await sb.from('dm_messages').insert({ sender_id: S.user.id, recipient_id: to, body }).select().single();
+    btn.disabled = false;
+    if (error) { if (/row-level security/i.test(error.message)) { S.dmCan[to] = false; render(); return toast('Ya no podéis escribiros en privado', 'bad'); } return toast('No se pudo enviar: ' + error.message, 'bad'); }
+    addUnique(S.dms, data, 'dm_messages');
+    ta.value = ''; ta.style.height = '';
+    updateThread(); scrollThread(); updateDmList(); ta.focus();
   } else if (f.id === 'nameForm') {
     e.preventDefault();
     const name = f.elements['display_name'].value.trim();
@@ -2096,6 +2663,8 @@ document.addEventListener('submit', async e => {
     if (!/^https?:\/\//i.test(url)) return toast('El enlace debe empezar por http:// o https://', 'bad');
     const row = { title: f.title.value.trim(), url, kind: f.kind.value, brief: f.brief.value.trim() || null };
     const id = f.dataset.id;
+    const prev = id ? S.items.find(x => x.id === id) : null;
+    if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = await fetchThumb(url); // portada de Spotify/YouTube
     const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
     if (error) return toast('Error: ' + error.message, 'bad');
     await loadData();
@@ -2105,6 +2674,24 @@ document.addEventListener('submit', async e => {
   }
 });
 
+/* ------------------------- Instalar como app (PWA) ------------------------- */
+let installPrompt = null; // Android/Chrome/Edge: el navegador nos deja mostrar su ventana de instalar
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; if (S.section === 'profile' && !uiBusy()) softRender(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; toast('¡App instalada! Ya la tienes en tu pantalla de inicio', 'ok'); });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installPanelHtml() {
+  if (isStandalone()) return ''; // ya la está usando como app
+  const how = installPrompt ? '<button class="btn primary" data-action="install-app">Instalar la app</button>'
+    : isIOS() ? '<p class="sub" style="margin:0">En iPhone: abre esta web en <b>Safari</b>, pulsa el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba) y elige <b>"Añadir a pantalla de inicio"</b>.</p>'
+    : '<p class="sub" style="margin:0">En Android: abre esta web en <b>Chrome</b>, pulsa el menú <b>⋮</b> y elige <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>.</p>';
+  return `<div class="panel"><h2 class="h2" style="margin-top:0">Tenla en el móvil como una app</h2>
+    <p class="sub" style="margin:0 0 12px">Se abre a pantalla completa desde su icono, sin barra del navegador. No ocupa casi espacio.</p>${how}</div>`;
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker:', e));
+}
+
 /* -------------------------------- Arranque -------------------------- */
 (async function boot() {
   if (!configured) return viewSetup();
@@ -2112,7 +2699,7 @@ document.addEventListener('submit', async e => {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.section = 'feed'; viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.section = 'feed'; viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });

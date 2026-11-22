@@ -686,6 +686,389 @@ begin
 end $$;
 
 -- =====================================================================
+--  FASE 2 · PERFILES COMPLETOS + FECHA DE NACIMIENTO
+--  Campos públicos (los ven los compañeros): bio, instrumento, nivel,
+--  favoritos, qué está aprendiendo y equipo.
+--  Privados (solo el propio alumno y el profesor): fecha de nacimiento y
+--  el permiso familiar para mensajes entre alumnos.
+-- =====================================================================
+alter table public.profiles add column if not exists bio text check (bio is null or char_length(bio) <= 200);
+alter table public.profiles add column if not exists instrument text
+  check (instrument is null or instrument in ('electric', 'acoustic', 'classical', 'bass', 'other'));
+alter table public.profiles add column if not exists level text
+  check (level is null or level in ('beginner', 'intermediate', 'advanced'));
+alter table public.profiles add column if not exists favorites text check (favorites is null or char_length(favorites) <= 200);
+alter table public.profiles add column if not exists learning text check (learning is null or char_length(learning) <= 200);
+alter table public.profiles add column if not exists gear text check (gear is null or char_length(gear) <= 150);
+alter table public.profiles add column if not exists birth_date date;
+alter table public.profiles add column if not exists family_dm_ok boolean not null default false;
+
+-- Fecha de nacimiento razonable (ni futura ni absurda). Devuelve null si no vale.
+create or replace function public.valid_birth_date(d date)
+returns date language sql immutable set search_path = '' as $$
+  select case when d is not null and d > date '1920-01-01' and d < date '2100-01-01' then d end;
+$$;
+
+-- Al registrarse: nombre y fecha de nacimiento vienen del formulario (metadatos de Auth).
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare bd date;
+begin
+  begin
+    bd := public.valid_birth_date((new.raw_user_meta_data->>'birth_date')::date);
+    if bd > current_date then bd := null; end if;
+  exception when others then bd := null;
+  end;
+  insert into public.profiles (id, display_name, email, birth_date)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data->>'display_name'), ''), split_part(new.email, '@', 1)),
+    new.email,
+    bd
+  );
+  return new;
+end;
+$$;
+
+-- El alumno no puede tocar su rol, aprobación, email, permiso familiar ni (una vez puesta) su fecha de nacimiento.
+create or replace function public.profiles_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_teacher() then
+    if new.id           is distinct from old.id
+    or new.role         is distinct from old.role
+    or new.approved     is distinct from old.approved
+    or new.email        is distinct from old.email
+    or new.family_dm_ok is distinct from old.family_dm_ok
+    or (old.birth_date is not null and new.birth_date is distinct from old.birth_date) then
+      raise exception 'Solo el profesor puede modificar esos campos';
+    end if;
+  end if;
+  if new.birth_date is not null and (public.valid_birth_date(new.birth_date) is null or new.birth_date > current_date) then
+    raise exception 'Fecha de nacimiento no válida';
+  end if;
+  new.display_name = trim(new.display_name);
+  new.nickname = nullif(trim(coalesce(new.nickname, '')), '');
+  new.bio = nullif(trim(coalesce(new.bio, '')), '');
+  new.favorites = nullif(trim(coalesce(new.favorites, '')), '');
+  new.learning = nullif(trim(coalesce(new.learning, '')), '');
+  new.gear = nullif(trim(coalesce(new.gear, '')), '');
+  if char_length(new.display_name) not between 1 and 60 then
+    raise exception 'El nombre debe tener entre 1 y 60 caracteres';
+  end if;
+  return new;
+end;
+$$;
+
+-- ¿Puede esta persona usar mensajes privados con compañeros?
+-- Profesor: siempre. Alumno: si es mayor de edad o su familia lo autoriza.
+-- Sin fecha de nacimiento cuenta como menor (protección por defecto).
+create or replace function public.dm_ok(uid uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = uid and p.approved
+      and (p.role = 'teacher' or p.family_dm_ok
+           or (p.birth_date is not null and p.birth_date <= (current_date - interval '18 years')::date))
+  );
+$$;
+
+-- Escucha analítica: portada del álbum/playlist/canción (Spotify) o miniatura (YouTube).
+-- La rellena la app del profesor al crear el elemento; solo se aceptan imágenes de esos servicios.
+alter table public.listening_items add column if not exists thumb_url text
+  check (thumb_url is null or (char_length(thumb_url) <= 300
+         and thumb_url ~ '^https://(i\.scdn\.co|image-cdn-[a-z0-9-]+\.spotifycdn\.com|mosaic\.scdn\.co|i\.ytimg\.com)/'));
+
+-- =====================================================================
+--  FASE 2 · MENSAJES PRIVADOS  (prefijo dm_)
+--   · Con el profesor puede hablar todo el mundo.
+--   · Entre alumnos: los dos deben cumplir dm_ok y no haberse bloqueado.
+--   · El profesor NO lee las conversaciones entre alumnos, salvo un
+--     mensaje que alguien haya denunciado.
+--   · Los bloqueos son privados: solo los ve quien bloquea.
+-- =====================================================================
+create table if not exists public.user_blocks (
+  blocker_id uuid not null references public.profiles(id) on delete cascade,
+  blocked_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  check (blocker_id <> blocked_id)
+);
+
+create table if not exists public.dm_messages (
+  id           uuid primary key default gen_random_uuid(),
+  sender_id    uuid not null references public.profiles(id) on delete cascade,
+  recipient_id uuid not null references public.profiles(id) on delete cascade,
+  body         text not null check (char_length(body) between 1 and 2000),
+  created_at   timestamptz not null default now(),
+  read_at      timestamptz,
+  check (sender_id <> recipient_id)
+);
+create index if not exists dm_messages_recipient_idx on public.dm_messages (recipient_id, read_at);
+create index if not exists dm_messages_pair_idx on public.dm_messages (sender_id, recipient_id, created_at);
+
+create or replace function public.can_dm(a uuid, b uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select a is not null and b is not null and a <> b
+    -- solo responde a una de las dos personas: así nadie puede averiguar si un compañero es menor
+    and (auth.uid() is null or auth.uid() in (a, b))
+    and exists (select 1 from public.profiles where id = a and approved)
+    and exists (select 1 from public.profiles where id = b and approved)
+    and (
+      exists (select 1 from public.profiles where id in (a, b) and role = 'teacher')
+      or (public.dm_ok(a) and public.dm_ok(b)
+          and not exists (select 1 from public.user_blocks
+                          where (blocker_id = a and blocked_id = b) or (blocker_id = b and blocked_id = a)))
+    );
+$$;
+
+-- Personas a las que puedo escribir (para "Nuevo mensaje").
+create or replace function public.get_dm_contacts()
+returns setof uuid
+language sql stable security definer set search_path = public
+as $$
+  select p.id from public.profiles p where p.approved and public.can_dm(auth.uid(), p.id);
+$$;
+
+-- Perfil público de una persona (para la ficha que se abre al pulsar su nombre).
+create or replace function public.get_profile(p_id uuid)
+returns table (id uuid, public_name text, avatar text, role text, bio text, instrument text,
+               level text, favorites text, learning text, gear text, can_message boolean)
+language sql stable security definer set search_path = public
+as $$
+  select p.id, coalesce(nullif(trim(p.nickname), ''), p.display_name), p.avatar, p.role,
+         p.bio, p.instrument, p.level, p.favorites, p.learning, p.gear,
+         public.can_dm(auth.uid(), p.id)
+  from public.profiles p
+  where p.id = p_id and p.approved and public.is_approved();
+$$;
+
+-- El destinatario solo puede marcar el mensaje como leído; nadie puede reescribirlo.
+create or replace function public.dm_messages_guard()
+returns trigger
+language plpgsql set search_path = public
+as $$
+begin
+  if new.id is distinct from old.id or new.sender_id is distinct from old.sender_id
+     or new.recipient_id is distinct from old.recipient_id or new.body is distinct from old.body
+     or new.created_at is distinct from old.created_at then
+    raise exception 'Solo se puede marcar como leído';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists dm_messages_guard_trg on public.dm_messages;
+create trigger dm_messages_guard_trg before update on public.dm_messages
+  for each row execute function public.dm_messages_guard();
+
+grant select, insert, update, delete on public.user_blocks, public.dm_messages to authenticated;
+revoke all on public.user_blocks, public.dm_messages from anon;
+alter table public.user_blocks enable row level security;
+alter table public.dm_messages enable row level security;
+
+drop policy if exists user_blocks_select_own on public.user_blocks;
+create policy user_blocks_select_own on public.user_blocks for select to authenticated using (blocker_id = auth.uid());
+drop policy if exists user_blocks_insert_own on public.user_blocks;
+create policy user_blocks_insert_own on public.user_blocks for insert to authenticated
+  with check (blocker_id = auth.uid() and public.is_approved());
+drop policy if exists user_blocks_delete_own on public.user_blocks;
+create policy user_blocks_delete_own on public.user_blocks for delete to authenticated using (blocker_id = auth.uid());
+
+drop policy if exists dm_messages_select on public.dm_messages;
+create policy dm_messages_select on public.dm_messages for select to authenticated
+  using (sender_id = auth.uid() or recipient_id = auth.uid()
+         or (public.is_teacher() and exists (select 1 from public.moderation_reports r
+                                             where r.target_type = 'dm_message' and r.target_id = dm_messages.id)));
+drop policy if exists dm_messages_insert on public.dm_messages;
+create policy dm_messages_insert on public.dm_messages for insert to authenticated
+  with check (sender_id = auth.uid() and public.is_approved() and public.can_dm(sender_id, recipient_id));
+drop policy if exists dm_messages_update_read on public.dm_messages;
+create policy dm_messages_update_read on public.dm_messages for update to authenticated
+  using (recipient_id = auth.uid()) with check (recipient_id = auth.uid());
+drop policy if exists dm_messages_delete on public.dm_messages;
+create policy dm_messages_delete on public.dm_messages for delete to authenticated
+  using (sender_id = auth.uid()
+         or (public.is_teacher() and exists (select 1 from public.moderation_reports r
+                                             where r.target_type = 'dm_message' and r.target_id = dm_messages.id)));
+
+-- Las denuncias también aceptan mensajes privados
+alter table public.moderation_reports drop constraint if exists moderation_reports_target_type_check;
+alter table public.moderation_reports add constraint moderation_reports_target_type_check
+  check (target_type in ('feed_post', 'feed_comment', 'listening_comment', 'dm_message'));
+
+create or replace function public.can_see_target(t text, i uuid)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select case t
+    when 'board_post'        then exists (select 1 from public.board_posts        where id = i)
+    when 'feed_post'         then exists (select 1 from public.feed_posts         where id = i)
+    when 'feed_comment'      then exists (select 1 from public.feed_comments      where id = i)
+    when 'listening_comment' then exists (select 1 from public.listening_comments where id = i)
+    when 'listening_item'    then exists (select 1 from public.listening_items    where id = i)
+    when 'dm_message'        then exists (select 1 from public.dm_messages        where id = i and recipient_id = auth.uid())
+    else false
+  end;
+$$;
+
+drop trigger if exists cleanup_dm_messages on public.dm_messages;
+create trigger cleanup_dm_messages after delete on public.dm_messages
+  for each row execute function public.cleanup_target_links('dm_message');
+
+-- =====================================================================
+--  FASE 2 · NOTIFICACIONES
+--  Las crea la propia base de datos (triggers), nunca el navegador.
+--  Cada persona solo ve, marca como leídas y borra las suyas.
+-- =====================================================================
+create table if not exists public.notifications (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  kind        text not null check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report')),
+  actor_id    uuid references public.profiles(id) on delete cascade,
+  target_id   uuid,
+  extra       text check (extra is null or char_length(extra) <= 160),
+  created_at  timestamptz not null default now(),
+  read_at     timestamptz,
+  pushed_at   timestamptz
+);
+create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
+
+create or replace function public.notifications_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if auth.uid() is not null and (new.id is distinct from old.id or new.user_id is distinct from old.user_id
+     or new.kind is distinct from old.kind or new.actor_id is distinct from old.actor_id
+     or new.target_id is distinct from old.target_id or new.extra is distinct from old.extra
+     or new.created_at is distinct from old.created_at or new.pushed_at is distinct from old.pushed_at) then
+    raise exception 'Solo se puede marcar como leída';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists notifications_guard_trg on public.notifications;
+create trigger notifications_guard_trg before update on public.notifications
+  for each row execute function public.notifications_guard();
+
+grant select, update, delete on public.notifications to authenticated;
+revoke all on public.notifications from anon;
+alter table public.notifications enable row level security;
+drop policy if exists notifications_select_own on public.notifications;
+create policy notifications_select_own on public.notifications for select to authenticated using (user_id = auth.uid());
+drop policy if exists notifications_update_own on public.notifications;
+create policy notifications_update_own on public.notifications for update to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists notifications_delete_own on public.notifications;
+create policy notifications_delete_own on public.notifications for delete to authenticated using (user_id = auth.uid());
+
+-- Crea una notificación (sin repetir una igual que siga sin leer)
+create or replace function public.notify(p_user uuid, p_kind text, p_actor uuid, p_target uuid, p_extra text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_user is null or p_user = p_actor then return; end if;
+  if exists (select 1 from public.notifications where user_id = p_user and kind = p_kind
+             and actor_id is not distinct from p_actor and target_id is not distinct from p_target and read_at is null) then
+    return;
+  end if;
+  insert into public.notifications (user_id, kind, actor_id, target_id, extra)
+  values (p_user, p_kind, p_actor, p_target, left(p_extra, 160));
+end;
+$$;
+
+create or replace function public.notify_trg()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare r record; owner uuid;
+begin
+  if tg_table_name = 'board_posts' then            -- aviso para todos
+    if new.audience = 'all' then
+      for r in select id from public.profiles where role = 'student' and approved loop
+        perform public.notify(r.id, 'board_post', new.author_id, new.id, new.title);
+      end loop;
+    end if;
+  elsif tg_table_name = 'board_recipients' then    -- aviso dirigido
+    select * into r from public.board_posts where id = new.post_id;
+    perform public.notify(new.student_id, 'board_post', r.author_id, r.id, r.title);
+  elsif tg_table_name = 'listening_assignments' then
+    select title into r from public.listening_items where id = new.item_id;
+    perform public.notify(new.student_id, 'assignment', null, new.item_id, r.title);
+  elsif tg_table_name = 'dm_messages' then
+    perform public.notify(new.recipient_id, 'dm', new.sender_id, new.sender_id, null);
+  elsif tg_table_name = 'feed_comments' then
+    select author_id into owner from public.feed_posts where id = new.post_id;
+    perform public.notify(owner, 'comment', new.author_id, new.post_id, left(new.body, 80));
+  elsif tg_table_name = 'reactions' then
+    if new.target_type = 'feed_post' then
+      select author_id into owner from public.feed_posts where id = new.target_id;
+      perform public.notify(owner, 'reaction', new.user_id, new.target_id, new.emoji);
+    elsif new.target_type = 'feed_comment' then
+      select author_id into owner from public.feed_comments where id = new.target_id;
+      perform public.notify(owner, 'reaction', new.user_id, (select post_id from public.feed_comments where id = new.target_id), new.emoji);
+    end if;
+  elsif tg_table_name = 'profiles' then            -- alguien se registra
+    for r in select id from public.profiles where role = 'teacher' and approved loop
+      perform public.notify(r.id, 'signup', new.id, new.id, new.display_name);
+    end loop;
+  elsif tg_table_name = 'moderation_reports' then
+    for r in select id from public.profiles where role = 'teacher' and approved loop
+      perform public.notify(r.id, 'report', null, new.id, null);
+    end loop;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists notify_board_posts on public.board_posts;
+create trigger notify_board_posts after insert on public.board_posts for each row execute function public.notify_trg();
+drop trigger if exists notify_board_recipients on public.board_recipients;
+create trigger notify_board_recipients after insert on public.board_recipients for each row execute function public.notify_trg();
+drop trigger if exists notify_listening_assignments on public.listening_assignments;
+create trigger notify_listening_assignments after insert on public.listening_assignments for each row execute function public.notify_trg();
+drop trigger if exists notify_dm_messages on public.dm_messages;
+create trigger notify_dm_messages after insert on public.dm_messages for each row execute function public.notify_trg();
+drop trigger if exists notify_feed_comments on public.feed_comments;
+create trigger notify_feed_comments after insert on public.feed_comments for each row execute function public.notify_trg();
+drop trigger if exists notify_reactions on public.reactions;
+create trigger notify_reactions after insert on public.reactions for each row execute function public.notify_trg();
+drop trigger if exists notify_profiles on public.profiles;
+create trigger notify_profiles after insert on public.profiles for each row execute function public.notify_trg();
+drop trigger if exists notify_moderation_reports on public.moderation_reports;
+create trigger notify_moderation_reports after insert on public.moderation_reports for each row execute function public.notify_trg();
+
+-- Permisos de ejecución de las funciones nuevas
+revoke execute on function public.notify(uuid, text, uuid, uuid, text), public.notify_trg(),
+  public.dm_messages_guard(), public.notifications_guard() from public, anon, authenticated;
+-- dm_ok solo la usan otras funciones internas: no se puede llamar desde fuera (revelaría si alguien es menor)
+revoke execute on function public.dm_ok(uuid) from public, anon, authenticated;
+revoke execute on function public.can_dm(uuid, uuid), public.get_profile(uuid),
+  public.get_dm_contacts() from public, anon;
+grant execute on function public.can_dm(uuid, uuid), public.get_profile(uuid),
+  public.get_dm_contacts() to authenticated;
+
+-- Tiempo real para lo nuevo
+do $$
+declare t text;
+begin
+  foreach t in array array['dm_messages', 'notifications'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
+
+-- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto
 --    (cambia el email por el tuyo) para convertirte en profesor:

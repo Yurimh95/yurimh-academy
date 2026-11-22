@@ -149,7 +149,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.row.click:has-text("Luis G.")').count())===1 && (await p.locator('.row.click:has-text("Luis")').count())===1, 'Lista de alumnos refleja el nombre nuevo');
   // escucha intacta
   await goto(p,'listening');
-  ok((await p.locator('.card').count())===2, 'Módulo Escucha sigue funcionando (2 elementos)');
+  ok((await p.locator('.track').count())===2, 'Módulo Escucha sigue funcionando (2 filas en la lista)');
 
   // sin migración de SQL
   const q = await open('t1');

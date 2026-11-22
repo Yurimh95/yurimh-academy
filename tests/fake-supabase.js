@@ -1,13 +1,22 @@
 // Supabase falso en memoria que IMITA las reglas RLS de supabase.sql (solo para pruebas)
 (function(){
   const uid = p => p + Math.random().toString(16).slice(2,10);
-  const DB = window.__DB = JSON.parse(JSON.stringify(window.__DB_SEED));
+  // __DB_OVERRIDE: para que una prueba continúe con el estado que dejó otra sesión (otra persona)
+  const DB = window.__DB = JSON.parse(JSON.stringify(window.__DB_OVERRIDE || window.__DB_SEED));
   let me = window.__ME || null;
   const listeners = [];
   const P = () => DB.profiles.find(x => x.id === me);
   const isTeacher = () => !!P() && P().role==='teacher' && P().approved;
   const isApproved = () => !!P() && P().approved;
   const assigned = itemId => DB.listening_assignments.some(a=>a.item_id===itemId && a.student_id===me);
+  // ---- Mensajes privados: misma lógica que dm_ok / can_dm del SQL ----
+  const ageOf = iso => { if(!iso) return null; const [y,m,d]=iso.split('-').map(Number), t=new Date(); return t.getFullYear()-y-((t.getMonth()+1<m||(t.getMonth()+1===m&&t.getDate()<d))?1:0); };
+  const prof = id => DB.profiles.find(x=>x.id===id);
+  const dmOk = id => { const p=prof(id); return !!p && p.approved && (p.role==='teacher' || p.family_dm_ok || (ageOf(p.birth_date)!==null && ageOf(p.birth_date)>=18)); };
+  const canDm = (a,b) => { const pa=prof(a), pb=prof(b); if(!pa||!pb||a===b||!pa.approved||!pb.approved) return false;
+    if(pa.role==='teacher'||pb.role==='teacher') return true;
+    return dmOk(a) && dmOk(b) && !DB.user_blocks.some(x=>(x.blocker_id===a&&x.blocked_id===b)||(x.blocker_id===b&&x.blocked_id===a)); };
+  const dmReported = id => DB.moderation_reports.some(x=>x.target_type==='dm_message'&&x.target_id===id);
   const postVisibleToMe = post => isTeacher() || (isApproved() && (post.audience==='all' || DB.board_recipients.some(r=>r.post_id===post.id && r.student_id===me)));
 
   const canRead = {
@@ -21,9 +30,13 @@
     feed_comments: () => isApproved(),
     listening_comments: r => isTeacher() || (isApproved() && assigned(r.item_id)),
     reactions: r => isApproved() && canSee(r.target_type, r.target_id),
-    moderation_reports: r => isTeacher() || r.reporter_id===me
+    moderation_reports: r => isTeacher() || r.reporter_id===me,
+    dm_messages: r => r.sender_id===me || r.recipient_id===me || (isTeacher() && dmReported(r.id)),
+    user_blocks: r => r.blocker_id===me,
+    notifications: r => r.user_id===me
   };
   function canSee(type,id){
+    if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
     const T={board_post:['board_posts'],feed_post:['feed_posts'],feed_comment:['feed_comments'],listening_comment:['listening_comments'],listening_item:['listening_items']}[type];
     if(!T) return false;
     return DB[T[0]].some(r=>r.id===id && canRead[T[0]](r));
@@ -40,7 +53,10 @@
     feed_comments: (op,r) => op==='delete' && (isTeacher() || own(r)),
     listening_comments: (op,r) => op==='delete' && (isTeacher() || own(r)),
     reactions: (op,r) => op==='delete' && r.user_id===me,
-    moderation_reports: () => isTeacher()
+    moderation_reports: () => isTeacher(),
+    dm_messages: (op,r) => op==='update' ? r.recipient_id===me : (r.sender_id===me || (isTeacher() && dmReported(r.id))),
+    user_blocks: (op,r) => op==='delete' && r.blocker_id===me,
+    notifications: (op,r) => r.user_id===me
   };
   const canInsert = {
     profiles: () => false,
@@ -53,16 +69,39 @@
     feed_comments: r => r.author_id===me && isApproved() && DB.feed_posts.some(p=>p.id===r.post_id),
     listening_comments: r => r.author_id===me && (isTeacher() || (isApproved() && assigned(r.item_id))),
     reactions: r => r.user_id===me && isApproved() && canSee(r.target_type,r.target_id),
-    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment'].includes(r.target_type) && canSee(r.target_type,r.target_id)
+    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message'].includes(r.target_type) && canSee(r.target_type,r.target_id),
+    dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id),
+    user_blocks: r => r.blocker_id===me && isApproved() && r.blocker_id!==r.blocked_id,
+    notifications: () => false
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
     feed_comments: r => r.body && r.body.length<=1000,
     listening_comments: r => r.body && r.body.length<=1000,
+    dm_messages: r => r.body && r.body.length<=2000 && r.sender_id!==r.recipient_id,
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'] };
+
+  // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
+  function notify(user, kind, actor, target, extra){
+    if(!user || user===actor) return;
+    if(DB.notifications.some(n=>n.user_id===user&&n.kind===kind&&(n.actor_id||null)===(actor||null)&&(n.target_id||null)===(target||null)&&!n.read_at)) return;
+    const n={id:uid('nt'),user_id:user,kind,actor_id:actor||null,target_id:target||null,extra:extra==null?null:String(extra).slice(0,160),created_at:new Date().toISOString(),read_at:null,pushed_at:null};
+    DB.notifications.push(n); emit('notifications','INSERT',n);
+  }
+  function notifyFor(table,row){
+    const teachers=()=>DB.profiles.filter(p=>p.role==='teacher'&&p.approved).map(p=>p.id);
+    if(table==='board_posts' && row.audience==='all') DB.profiles.filter(p=>p.role==='student'&&p.approved).forEach(p=>notify(p.id,'board_post',row.author_id,row.id,row.title));
+    if(table==='board_recipients'){ const bp=DB.board_posts.find(p=>p.id===row.post_id)||{}; notify(row.student_id,'board_post',bp.author_id,bp.id,bp.title); }
+    if(table==='listening_assignments'){ const it=DB.listening_items.find(i=>i.id===row.item_id)||{}; notify(row.student_id,'assignment',null,row.item_id,it.title); }
+    if(table==='dm_messages') notify(row.recipient_id,'dm',row.sender_id,row.sender_id,null);
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; notify(fp.author_id,'comment',row.author_id,row.post_id,String(row.body).slice(0,80)); }
+    if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
+    if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
+    if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));
+  }
 
   // ---- Tiempo real simulado: como Supabase Realtime, INSERT/UPDATE solo llegan si RLS deja leer la fila;
   //      los DELETE llegan a todos, pero solo con la clave primaria.
@@ -78,7 +117,7 @@
   }
   function removeRows(table, pred){ const gone=DB[table].filter(pred); DB[table]=DB[table].filter(r=>!pred(r)); gone.forEach(r=>emit(table,'DELETE',r)); return gone; }
   // Para las pruebas: simula que OTRA persona inserta/borra algo (window.__rtExternal('feed_posts', {...}))
-  window.__rtExternal=(table,row)=>{ const r={created_at:new Date().toISOString(),...row}; DB[table].push(r); emit(table,'INSERT',r); return r; };
+  window.__rtExternal=(table,row)=>{ const r={created_at:new Date().toISOString(),...row}; DB[table].push(r); emit(table,'INSERT',r); notifyFor(table,r); return r; };
   window.__rtExternalUpdate=(table,id,patch)=>{ const r=DB[table].find(x=>x.id===id); Object.assign(r,patch); emit(table,'UPDATE',r); };
   window.__rtExternalDelete=(table,id)=>{ const rows=removeRows(table,r=>r.id===id); cascade(table,rows); };
 
@@ -97,8 +136,11 @@
   }
   function guard(table, old, nw){
     if (table==='profiles' && !isTeacher()) {
-      if (nw.role!==old.role || nw.approved!==old.approved || nw.email!==old.email || nw.id!==old.id) throw new Error('Solo el profesor puede modificar esos campos');
+      if (nw.role!==old.role || nw.approved!==old.approved || nw.email!==old.email || nw.id!==old.id
+          || !!nw.family_dm_ok!==!!old.family_dm_ok || (old.birth_date && nw.birth_date!==old.birth_date)) throw new Error('Solo el profesor puede modificar esos campos');
     }
+    if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id)) throw new Error('Solo se puede marcar como leído');
+    if (table==='notifications' && (nw.kind!==old.kind||nw.user_id!==old.user_id||nw.extra!==old.extra)) throw new Error('Solo se puede marcar como leída');
     if (table==='profiles'){
       nw.display_name=String(nw.display_name).trim(); if(nw.display_name.length<1||nw.display_name.length>60) throw new Error('El nombre debe tener entre 1 y 60 caracteres');
       nw.nickname=(nw.nickname==null||String(nw.nickname).trim()==='')?null:String(nw.nickname).trim();
@@ -116,7 +158,9 @@
     const st={op:'select',filters:[],order:null,payload:null,embed:false,single:false,maybe:false,opts:null,lim:null};
     const b={
       select(cols){ if(cols&&cols.includes('item:listening_items(*)')) st.embed=true; st.sel=true; return b; },
-      eq(k,v){ st.filters.push([k,v]); return b; },
+      eq(k,v){ st.filters.push(r=>r[k]===v); return b; },
+      is(k,v){ st.filters.push(r=>(r[k]??null)===v); return b; },
+      in(k,arr){ st.filters.push(r=>arr.includes(r[k])); return b; },
       order(k,o){ st.order=[k,!o||o.ascending!==false]; return b; },
       limit(n){ st.lim=n; return b; },
       update(p){ st.op='update'; st.payload=p; st.sel=false; return b; },
@@ -127,7 +171,7 @@
       maybeSingle(){ st.maybe=true; return b; },
       then(res,rej){ return Promise.resolve().then(run).then(res,rej); }
     };
-    function match(r){ return st.filters.every(([k,v])=>r[k]===v); }
+    function match(r){ return st.filters.every(f=>f(r)); }
     function finish(rows,error){
       if(error) return {data:null,error:{message:error}};
       let out=rows.map(r=>({...r}));
@@ -164,7 +208,7 @@
           if(pk[table] && DB[table].some(e=>pk[table].every(k=>e[k]===row[k]))){ if(st.op==='upsert'&&st.opts.ignoreDuplicates) continue; return finish([],'duplicate key value violates unique constraint'); }
           if(table==='moderation_reports' && DB[table].some(e=>e.reporter_id===row.reporter_id&&e.target_type===row.target_type&&e.target_id===row.target_id)) return finish([],'duplicate key value violates unique constraint');
           if(table==='listening_assignments' && DB[table].some(e=>e.item_id===row.item_id&&e.student_id===row.student_id)) return finish([],'duplicate key value');
-          DB[table].push(row); made.push(row); emit(table,'INSERT',row);
+          DB[table].push(row); made.push(row); emit(table,'INSERT',row); notifyFor(table,row);
         }
         return st.sel?finish(made):{data:null,error:null};
       }
@@ -177,9 +221,14 @@
     }
     return b;
   }
-  const rpc = name => Promise.resolve().then(()=>{
-    if(name!=='get_directory') return {data:null,error:{message:'function public.'+name+' does not exist'}};
+  const rpc = (name,args) => Promise.resolve().then(()=>{
     if(!me) return {data:null,error:{message:'No autenticado'}};
+    if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id)).map(p=>p.id), error:null};
+    if(name==='can_dm') return {data: (args.a===me||args.b===me) && canDm(args.a,args.b), error:null}; // solo responde a los implicados
+    if(name==='dm_ok') return {data:null, error:{message:'permission denied for function dm_ok'}};
+    if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()) return {data:[],error:null};
+      return {data:[{id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role,bio:p.bio||null,instrument:p.instrument||null,level:p.level||null,favorites:p.favorites||null,learning:p.learning||null,gear:p.gear||null,can_message:canDm(me,p.id)}],error:null}; }
+    if(name!=='get_directory') return {data:null,error:{message:'function public.'+name+' does not exist'}};
     const rows = isApproved()? DB.profiles.filter(p=>p.approved).map(p=>({id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role})) : [];
     return {data:rows,error:null};
   });

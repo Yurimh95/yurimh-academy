@@ -106,7 +106,7 @@ const { chromium } = require('playwright');
 
   // Escucha: comentarios
   await goto(p,'listening');
-  await p.click('.card:has-text("Kind of Blue")'); await p.waitForTimeout(200);
+  await p.click('.track:has-text("Kind of Blue")'); await p.waitForTimeout(200);
   const mt = (await p.textContent('.modal')).replace(/\s+/g,' ');
   ok(mt.includes('El bajo en So What')&&!mt.includes('otro planeta'), 'Modal de escucha: ve el comentario de su elemento y no el del otro');
   ok(mt.includes('siguen siendo privadas'), 'Aviso de que las respuestas siguen siendo privadas');
@@ -183,7 +183,7 @@ const { chromium } = require('playwright');
   ok(!(await dbq(p,()=>window.__DB.feed_posts.some(x=>x.id==='f1')))&&!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f1'))), 'Borrar publicación elimina sus reacciones (cascada)');
   // escucha: profe ve comentarios de todos los elementos
   await goto(p,'listening');
-  await p.click('.card:has-text("Cliffs of Dover")'); await p.waitForTimeout(200);
+  await p.click('.track:has-text("Cliffs of Dover")'); await p.waitForTimeout(200);
   ok((await p.textContent('.modal')).includes('otro planeta'), 'Profe ve los comentarios de cualquier elemento');
   await p.click('.modal .cmt:has-text("otro planeta") [data-action=comment-delete]'); await p.waitForTimeout(250);
   ok(!(await dbq(p,()=>window.__DB.listening_comments.some(c=>c.id==='lc2')))&&!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='lc2'))), 'Profe elimina comentario de escucha (y su reacción)');

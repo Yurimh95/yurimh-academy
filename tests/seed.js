@@ -1,10 +1,11 @@
 const T=(m)=>new Date(Date.now()-m*60000).toISOString();
 window.__DB_SEED = {
   profiles:[
-    {id:'t1',display_name:'Yuri',email:'p@x.com',role:'teacher',approved:true,nickname:null,avatar:null},
-    {id:'s1',display_name:'Marta',email:'m@x.com',role:'student',approved:true,nickname:null,avatar:null},
-    {id:'s2',display_name:'Luis',email:'l@x.com',role:'student',approved:true,nickname:'Lu',avatar:'javascript:alert(1)'},
-    {id:'s3',display_name:'Nuevo',email:'n@x.com',role:'student',approved:false,nickname:null,avatar:null}
+    {id:'t1',display_name:'Yuri',email:'p@x.com',role:'teacher',approved:true,nickname:null,avatar:null,birth_date:null,family_dm_ok:false},
+    // Marta: menor (13 años) y sin permiso familiar · Luis: adulto
+    {id:'s1',display_name:'Marta',email:'m@x.com',role:'student',approved:true,nickname:null,avatar:null,birth_date:'2013-05-10',family_dm_ok:false,bio:null},
+    {id:'s2',display_name:'Luis',email:'l@x.com',role:'student',approved:true,nickname:'Lu',avatar:'javascript:alert(1)',birth_date:'2000-03-02',family_dm_ok:false,bio:'Bajista y fan del jazz',instrument:'bass',level:'intermediate',favorites:'Joe Pass, Jaco'},
+    {id:'s3',display_name:'Nuevo',email:'n@x.com',role:'student',approved:false,nickname:null,avatar:null,birth_date:null,family_dm_ok:false}
   ],
   listening_items:[
     {id:'i1',title:'Kind of Blue',url:'https://open.spotify.com/album/x',kind:'album',brief:'Fíjate en los voicings',created_at:'2026-01-01'},
@@ -44,5 +45,14 @@ window.__DB_SEED = {
   moderation_reports:[
     {id:'r1',reporter_id:'s2',target_type:'feed_comment',target_id:'fc1',reason:'No me gusta el tono',resolved:false,created_at:T(30)},
     {id:'r2',reporter_id:'s1',target_type:'feed_comment',target_id:'fc2',reason:null,resolved:false,created_at:T(20)}
+  ],
+  // Mensajes privados: uno antiguo Luis → Marta (de cuando tenía permiso; el profe NO debe verlo) y Yuri → Marta
+  dm_messages:[
+    {id:'d1',sender_id:'s2',recipient_id:'s1',body:'Mensaje privado entre alumnos',created_at:T(50),read_at:T(45)},
+    {id:'d3',sender_id:'t1',recipient_id:'s1',body:'Marta, repasa el ejercicio de escalas',created_at:T(40),read_at:null}
+  ],
+  user_blocks:[],
+  notifications:[
+    {id:'n1',user_id:'s1',kind:'dm',actor_id:'t1',target_id:'t1',extra:null,created_at:T(40),read_at:null,pushed_at:null}
   ]
 };
