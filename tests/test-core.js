@@ -19,12 +19,12 @@ const { chromium } = require('playwright');
 
   // ================= ALUMNA: Marta =================
   let p = await open('s1');
-  ok((await p.locator('.auth').count())===0 && (await p.locator('.page-title').count())===1, 'config.js con URL "sucia" (/rest/v1/) aceptada y limpiada');
-  ok((await p.textContent('.page-title')).includes('Hola, Marta'), 'Inicio: saludo');
+  ok((await p.locator('.auth').count())===0 && (await p.locator('#feedForm').count())===1, 'config.js con URL "sucia" (/rest/v1/) aceptada y limpiada');
+  ok((await p.textContent('.nav button.on')).includes('Inicio') && (await p.locator('.fpost').count())>0, 'Al entrar se ve el Inicio con las publicaciones');
   const n1 = (await nav(p)).join('|');
-  ok(n1.includes('Inicio')&&n1.includes('Avisos2 nuevos')&&n1.includes('Escucha analítica')&&n1.includes('Perfil')&&!n1.includes('Alumnos'), 'Menú alumna con "2 nuevos" y sin "Alumnos": '+n1);
-  const home = await p.textContent('.dash');
-  ok(home.includes('Kind of Blue')&&home.includes('Clase del jueves')&&home.includes('Solo para Marta')&&!home.includes('Secreto de Luis'), 'Inicio: pendientes y avisos propios, sin el aviso de Luis');
+  ok(n1.includes('Inicio')&&n1.includes('Avisos2 nuevos')&&n1.includes('Escucha analítica')&&n1.includes('Perfil')&&!n1.includes('Alumnos')&&!n1.includes('Moderación')&&!n1.includes('Feed'), 'Menú alumna con "2 nuevos", sin "Alumnos" ni "Moderación": '+n1);
+  const home = await p.textContent('.foryou');
+  ok(home.includes('Kind of Blue')&&home.includes('Aviso nuevo')&&!home.includes('Secreto de Luis'), 'Inicio: bloque "Para ti" con su aviso nuevo y su escucha, sin el aviso de Luis');
   await p.screenshot({path:require('path').join(__dirname,'shots','h_alumna.png')});
   await goto(p,'board');
   ok((await p.locator('.card.post').count())===2, 'Avisos: Marta ve 2 de 3');
@@ -81,8 +81,8 @@ const { chromium } = require('playwright');
   await p.click('#passForm button'); await p.waitForTimeout(200);
   ok((await p.evaluate(()=>window.__lastPassword))==='abcdefgh', 'Contraseña nueva enviada');
   // inicio -> abrir pendiente
-  await goto(p,'home');
-  await p.click('[data-action=home-open-assign]'); await p.waitForTimeout(250);
+  await goto(p,'feed');
+  await p.click('.foryou [data-action=home-open-assign]'); await p.waitForTimeout(250);
   ok((await p.locator('.modal textarea').count())===7 && (await p.textContent('.nav button.on')).includes('Escucha'), 'Desde Inicio se abre la escucha pendiente');
   await p.keyboard.press('Escape');
 
@@ -93,7 +93,10 @@ const { chromium } = require('playwright');
 
   // ================= PROFESOR =================
   p = await open('t1');
-  ok((await p.textContent('.page-title')).includes('Hola, Yuri'), 'Profe: Inicio con saludo');
+  ok((await p.textContent('.nav button.on')).includes('Inicio') && (await p.locator('.foryou').count())===0, 'Profe: también entra al Inicio (sin bloque "Para ti")');
+  ok((await nav(p)).join('|').includes('Moderación'), 'Profe: tiene la pestaña Moderación');
+  await goto(p,'mod');
+  ok((await p.textContent('.top h1.sec')).includes('Moderación'), 'Moderación: título');
   const stats = (await p.locator('.stat').allTextContents()).map(s=>s.replace(/\s+/g,' ').trim());
   ok(stats[0].startsWith('2')&&stats[1].startsWith('1')&&stats[2].startsWith('1')&&stats[3].startsWith('3'), 'Estadísticas: 2 activos, 1 por aprobar, 1 vencida, 3 avisos -> '+stats.join(' | '));
   ok((await p.textContent('.dash')).includes('Luis · Kind of Blue'), 'Respuestas recientes muestra a Luis');

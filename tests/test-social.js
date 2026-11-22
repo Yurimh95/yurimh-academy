@@ -153,16 +153,10 @@ const { chromium } = require('playwright');
   ok(await p.locator('.fpost:has-text("Probando mi primera") img.av').count()===1, 'Con su foto en el feed');
   await goto(p,'profile'); await p.click('[data-action=avatar-remove]'); await p.waitForTimeout(300);
   ok((await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar))===null, 'Quitar foto');
-  // Inicio
-  await goto(p,'home');
-  ok((await p.textContent('.dash')).includes('Feed')&&(await p.locator('[data-action=home-open-fpost]').count())===3, 'Inicio: tarjeta de Feed con 3 últimas');
-  await p.click('[data-action=home-open-fpost] >> nth=0'); await p.waitForTimeout(200);
-  ok((await p.locator('.modal .cm').count())===1&&(await p.textContent('.nav button.on')).includes('Feed'), 'Desde Inicio se abre la publicación');
-  await p.keyboard.press('Escape');
-
   // ================= PROFESOR =================
   p = await open('t1');
-  ok((await p.locator('.nav button').allTextContents()).join('|').includes('Feed2 denuncias'), 'Menú profe: "Feed 2 denuncias"');
+  ok((await p.locator('.nav button').allTextContents()).join('|').includes('Moderación2 denuncias'), 'Menú profe: "Moderación 2 denuncias"');
+  await goto(p,'mod');
   const stats = (await p.locator('.stat').allTextContents()).map(s=>s.replace(/\s+/g,' ').trim());
   ok(stats.length===5&&stats[4].startsWith('2'), 'Estadística: 2 denuncias pendientes -> '+stats[4]);
   ok(await p.locator('.dcard.mod .row.rep').count()===2, 'Tarjeta de denuncias con 2 filas');

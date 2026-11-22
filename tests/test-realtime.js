@@ -78,7 +78,7 @@ const { chromium } = require('playwright');
   await ext(t,'__rtExternal','profiles',{id:'s4',display_name:'Recién llegado',email:'r@x.com',role:'student',approved:false,nickname:null,avatar:null}); await wait(t);
   ok((await navText(t)).includes('2 por aprobar'), 'Alguien se registra: "2 por aprobar" sin recargar');
   await ext(t,'__rtExternal','moderation_reports',{id:'rr1',reporter_id:'s1',target_type:'feed_post',target_id:'f2',reason:null,resolved:false}); await wait(t);
-  ok((await navText(t)).includes('Feed3 denuncias'), 'Nueva denuncia: el contador del Feed sube solo');
+  ok((await navText(t)).includes('Moderación3 denuncias'), 'Nueva denuncia: el contador de Moderación sube solo');
 
   console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
   console.log(fails? `\n${fails} FALLOS`:'\nTODO OK');

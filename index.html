@@ -244,6 +244,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .composer-main textarea{min-height:64px}
 .composer .actions{justify-content:flex-end}
 .feed{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.foryou{display:flex;flex-direction:column;gap:2px;background:linear-gradient(180deg,rgba(var(--accent-rgb),.08),transparent 80%),var(--panel);border:1px solid var(--line-strong);border-radius:16px;padding:8px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fy-row{display:flex;align-items:center;gap:12px;padding:8px;border-radius:11px;cursor:pointer;transition:background .15s}
+.fy-row:hover{background:var(--hover)}
+.fy-row .ic{width:36px;height:36px;border-radius:10px;background:rgba(var(--accent-rgb),.13);color:var(--accent-hi);display:grid;place-items:center;flex:none}
+.fy-row .ic svg{width:18px;height:18px}
+.fy-row .t{flex:1;min-width:0}
+.fy-row b{display:block;color:var(--strong);font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .newposts-wrap{position:sticky;top:12px;z-index:20;display:flex;justify-content:center;height:0;overflow:visible}
 .newposts{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:999px;padding:9px 18px;color:var(--on-accent);background:var(--accent);box-shadow:var(--glow),0 8px 24px rgba(0,0,0,.25);animation:tin .25s ease-out;transform:translateY(-6px)}
 .newposts:hover{filter:brightness(1.08)}
@@ -425,6 +432,7 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
   <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/></symbol>
   <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </svg>
@@ -471,7 +479,7 @@ const S = {
   items: [], assigns: [], students: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
-  section: 'home', filter: 'pend',
+  section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
 let recovering = location.hash.includes('type=recovery');
@@ -972,18 +980,19 @@ async function loadDirectory() {
 function render() {
   if (!S.profile) return;
   const t = isTeacher();
-  if (!['home', 'board', 'feed', 'listening', 'profile'].concat(t ? ['students'] : []).includes(S.section)) S.section = 'home';
+  // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
+  if (!['feed', 'board', 'listening', 'profile'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
   switch (S.section) {
     case 'board': body = t ? boardTeacher() : boardStudent(); break;
-    case 'feed': body = feedView(); break;
     case 'listening': body = t ? teacherCatalog() : studentListening(); break;
     case 'students': body = teacherStudents(); break;
     case 'profile': body = profileView(); break;
-    default: body = t ? homeTeacher() : homeStudent();
+    case 'mod': body = homeTeacher(); break;
+    default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = S.section === 'home' ? '' : railView(); // en Inicio ya está todo resumido
+  const rail = S.section === 'mod' ? '' : railView(); // en Moderación ya está todo resumido
   $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
@@ -1000,14 +1009,15 @@ function sections() {
   const unread = t ? 0 : unreadCount();
   const reps = t ? S.reports.filter(r => !r.resolved).length : 0;
   // Cada módulo nuevo (Pagos, Deberes semanales, Chat…) se añade aquí como una sección más.
+  // icon: nombre del icono (si no, el id). mob: false = no sale en la barra inferior del móvil.
   const list = [
-    { id: 'home', label: 'Inicio', short: 'Inicio' },
+    { id: 'feed', label: 'Inicio', short: 'Inicio', icon: 'home' },
     { id: 'board', label: 'Avisos', short: 'Avisos', n: unread, badge: unread ? `${unread} nuevo${unread > 1 ? 's' : ''}` : '' },
-    { id: 'feed', label: 'Feed', short: 'Feed', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' },
     { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' }
   ];
   if (t) list.push({ id: 'students', label: 'Alumnos', short: 'Alumnos', n: pending, badge: pending ? `${pending} por aprobar` : '', cls: 'warn' });
   list.push({ id: 'profile', label: 'Perfil', short: 'Perfil' });
+  if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
   return list;
 }
 function themeSwitch() {
@@ -1016,7 +1026,7 @@ function themeSwitch() {
     <button data-action="theme" data-t="light" aria-pressed="${th === 'light'}">${ic('sun')}Claro</button>
     <button data-action="theme" data-t="dark" aria-pressed="${th !== 'light'}">${ic('moon')}Oscuro</button></div>`;
 }
-const navHtml = secs => `<nav class="nav">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.id)}${esc(s.label)}${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
+const navHtml = secs => `<nav class="nav">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.icon || s.id)}${esc(s.label)}${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
 function sidebar(secs) {
   const t = isTeacher();
   return `<aside class="sidebar">
@@ -1033,7 +1043,7 @@ function topbar(cur) {
   const th = document.documentElement.dataset.theme;
   return `<header class="top">
     <div class="mbrand"><img src="logo.png" alt="">${esc(APP_NAME)}</div>
-    ${S.section !== 'home' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
+    ${S.section !== 'feed' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
     <div class="top-r only-m">
       <button class="iconbtn" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
       <button class="iconbtn" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button>
@@ -1041,7 +1051,7 @@ function topbar(cur) {
   </header>`;
 }
 function tabbar(secs) {
-  return `<nav class="tabbar">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
+  return `<nav class="tabbar">${secs.filter(s => s.mob !== false).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.icon || s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
 }
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
@@ -1060,8 +1070,8 @@ function railView() {
     const row = (icon, label, n, cls, s) => `<div class="rail-row" data-action="section" data-s="${s}"><span class="ic">${ic(icon)}</span><div class="t"><b>${label}</b></div><span class="num ${n ? cls : ''}">${n}</span></div>`;
     return `<section class="rail-card"><h3>Pendiente</h3>
       ${row('students', 'Por aprobar', pend, 'warn', 'students')}
-      ${row('flag', 'Denuncias', reps, 'warn', 'feed')}
-      ${row('clock', 'Escuchas vencidas', over, 'bad', 'home')}</section>${facesCard}`;
+      ${row('flag', 'Denuncias', reps, 'warn', 'mod')}
+      ${row('clock', 'Escuchas vencidas', over, 'bad', 'mod')}</section>${facesCard}`;
   }
   const pend = S.assigns.filter(a => !a.listened).sort(dueSort).slice(0, 4);
   return `<section class="rail-card"><h3>Tus escuchas</h3>
@@ -1070,43 +1080,22 @@ function railView() {
 }
 
 /* =============================== INICIO =============================== */
-function feedRow(p) {
-  return `<div class="row click" data-action="home-open-fpost" data-id="${p.id}">
-    <div class="rowav">${avatarHtml(p.author_id, 30)}<div style="min-width:0"><strong>${esc(whoName(p.author_id))}</strong><div class="sub clip">${esc(p.body.slice(0, 80))}</div></div></div>
-    <span class="sub">${timeAgo(p.created_at)}</span></div>`;
-}
-const latestFeed = n => S.fposts.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, n);
 
-function homeStudent() {
-  const pend = S.assigns.filter(a => !a.listened).sort(dueSort);
+// Bloque compacto "Para ti" encima del Inicio (alumno): avisos sin leer y la próxima escucha
+function forYou() {
+  if (isTeacher()) return '';
   const rs = myReadSet();
-  const posts = S.posts.slice().sort(postSort).slice(0, 3);
-  const feed = latestFeed(3);
-  return `<h1 class="page-title">Hola, ${esc(firstName(S.profile.display_name))}</h1>
-  <div class="dash">
-    <section class="dcard">
-      <div class="dhead"><h2>Pendientes de escucha</h2><button class="linkbtn" data-action="section" data-s="listening">Ver todo</button></div>
-      ${pend.length ? `<div class="list">${pend.slice(0, 4).map(a => { const d = dueInfo(a); return `
-        <div class="row click" data-action="home-open-assign" data-id="${a.id}">
-          <div><strong>${esc(a.item.title)}</strong><div class="sub">${esc(KIND[a.item.kind] || a.item.kind)}</div></div>
-          <span class="chip ${d.cls}">${esc(d.text)}</span></div>`; }).join('')}</div>`
-        : `<div class="empty small">No tienes nada pendiente.</div>`}
-    </section>
-    <section class="dcard">
-      <div class="dhead"><h2>Avisos</h2><button class="linkbtn" data-action="section" data-s="board">Ver todos</button></div>
-      ${posts.length ? `<div class="list">${posts.map(p => `
-        <div class="row click" data-action="home-open-post" data-id="${p.id}">
-          <div><strong>${esc(p.title)}</strong><div class="sub">${timeAgo(p.created_at)}</div></div>
-          ${rs.has(p.id) ? '' : '<span class="chip new">Nuevo</span>'}</div>`).join('')}</div>`
-        : `<div class="empty small">Sin avisos por ahora.</div>`}
-    </section>
-    <section class="dcard">
-      <div class="dhead"><h2>Feed</h2><button class="linkbtn" data-action="section" data-s="feed">Ver todo</button></div>
-      ${feed.length ? `<div class="list">${feed.map(feedRow).join('')}</div>` : `<div class="empty small">Nadie ha publicado todavía.</div>`}
-    </section>
-  </div>`;
+  const unread = S.posts.filter(p => !rs.has(p.id)).sort(postSort);
+  const next = S.assigns.filter(a => !a.listened).sort(dueSort)[0];
+  if (!unread.length && !next) return '';
+  const p = unread[0], d = next ? dueInfo(next) : null;
+  return `<section class="foryou">
+    ${p ? `<div class="fy-row" data-action="home-open-post" data-id="${p.id}"><span class="ic">${ic('board')}</span><div class="t"><b>${esc(p.title)}</b><span class="sub">${unread.length > 1 ? `Aviso nuevo · y ${unread.length - 1} más` : 'Aviso nuevo'}</span></div><span class="chip new">Nuevo</span></div>` : ''}
+    ${next ? `<div class="fy-row" data-action="home-open-assign" data-id="${next.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(next.item.title)}</b><span class="sub">Escucha pendiente</span></div><span class="chip ${d.cls}">${esc(d.text)}</span></div>` : ''}
+  </section>`;
 }
 
+/* ============================ MODERACIÓN (profesor) ============================ */
 function homeTeacher() {
   const ok = S.students.filter(s => s.approved), pend = S.students.filter(s => !s.approved);
   const over = S.assigns.filter(isOverdue).sort((a, b) => a.due_date.localeCompare(b.due_date));
@@ -1115,8 +1104,7 @@ function homeTeacher() {
   const posts = S.posts.slice().sort(postSort).slice(0, 3);
   const reps = S.reports.filter(r => !r.resolved);
   const itemTitle = id => (S.items.find(i => i.id === id) || {}).title || 'Elemento';
-  return `<h1 class="page-title">Hola, ${esc(firstName(S.profile.display_name))}</h1>
-  <div class="stats">
+  return `<div class="stats">
     <div class="stat"><b>${ok.length}</b><span>Alumnos activos</span></div>
     <div class="stat ${pend.length ? 'warn' : ''}" ${pend.length ? 'data-action="section" data-s="students"' : ''}><b>${pend.length}</b><span>Por aprobar</span></div>
     <div class="stat ${over.length ? 'bad' : ''}"><b>${over.length}</b><span>Escuchas vencidas</span></div>
@@ -1151,17 +1139,13 @@ function homeTeacher() {
           <span class="chip ${r.rec.length && r.read === r.rec.length ? 'ok' : ''}">Leído ${r.read}/${r.rec.length}</span></div>`; }).join('')}</div>`
         : `<div class="empty small">Todavía no has publicado avisos.</div>`}
     </section>
-    <section class="dcard">
-      <div class="dhead"><h2>Feed</h2><button class="linkbtn" data-action="section" data-s="feed">Ver todo</button></div>
-      ${latestFeed(3).length ? `<div class="list">${latestFeed(3).map(feedRow).join('')}</div>` : `<div class="empty small">Nadie ha publicado todavía.</div>`}
-    </section>
   </div>`;
 }
 
 /* ================================= FEED =============================== */
 function feedView() {
   const list = S.fposts.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return `<form id="feedForm" class="panel composer">
+  return `${forYou()}<form id="feedForm" class="panel composer">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
         <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión o un enlace de música…"></textarea>
@@ -2128,7 +2112,7 @@ document.addEventListener('submit', async e => {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.section = 'home'; viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.section = 'feed'; viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });
