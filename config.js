@@ -9,5 +9,7 @@
    ===================================================================== */
 window.APP_CONFIG = {
   SUPABASE_URL: 'https://gyzwevayeloishhldumd.supabase.co',
-  SUPABASE_KEY: 'sb_publishable_zhDYhe8zb7tJezeahXKUFw_Ewv9vvXH'
+  SUPABASE_KEY: 'sb_publishable_zhDYhe8zb7tJezeahXKUFw_Ewv9vvXH',
+  // Llave PÚBLICA de las notificaciones push (VAPID). La privada solo está en Supabase (secreto de Edge Functions).
+  VAPID_PUBLIC_KEY: 'BEGkt5LzuehpdU19-afE_fSxxdST6mtXx-eCa9cjNTUsJFvrW6W-WAaAvgX-S3vQTQLYmLH-e4grFZYB7Nv6-rw'
 };

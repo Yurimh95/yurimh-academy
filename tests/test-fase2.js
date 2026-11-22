@@ -105,6 +105,10 @@ const { chromium } = require('playwright');
   await p.screenshot({path:require('path').join(__dirname,'shots','escucha_lista.png')});
   await goto(p,'profile');
   ok((await p.textContent('#app')).includes('Tenla en el móvil como una app'), 'Perfil: explica cómo instalarla en el móvil');
+  ok((await p.textContent('#app')).includes('Notificaciones en el móvil'), 'Perfil: apartado de notificaciones en el móvil');
+  await p.click('.bell'); await wait(p,250);
+  ok((await p.locator('.modal .push-box').count())===1, 'La campanita también ofrece activar las notificaciones en el móvil');
+  await p.keyboard.press('Escape'); await wait(p);
   let state = await snapshot(p);
 
   // ================= PROFESOR =================

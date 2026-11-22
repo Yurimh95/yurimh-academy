@@ -438,6 +438,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .nrow .ic svg{width:18px;height:18px}
 .nrow .t{flex:1;min-width:0;font-size:14px}
 .nrow b{color:var(--strong)}
+.push-box{display:flex;flex-direction:column;gap:6px}
+.modal .push-box{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.push-box>b{color:var(--strong)}
 .udot{width:9px;height:9px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);flex:none}
 
 /* ---------- Mensajes privados ---------- */
@@ -1128,7 +1131,15 @@ async function route() {
   if (!prof.approved) return viewPending();
   $('#app').innerHTML = '<div class="loading">Cargando…</div>';
   const ok = await loadData();
-  if (ok) { render(); rtStart(); backfillThumbs(); }
+  if (ok) {
+    render(); rtStart(); backfillThumbs();
+    pushInit().catch(e => console.warn('Push:', e));
+    if (new URLSearchParams(location.search).has('n')) { // llegamos desde un aviso del móvil
+      const url = location.href;
+      history.replaceState(history.state, '', location.pathname); // limpia ?n= de la barra
+      openNotifFromUrl(url);
+    }
+  }
 }
 
 // quiet = true: resincronización en segundo plano (si falla, no muestra la pantalla de error)
@@ -1567,6 +1578,7 @@ function profileView() {
       <button class="btn" type="submit">Cambiar contraseña</button>
     </form>
     ${installPanelHtml()}
+    <div class="panel">${pushSettingHtml()}</div>
     <div class="panel">
       <h2 class="h2" style="margin-top:0">Sesión</h2>
       <p class="sub" style="margin:0 0 12px">Conectado como ${esc(p.email || '')}</p>
@@ -2336,6 +2348,8 @@ const actions = {
     if (b) { const th = el.dataset.t; b.dataset.t = th === 'light' ? 'dark' : 'light'; b.innerHTML = ic(th === 'light' ? 'moon' : 'sun'); }
   },
   'avatar-save'() { cropSave(); },
+  'push-on'() { pushEnable(); },
+  'push-off'() { pushDisable(); },
   async 'install-app'() { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; render(); },
   // ---- Perfiles ----
   'open-profile'(el) { profileModal(el.dataset.id); },
@@ -2696,6 +2710,67 @@ function installPanelHtml() {
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker:', e));
+  // El service worker nos pide abrir una notificación (tocaron el aviso con la app ya abierta)
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'open-notification') openNotifFromUrl(e.data.url);
+  });
+}
+
+/* ------------------------- Notificaciones push (móvil) -------------------------
+   S.push: 'unsupported' (este navegador no puede) · 'install' (iPhone: primero hay que instalar la app)
+           'denied' (el usuario las bloqueó) · 'off' · 'on' */
+S.push = 'unsupported';
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
+function b64urlToBytes(s) { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); }
+async function pushInit() { // al entrar: averigua el estado y, si ya estaban activadas, refresca la suscripción
+  if (!pushSupported() || !CFG.VAPID_PUBLIC_KEY) { S.push = isIOS() && !isStandalone() ? 'install' : 'unsupported'; return; }
+  if (Notification.permission === 'denied') { S.push = 'denied'; return; }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub && Notification.permission === 'granted') { S.push = 'on'; await savePushSub(sub); } else S.push = 'off';
+}
+async function savePushSub(sub) {
+  const j = sub.toJSON();
+  const { error } = await sb.rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+  if (error) console.warn('No se pudo guardar el dispositivo:', error.message);
+  return !error;
+}
+async function pushEnable() {
+  if (!pushSupported()) return toast(isIOS() ? 'En iPhone, primero instala la app (Compartir → Añadir a pantalla de inicio) y ábrela desde su icono' : 'Este navegador no admite notificaciones', 'bad');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { S.push = perm === 'denied' ? 'denied' : 'off'; softRender(); return toast('No se han activado: hace falta que des permiso', 'bad'); }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(CFG.VAPID_PUBLIC_KEY) });
+    if (!(await savePushSub(sub))) throw new Error('no guardada');
+    S.push = 'on'; toast('¡Notificaciones activadas en este dispositivo!', 'ok');
+  } catch (e) { console.warn(e); toast('No se pudieron activar. Inténtalo de nuevo', 'bad'); }
+  if ($('#modalRoot').firstChild && $('.nlist, .modal .push-box')) notifsModal(); else softRender();
+}
+async function pushDisable() {
+  try {
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  } catch (e) { console.warn(e); }
+  S.push = 'off'; toast('Notificaciones desactivadas en este dispositivo', 'ok');
+  if ($('#modalRoot').firstChild) notifsModal(); else softRender();
+}
+function pushSettingHtml() {
+  const st = S.push;
+  const body = st === 'on' ? `<p class="sub" style="margin:0 0 10px">✅ Activadas en este dispositivo. Te llegarán aunque la app esté cerrada.</p><button class="btn ghost sm" data-action="push-off">Desactivar en este dispositivo</button>`
+    : st === 'off' ? `<p class="sub" style="margin:0 0 10px">Recibe avisos en el móvil o el ordenador aunque la app esté cerrada: avisos nuevos, mensajes, comentarios…</p><button class="btn primary sm" data-action="push-on">Activar notificaciones</button>`
+    : st === 'denied' ? '<p class="sub" style="margin:0">Las has bloqueado en este navegador. Para activarlas, permite las notificaciones de esta web en los ajustes del navegador o del móvil y vuelve a entrar.</p>'
+    : st === 'install' ? '<p class="sub" style="margin:0">En iPhone, primero instala la app: en Safari pulsa <b>Compartir</b> → <b>"Añadir a pantalla de inicio"</b>, ábrela desde su icono y activa aquí las notificaciones.</p>'
+    : '<p class="sub" style="margin:0">Este navegador no permite notificaciones. Prueba con Chrome (Android/ordenador) o instala la app en el iPhone.</p>';
+  return `<div class="push-box"><b>📲 Notificaciones en el móvil</b>${body}</div>`;
+}
+// Abrir la notificación que trae la dirección (?n=…): llegamos tocando un aviso del móvil
+async function openNotifFromUrl(url) {
+  let id = null; try { id = new URL(url, location.href).searchParams.get('n'); } catch { }
+  if (!id || !S.profile) return;
+  let n = S.notifs.find(x => x.id === id);
+  if (!n) { const { data } = await sb.from('notifications').select('*').eq('id', id).maybeSingle(); if (data) { n = data; addUnique(S.notifs, data, 'notifications'); } }
+  if (n) openNotif(n);
 }
 
 /* -------------------------------- Arranque -------------------------- */

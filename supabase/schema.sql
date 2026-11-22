@@ -1069,6 +1069,63 @@ begin
 end $$;
 
 -- =====================================================================
+--  NOTIFICACIONES PUSH (en el móvil aunque la app esté cerrada)
+--   · push_subscriptions: a qué dispositivos de cada persona hay que enviar.
+--   · Al crearse una notificación, la base de datos avisa a la Edge Function
+--     "send-push", que la envía y marca pushed_at (así nunca se repite).
+-- =====================================================================
+create table if not exists public.push_subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  endpoint   text not null unique check (char_length(endpoint) <= 1000 and endpoint ~ '^https://'),
+  p256dh     text not null check (char_length(p256dh) <= 200),
+  auth       text not null check (char_length(auth) <= 100),
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on public.push_subscriptions (user_id);
+
+grant select, delete on public.push_subscriptions to authenticated;
+revoke all on public.push_subscriptions from anon;
+alter table public.push_subscriptions enable row level security;
+drop policy if exists push_subscriptions_select_own on public.push_subscriptions;
+create policy push_subscriptions_select_own on public.push_subscriptions for select to authenticated using (user_id = auth.uid());
+drop policy if exists push_subscriptions_delete_own on public.push_subscriptions;
+create policy push_subscriptions_delete_own on public.push_subscriptions for delete to authenticated using (user_id = auth.uid());
+
+-- Guarda el dispositivo actual para la persona que ha iniciado sesión.
+-- Si ese dispositivo estaba asociado a otra cuenta (móvil compartido), pasa a la actual.
+create or replace function public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or not public.is_approved() then raise exception 'No autorizado'; end if;
+  delete from public.push_subscriptions where endpoint = p_endpoint;
+  insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (auth.uid(), p_endpoint, p_p256dh, p_auth);
+end;
+$$;
+revoke execute on function public.save_push_subscription(text, text, text) from public, anon;
+grant execute on function public.save_push_subscription(text, text, text) to authenticated;
+
+create extension if not exists pg_net;
+
+create or replace function public.notify_push_trg()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.push_subscriptions where user_id = new.user_id) then
+    perform net.http_post(
+      url := 'https://gyzwevayeloishhldumd.supabase.co/functions/v1/send-push',
+      body := jsonb_build_object('notification_id', new.id),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  end if;
+  return null;
+end;
+$$;
+revoke execute on function public.notify_push_trg() from public, anon, authenticated;
+drop trigger if exists notifications_push_trg on public.notifications;
+create trigger notifications_push_trg after insert on public.notifications
+  for each row execute function public.notify_push_trg();
+
+-- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto
 --    (cambia el email por el tuyo) para convertirte en profesor:
