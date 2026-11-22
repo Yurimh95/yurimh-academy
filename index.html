@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Yurimh Academy</title>
+<style>
+:root{
+  --bg:#0b0d12;
+  --panel:#12151c;
+  --panel2:#171b25;
+  --line:#262c3a;
+  --text:#d5d9e2;
+  --strong:#eceff6;
+  --muted:#8990a3;
+  --accent:#62d8ee;
+  --accent-rgb:98,216,238;
+  --violet:#a78bfa;
+  --violet-rgb:167,139,250;
+  --ok:#5fe3a1;
+  --ok-rgb:95,227,161;
+  --warn:#f2c55c;
+  --warn-rgb:242,197,92;
+  --bad:#ff6b81;
+  --bad-rgb:255,107,129;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  min-height:100vh;
+  background-image:radial-gradient(900px 420px at 50% -120px, rgba(var(--accent-rgb),.06), transparent 70%);
+  background-repeat:no-repeat;
+}
+body.noscroll{overflow:hidden}
+h1,h2,h3{color:var(--strong);margin:0;line-height:1.25}
+a{color:var(--accent)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
+
+/* ---------- Botones ---------- */
+.btn{
+  font:inherit;font-weight:600;font-size:14px;cursor:pointer;
+  color:var(--accent);background:rgba(var(--accent-rgb),.06);
+  border:1px solid rgba(var(--accent-rgb),.45);border-radius:9px;
+  padding:9px 15px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+  box-shadow:0 0 10px rgba(var(--accent-rgb),.14);
+  transition:box-shadow .18s,background .18s,border-color .18s,transform .08s;
+}
+.btn:hover{background:rgba(var(--accent-rgb),.12);border-color:rgba(var(--accent-rgb),.7);box-shadow:0 0 16px rgba(var(--accent-rgb),.26)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:default;box-shadow:none}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn.violet{color:var(--violet);background:rgba(var(--violet-rgb),.07);border-color:rgba(var(--violet-rgb),.45);box-shadow:0 0 10px rgba(var(--violet-rgb),.14)}
+.btn.violet:hover{background:rgba(var(--violet-rgb),.13);border-color:rgba(var(--violet-rgb),.7);box-shadow:0 0 16px rgba(var(--violet-rgb),.26)}
+.btn.danger{color:var(--bad);background:rgba(var(--bad-rgb),.06);border-color:rgba(var(--bad-rgb),.4);box-shadow:0 0 10px rgba(var(--bad-rgb),.12)}
+.btn.danger:hover{background:rgba(var(--bad-rgb),.12);border-color:rgba(var(--bad-rgb),.65);box-shadow:0 0 16px rgba(var(--bad-rgb),.22)}
+.btn.ghost{color:var(--muted);background:transparent;border-color:var(--line);box-shadow:none}
+.btn.ghost:hover{color:var(--text);border-color:#3a4256;box-shadow:none;background:rgba(255,255,255,.03)}
+
+/* ---------- Campos ---------- */
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{
+  width:100%;font:inherit;color:var(--strong);background:#0e1117;
+  border:1px solid var(--line);border-radius:9px;padding:9px 11px;outline:none;
+  transition:border-color .18s,box-shadow .18s;color-scheme:dark;
+}
+textarea{resize:vertical;min-height:78px;line-height:1.45}
+input:focus,select:focus,textarea:focus{
+  border-color:rgba(var(--accent-rgb),.6);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25),0 0 14px rgba(var(--accent-rgb),.13);
+}
+::placeholder{color:#5b6377}
+label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:12px}
+label.f>input,label.f>select,label.f>textarea{margin-top:5px}
+.chk{display:inline-flex;align-items:center;gap:9px;cursor:pointer;color:var(--text)}
+input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;width:20px;height:20px;flex:none;margin:0;cursor:pointer;
+  border:1px solid rgba(var(--accent-rgb),.5);border-radius:6px;background:#0e1117;position:relative;
+  box-shadow:0 0 8px rgba(var(--accent-rgb),.12);transition:box-shadow .18s,background .18s;
+}
+input[type=checkbox]:checked{background:rgba(var(--accent-rgb),.18);box-shadow:0 0 12px rgba(var(--accent-rgb),.3)}
+input[type=checkbox]:checked::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--accent);border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+/* ---------- Cabecera ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 0 10px}
+.brand{font-weight:700;color:var(--strong);font-size:17px;display:flex;align-items:center;gap:9px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.7)}
+.top-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who{color:var(--muted);font-size:13px;margin-right:4px}
+
+/* ---------- Menú superior por módulos ---------- */
+.nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 18px;overflow-x:auto}
+.nav button{
+  font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;color:var(--muted);background:none;border:0;
+  border-bottom:2px solid transparent;padding:9px 14px;margin-bottom:-1px;white-space:nowrap;
+  transition:color .18s,border-color .18s,box-shadow .18s;
+}
+.nav button:hover{color:var(--text)}
+.nav button.on{color:var(--accent);border-bottom-color:var(--accent);box-shadow:0 9px 12px -10px rgba(var(--accent-rgb),.65)}
+.nbadge{margin-left:8px;font-size:11.5px;font-weight:600;color:var(--warn);border:1px solid rgba(var(--warn-rgb),.4);border-radius:999px;padding:0 8px}
+
+/* ---------- Pestañas / filtros ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+.tab{
+  font:inherit;font-size:14px;cursor:pointer;color:var(--muted);background:transparent;
+  border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:all .18s;
+}
+.tab:hover{color:var(--text);border-color:#3a4256}
+.tab.on{color:var(--accent);border-color:rgba(var(--accent-rgb),.5);background:rgba(var(--accent-rgb),.06);box-shadow:0 0 10px rgba(var(--accent-rgb),.13)}
+.tab .n{opacity:.75;margin-left:4px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+
+/* ---------- Tarjetas ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px;cursor:pointer;display:flex;flex-direction:column;gap:9px;
+  transition:border-color .18s,box-shadow .18s,transform .12s;
+}
+.card:hover{border-color:rgba(var(--accent-rgb),.4);box-shadow:0 0 16px rgba(var(--accent-rgb),.11);transform:translateY(-1px)}
+.card.done{opacity:.78}
+.card h3{font-size:16.5px}
+.card .brief{margin:0;color:var(--muted);font-size:13.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-top,.card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-foot{margin-top:auto;padding-top:4px}
+.badge{
+  font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--violet);
+  border:1px solid rgba(var(--violet-rgb),.4);background:rgba(var(--violet-rgb),.07);border-radius:6px;padding:2px 8px;
+}
+.chip{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px;white-space:nowrap}
+.chip.ok{color:var(--ok);border-color:rgba(var(--ok-rgb),.4);background:rgba(var(--ok-rgb),.06)}
+.chip.warn{color:var(--warn);border-color:rgba(var(--warn-rgb),.4);background:rgba(var(--warn-rgb),.06)}
+.chip.bad{color:var(--bad);border-color:rgba(var(--bad-rgb),.4);background:rgba(var(--bad-rgb),.06)}
+.chip.acc{color:var(--accent);border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.06)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.empty{
+  text-align:center;color:var(--muted);padding:44px 16px;border:1px dashed var(--line);border-radius:var(--radius);
+}
+
+/* ---------- Paneles genéricos ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.list{display:flex;flex-direction:column;gap:10px}
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;
+}
+.row.click{cursor:pointer;transition:border-color .18s,box-shadow .18s}
+.row.click:hover{border-color:rgba(var(--accent-rgb),.4);box-shadow:0 0 14px rgba(var(--accent-rgb),.1)}
+.row .sub{color:var(--muted);font-size:13px}
+.h2{font-size:16px;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+
+/* ---------- Modal ---------- */
+.backdrop{
+  position:fixed;inset:0;background:rgba(4,5,8,.72);backdrop-filter:blur(3px);
+  display:flex;align-items:flex-start;justify-content:center;padding:28px 14px;overflow-y:auto;z-index:50;
+}
+.modal{
+  width:100%;max-width:760px;background:var(--panel);border:1px solid rgba(var(--accent-rgb),.28);
+  border-radius:14px;padding:20px;box-shadow:0 0 28px rgba(var(--accent-rgb),.09),0 20px 60px rgba(0,0,0,.5);
+}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.modal-head h2{font-size:20px;margin-top:6px}
+.x{font:inherit;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:8px;width:34px;height:34px;flex:none}
+.x:hover{color:var(--text);border-color:#3a4256}
+.callout{
+  border:1px solid rgba(var(--violet-rgb),.3);background:rgba(var(--violet-rgb),.05);
+  border-radius:10px;padding:10px 13px;margin:10px 0;font-size:14px;white-space:pre-wrap;
+}
+.callout b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--violet);margin-bottom:3px}
+.qblock{margin:14px 0}
+.qblock .q{font-weight:600;color:var(--strong);margin-bottom:6px;font-size:14.5px}
+.ans{white-space:pre-wrap;background:#0e1117;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px}
+.ans.none{color:#5b6377;font-style:italic}
+.savebar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.save-state{font-size:13px;color:var(--muted)}
+.save-state.ok{color:var(--ok)}.save-state.bad{color:var(--bad)}
+.exports{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.exports-title{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:16px}
+
+/* ---------- Asignaciones (profesor) ---------- */
+.arow{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)}
+.arow+.arow{margin-top:10px}
+.arow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:170px 1fr;gap:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--accent);font-size:14px;user-select:none}
+.frow{display:grid;grid-template-columns:minmax(120px,1.1fr) 150px 1.4fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.frow:last-of-type{border-bottom:0}
+@media (max-width:640px){
+  .grid2{grid-template-columns:1fr}
+  .frow{grid-template-columns:1fr}
+}
+
+/* ---------- Pantallas de acceso ---------- */
+.auth{max-width:420px;margin:9vh auto 0}
+.auth .panel{padding:22px;box-shadow:0 0 24px rgba(var(--accent-rgb),.07)}
+.auth h1{font-size:22px;margin-bottom:4px}
+.auth p.lead{color:var(--muted);margin:0 0 18px;font-size:14px}
+.msg{font-size:13.5px;border-radius:9px;padding:9px 12px;margin:0 0 12px;border:1px solid var(--line)}
+.msg.bad{color:var(--bad);border-color:rgba(var(--bad-rgb),.4);background:rgba(var(--bad-rgb),.06)}
+.msg.ok{color:var(--ok);border-color:rgba(var(--ok-rgb),.4);background:rgba(var(--ok-rgb),.06)}
+.msg.info{color:var(--accent);border-color:rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.05)}
+.linkbtn{font:inherit;font-size:13.5px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.center{text-align:center}
+code{background:#0e1117;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  background:#10141b;border:1px solid rgba(var(--accent-rgb),.4);color:var(--strong);border-radius:10px;
+  padding:9px 15px;font-size:14px;box-shadow:0 0 16px rgba(var(--accent-rgb),.15),0 8px 24px rgba(0,0,0,.45);
+  animation:tin .2s ease-out;
+}
+.toast.bad{border-color:rgba(var(--bad-rgb),.5);box-shadow:0 0 16px rgba(var(--bad-rgb),.15),0 8px 24px rgba(0,0,0,.45)}
+.toast.ok{border-color:rgba(var(--ok-rgb),.5)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.loading{color:var(--muted);text-align:center;padding:60px 0}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Cargando…</div></div>
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =====================================================================
+   CONFIGURACIÓN — rellena estas dos líneas con los datos de tu proyecto
+   (Supabase > Project Settings > API). La clave "anon / publishable" es
+   pública por diseño: la seguridad real la ponen las reglas RLS del SQL.
+   NUNCA pegues aquí la clave "service_role".
+   ===================================================================== */
+const SUPABASE_URL = 'https://gyzwevayeloishhldumd.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'sb_publishable_zhDYhe8zb7tJezeahXKUFw_Ewv9vvXH';
+
+/* Nombre visible de la app (cabecera, pantallas de acceso, imagen PNG exportada). */
+const APP_NAME = 'Yurimh Academy';
+/* Nombre del módulo actual (aparece en el menú superior). */
+const MODULE_LISTENING = 'Escucha analítica';
+
+/* ===================================================================== */
+const QUESTIONS = [
+  { k: 'highlights',       q: '¿Qué destacas del álbum/playlist/canción?' },
+  { k: 'likes',         q: '¿Qué te gusta?' },
+  { k: 'dislikes',       q: '¿Qué no te gusta?' },
+  { k: 'learned',     q: '¿Qué has aprendido?' },
+  { k: 'would_use', q: '¿Qué aprovecharías para alguno de tus grupos o tu música?' },
+  { k: 'would_never_use',         q: '¿Qué jamás usarías en uno de tus grupos o música?' }
+];
+const KIND = { album: 'Álbum', song: 'Canción', playlist: 'Playlist' };
+
+const configured = !SUPABASE_URL.includes('TU-PROYECTO') && !SUPABASE_ANON_KEY.includes('TU-CLAVE');
+document.title = APP_NAME;
+const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const S = {
+  user: null, profile: null,
+  items: [], assigns: [], students: [],
+  section: 'listening', filter: 'pend'
+};
+let recovering = location.hash.includes('type=recovery');
+let modalOnClose = null;
+let cur = null; // estado del modal de alumno abierto
+
+/* ---------------------------- Utilidades ---------------------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+const pad = n => String(n).padStart(2, '0');
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+function daysDiff(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date();
+  const a = new Date(y, m - 1, d);
+  const b = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.round((a - b) / 86400000);
+}
+function dueInfo(a) {
+  if (!a.due_date) return { cls: '', text: 'Sin fecha límite' };
+  const n = daysDiff(a.due_date);
+  if (a.listened) return { cls: 'ok', text: 'Límite: ' + fmtDate(a.due_date) };
+  if (n < 0) return { cls: 'bad', text: `Vencido (${fmtDate(a.due_date)})` };
+  if (n === 0) return { cls: 'warn', text: 'Vence hoy' };
+  if (n <= 2) return { cls: 'warn', text: `Vence en ${n} día${n > 1 ? 's' : ''} (${fmtDate(a.due_date)})` };
+  return { cls: '', text: 'Límite: ' + fmtDate(a.due_date) };
+}
+const isOverdue = a => !a.listened && a.due_date && daysDiff(a.due_date) < 0;
+const answeredCount = a => QUESTIONS.filter(q => ((a.answers || {})[q.k] || '').trim()).length;
+const slug = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'respuestas';
+const studentName = id => (S.students.find(s => s.id === id) || {}).display_name || 'Alumno';
+const dueSort = (a, b) => {
+  if (a.listened !== b.listened) return a.listened ? 1 : -1;
+  if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+  if (a.due_date) return -1;
+  if (b.due_date) return 1;
+  return (b.assigned_at || '').localeCompare(a.assigned_at || '');
+};
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ------------------------------ Modal ------------------------------- */
+function openModal(html, onClose) {
+  $('#modalRoot').innerHTML = `<div class="backdrop" data-action="backdrop"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  document.body.classList.add('noscroll');
+  modalOnClose = onClose || null;
+}
+async function closeModal() {
+  if (modalOnClose) { const f = modalOnClose; modalOnClose = null; await f(); }
+  $('#modalRoot').innerHTML = '';
+  document.body.classList.remove('noscroll');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
+
+/* ----------------------------- Pantallas de acceso ------------------ */
+function viewSetup() {
+  $('#app').innerHTML = `
+  <div class="auth"><div class="panel">
+    <h1>Falta configurar</h1>
+    <p class="lead">Abre <code>index.html</code> y rellena <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> al principio del script. Los pasos están en <code>GUIA.md</code>.</p>
+  </div></div>`;
+}
+
+function viewAuth(mode = 'login', msg = null) {
+  const reg = mode === 'register';
+  $('#app').innerHTML = `
+  <div class="auth"><div class="panel">
+    <h1>${esc(APP_NAME)}</h1>
+    <p class="lead">${reg ? 'Crea tu cuenta de alumno. Tu profesor tendrá que aprobarla antes de que veas nada.' : 'Entra con tu cuenta.'}</p>
+    ${msg ? `<div class="msg ${msg.type}">${esc(msg.text)}</div>` : ''}
+    <form id="authForm" data-mode="${mode}" class="stack" autocomplete="on">
+      ${reg ? `<label class="f">Nombre<input type="text" name="name" required maxlength="60" autocomplete="name" placeholder="Cómo quieres que te vea tu profesor"></label>` : ''}
+      <label class="f">Email<input type="email" name="email" required autocomplete="email"></label>
+      <label class="f">Contraseña${reg ? ' (mínimo 8 caracteres)' : ''}<input type="password" name="password" required minlength="${reg ? 8 : 1}" autocomplete="${reg ? 'new-password' : 'current-password'}"></label>
+      <button class="btn" type="submit" id="authBtn">${reg ? 'Crear cuenta' : 'Entrar'}</button>
+    </form>
+    <p class="center" style="margin:16px 0 0">
+      ${reg
+        ? `<button class="linkbtn" data-action="auth-mode" data-mode="login">Ya tengo cuenta</button>`
+        : `<button class="linkbtn" data-action="auth-mode" data-mode="register">Crear cuenta</button> &nbsp;·&nbsp; <button class="linkbtn" data-action="forgot">He olvidado mi contraseña</button>`}
+    </p>
+  </div></div>`;
+}
+
+function viewPending() {
+  $('#app').innerHTML = `
+  <div class="auth"><div class="panel center">
+    <h1>Cuenta pendiente de aprobación</h1>
+    <p class="lead" style="margin-top:8px">Hola, ${esc(S.profile.display_name)}. Tu profesor aún tiene que aprobar tu cuenta. Cuando lo haga, pulsa en comprobar.</p>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" data-action="recheck">Comprobar de nuevo</button>
+      <button class="btn ghost" data-action="logout">Salir</button>
+    </div>
+  </div></div>`;
+}
+
+function viewFatal(text) {
+  $('#app').innerHTML = `
+  <div class="auth"><div class="panel">
+    <h1>Algo ha fallado</h1>
+    <p class="lead">${esc(text)}</p>
+    <div class="actions"><button class="btn" data-action="recheck">Reintentar</button><button class="btn ghost" data-action="logout">Salir</button></div>
+  </div></div>`;
+}
+
+function viewRecovery() {
+  $('#app').innerHTML = `
+  <div class="auth"><div class="panel">
+    <h1>Nueva contraseña</h1>
+    <p class="lead">Elige una contraseña nueva para tu cuenta.</p>
+    <div id="recMsg"></div>
+    <form id="recForm" class="stack">
+      <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+      <button class="btn" type="submit">Guardar contraseña</button>
+    </form>
+  </div></div>`;
+}
+
+/* ----------------------------- Flujo / datos ------------------------ */
+async function route() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { S.user = null; S.profile = null; return viewAuth(); }
+  S.user = session.user;
+  const { data: prof, error } = await sb.from('profiles').select('*').eq('id', S.user.id).maybeSingle();
+  if (error) return viewFatal('No se pudo leer tu perfil: ' + error.message);
+  if (!prof) return viewFatal('No existe tu perfil. ¿Se ejecutó el SQL de supabase.sql antes de crear la cuenta?');
+  S.profile = prof;
+  if (!prof.approved) return viewPending();
+  $('#app').innerHTML = '<div class="loading">Cargando…</div>';
+  const ok = await loadData();
+  if (ok) render();
+}
+
+async function loadData() {
+  try {
+    if (S.profile.role === 'teacher') {
+      const [i, a, p] = await Promise.all([
+        sb.from('listening_items').select('*').order('created_at', { ascending: false }),
+        sb.from('listening_assignments').select('*'),
+        sb.from('profiles').select('*').eq('role', 'student').order('display_name')
+      ]);
+      const err = i.error || a.error || p.error;
+      if (err) throw err;
+      S.items = i.data; S.assigns = a.data; S.students = p.data;
+    } else {
+      const { data, error } = await sb.from('listening_assignments').select('*, item:listening_items(*)').eq('student_id', S.user.id);
+      if (error) throw error;
+      S.assigns = (data || []).filter(a => a.item);
+    }
+    return true;
+  } catch (e) {
+    viewFatal('Error cargando los datos: ' + (e.message || e));
+    return false;
+  }
+}
+
+function render() {
+  if (!S.profile) return;
+  if (S.profile.role === 'teacher') viewTeacher(); else viewStudent();
+}
+
+function header() {
+  const t = S.profile.role === 'teacher';
+  const pending = t ? S.students.filter(s => !s.approved).length : 0;
+  // Cada módulo nuevo (Pagos, Deberes semanales…) se añade aquí como una sección más.
+  const sections = [{ id: 'listening', label: MODULE_LISTENING }];
+  if (t) sections.push({ id: 'students', label: 'Alumnos', badge: pending });
+  return `<header class="top">
+    <div class="brand"><span class="dot"></span>${esc(APP_NAME)}</div>
+    <div class="top-r">
+      <span class="who">${esc(S.profile.display_name)}${t ? ' · Profesor' : ''}</span>
+      <button class="btn ghost sm" data-action="refresh">Actualizar</button>
+      <button class="btn ghost sm" data-action="logout">Salir</button>
+    </div>
+  </header>
+  <nav class="nav">${sections.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${esc(s.label)}${s.badge ? `<span class="nbadge">${s.badge} por aprobar</span>` : ''}</button>`).join('')}</nav>`;
+}
+
+/* ============================== ALUMNO ============================== */
+function viewStudent() {
+  const all = S.assigns;
+  const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
+  let list = S.filter === 'pend' ? pend : S.filter === 'done' ? done : all;
+  list = list.slice().sort(dueSort);
+  $('#app').innerHTML = `<div class="wrap">${header()}
+    <div class="tabs">
+      <button class="tab ${S.filter === 'pend' ? 'on' : ''}" data-action="filter" data-f="pend">Pendientes<span class="n">${pend.length}</span></button>
+      <button class="tab ${S.filter === 'done' ? 'on' : ''}" data-action="filter" data-f="done">Escuchados<span class="n">${done.length}</span></button>
+      <button class="tab ${S.filter === 'all' ? 'on' : ''}" data-action="filter" data-f="all">Todos<span class="n">${all.length}</span></button>
+    </div>
+    ${list.length ? `<div class="grid">${list.map(studentCard).join('')}</div>`
+      : `<div class="empty">${all.length ? 'No hay elementos en esta pestaña.' : 'Todavía no tienes nada asignado.'}</div>`}
+  </div>`;
+}
+
+function studentCard(a) {
+  const it = a.item, d = dueInfo(a), n = answeredCount(a);
+  return `<article class="card ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
+    <div class="card-top"><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div>
+    <h3>${esc(it.title)}</h3>
+    ${it.brief ? `<p class="brief">${esc(it.brief)}</p>` : ''}
+    <div class="card-foot">
+      <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span></div>
+      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer" data-action="noop">Abrir enlace ↗</a>
+    </div>
+  </article>`;
+}
+
+function studentModal(id) {
+  const a = S.assigns.find(x => x.id === id);
+  if (!a) return;
+  const it = a.item, d = dueInfo(a);
+  cur = { id, dirty: false, timer: null, saving: false };
+  openModal(`
+    <div class="modal-head">
+      <div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div>
+      <button class="x" data-action="close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="chips" style="margin-bottom:6px"><span class="chip ${d.cls}">${esc(d.text)}</span></div>
+    <div class="actions" style="margin:10px 0"><a class="btn" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a></div>
+    ${it.brief ? `<div class="callout"><b>Consigna</b>${esc(it.brief)}</div>` : ''}
+    ${a.note ? `<div class="callout"><b>Nota para ti</b>${esc(a.note)}</div>` : ''}
+    <div style="margin:14px 0"><label class="chk"><input type="checkbox" id="chkListened" ${a.listened ? 'checked' : ''}> Ya lo he escuchado</label></div>
+    ${QUESTIONS.map(q => `<label class="f qblock" style="color:inherit;margin:14px 0">
+        <span class="q" style="display:block">${esc(q.q)}</span>
+        <textarea data-q="${q.k}" rows="3" placeholder="Escribe aquí…">${esc((a.answers || {})[q.k] || '')}</textarea>
+      </label>`).join('')}
+    <div class="savebar">
+      <span class="save-state" id="saveState">Los cambios se guardan solos</span>
+      <button class="btn sm" data-action="save-now">Guardar ahora</button>
+    </div>
+    <div class="exports-title">Enviar o exportar mis respuestas</div>
+    <div class="exports">
+      <button class="btn" data-action="exp-copy">Copiar texto (WhatsApp)</button>
+      ${navigator.share ? `<button class="btn violet" data-action="exp-share">Compartir…</button>` : ''}
+      <button class="btn" data-action="exp-txt">Descargar TXT</button>
+      <button class="btn" data-action="exp-png">Descargar PNG</button>
+      ${canShareFiles() ? `<button class="btn violet" data-action="exp-sharepng">Compartir imagen</button>` : ''}
+    </div>`,
+    async () => {
+      const c = cur;
+      if (c) {
+        clearTimeout(c.timer);
+        while (c.saving) await new Promise(r => setTimeout(r, 80)); // espera a un guardado en curso
+        await saveNow();
+      }
+      cur = null; render();
+    });
+}
+
+function setSaveState(text, cls = '') {
+  const el = $('#saveState');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'save-state ' + cls;
+}
+function markDirty() {
+  if (!cur) return;
+  cur.dirty = true;
+  setSaveState('Sin guardar…');
+  clearTimeout(cur.timer);
+  cur.timer = setTimeout(saveNow, 900);
+}
+async function saveNow() {
+  const c = cur;
+  if (!c || !c.dirty || c.saving) return;
+  const a = S.assigns.find(x => x.id === c.id);
+  const chk = $('#chkListened');
+  if (!a || !chk) return;
+  clearTimeout(c.timer);
+  const answers = {};
+  QUESTIONS.forEach(q => { const t = $(`[data-q="${q.k}"]`); answers[q.k] = t ? t.value : ((a.answers || {})[q.k] || ''); });
+  const listened = chk.checked;
+  c.dirty = false; c.saving = true;
+  setSaveState('Guardando…');
+  const { data, error } = await sb.from('listening_assignments')
+    .update({ listened, listened_at: listened ? (a.listened_at || new Date().toISOString()) : null, answers })
+    .eq('id', a.id).select();
+  c.saving = false;
+  if (error || !data || !data.length) {
+    c.dirty = true;
+    setSaveState('Error al guardar', 'bad');
+    toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    return;
+  }
+  Object.assign(a, data[0]);
+  setSaveState('Guardado ✓', 'ok');
+  if (c.dirty) c.timer = setTimeout(saveNow, 300); // se escribió algo mientras guardaba
+}
+
+/* ----------------------- Exportaciones del alumno ------------------- */
+function currentExport() {
+  const a = S.assigns.find(x => x.id === cur.id);
+  const answers = {};
+  QUESTIONS.forEach(q => { const t = $(`[data-q="${q.k}"]`); answers[q.k] = t ? t.value : ''; });
+  return { name: S.profile.display_name, title: a.item.title, kind: a.item.kind, url: a.item.url, answers };
+}
+function buildText(d, wa) {
+  const b = s => wa ? `*${s}*` : s;
+  let t = `${b(d.title)} (${KIND[d.kind] || d.kind})\nAlumno: ${d.name}\n${d.url}\n`;
+  QUESTIONS.forEach((q, i) => { t += `\n${b(`${i + 1}. ${q.q}`)}\n${(d.answers[q.k] || '').trim() || '—'}\n`; });
+  return t.trim();
+}
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { }
+    ta.remove();
+    return ok;
+  }
+}
+function buildCanvas(d) {
+  const W = 1080, P = 56, maxW = W - 2 * P;
+  const F = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  const blocks = [
+    { t: (KIND[d.kind] || d.kind).toUpperCase(), f: `600 20px ${F}`, col: '#a78bfa', lh: 28, gap: 0 },
+    { t: d.title, f: `700 40px ${F}`, col: '#eceff6', lh: 50, gap: 6 },
+    { t: `Alumno: ${d.name}`, f: `400 22px ${F}`, col: '#8990a3', lh: 30, gap: 10 },
+    { t: d.url, f: `400 19px ${F}`, col: '#8990a3', lh: 26, gap: 2 }
+  ];
+  QUESTIONS.forEach((q, i) => {
+    blocks.push({ t: `${i + 1}. ${q.q}`, f: `600 24px ${F}`, col: '#62d8ee', lh: 32, gap: 32 });
+    blocks.push({ t: (d.answers[q.k] || '').trim() || '—', f: `400 24px ${F}`, col: '#d5d9e2', lh: 34, gap: 8 });
+  });
+  const wrap = (text, font) => {
+    ctx.font = font;
+    const out = [];
+    text.split('\n').forEach(par => {
+      if (!par.trim()) { out.push(''); return; }
+      let line = '';
+      par.split(/\s+/).forEach(w => {
+        while (ctx.measureText(w).width > maxW) { // palabra más ancha que la línea (p. ej. una URL)
+          let i = w.length;
+          while (i > 1 && ctx.measureText(w.slice(0, i)).width > maxW) i--;
+          if (line) { out.push(line); line = ''; }
+          out.push(w.slice(0, i)); w = w.slice(i);
+        }
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test;
+      });
+      out.push(line);
+    });
+    return out;
+  };
+  let y = P + 6;
+  blocks.forEach(b => { b.lines = wrap(b.t, b.f); y += b.gap + b.lines.length * b.lh; });
+  const H = y + P + 30;
+  c.width = W; c.height = H;
+  ctx.fillStyle = '#0b0d12'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.shadowColor = 'rgba(98,216,238,.55)'; ctx.shadowBlur = 14;
+  ctx.fillStyle = '#62d8ee'; ctx.fillRect(P, 28, 90, 3);
+  ctx.restore();
+  ctx.textBaseline = 'top';
+  y = P + 6;
+  blocks.forEach(b => {
+    y += b.gap; ctx.font = b.f; ctx.fillStyle = b.col;
+    b.lines.forEach(l => { ctx.fillText(l, P, y); y += b.lh; });
+  });
+  ctx.font = `400 16px ${F}`; ctx.fillStyle = '#4b5366';
+  ctx.fillText(APP_NAME, P, H - P + 6);
+  return c;
+}
+const canvasBlob = c => new Promise(res => c.toBlob(res, 'image/png'));
+function canShareFiles() {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'a.png', { type: 'image/png' })] })); }
+  catch { return false; }
+}
+
+const exportActions = {
+  async 'exp-copy'() {
+    const ok = await copyText(buildText(currentExport(), true));
+    toast(ok ? 'Texto copiado. Pégalo en WhatsApp' : 'No se pudo copiar', ok ? 'ok' : 'bad');
+  },
+  async 'exp-share'() {
+    const d = currentExport();
+    try { await navigator.share({ title: d.title, text: buildText(d, true) }); }
+    catch (e) { if (e && e.name !== 'AbortError') toast('No se pudo compartir', 'bad'); }
+  },
+  'exp-txt'() {
+    const d = currentExport();
+    download(new Blob([buildText(d, false)], { type: 'text/plain;charset=utf-8' }), `${slug(d.title)}_${slug(d.name)}.txt`);
+  },
+  async 'exp-png'() {
+    const d = currentExport();
+    download(await canvasBlob(buildCanvas(d)), `${slug(d.title)}_${slug(d.name)}.png`);
+  },
+  async 'exp-sharepng'() {
+    const d = currentExport();
+    const blob = await canvasBlob(buildCanvas(d));
+    const file = new File([blob], `${slug(d.title)}_${slug(d.name)}.png`, { type: 'image/png' });
+    try { await navigator.share({ files: [file], title: d.title }); }
+    catch (e) { if (e && e.name !== 'AbortError') toast('No se pudo compartir la imagen', 'bad'); }
+  }
+};
+
+/* ============================= PROFESOR ============================= */
+function viewTeacher() {
+  $('#app').innerHTML = `<div class="wrap">${header()}${S.section === 'students' ? teacherStudents() : teacherCatalog()}</div>`;
+}
+
+function teacherCatalog() {
+  return `<div class="toolbar"><span class="sub" style="color:var(--muted)">Pulsa una tarjeta para ver respuestas y asignar alumnos.</span>
+      <button class="btn" data-action="new-item">+ Nuevo elemento</button></div>
+    ${S.items.length ? `<div class="grid">${S.items.map(it => {
+      const as = S.assigns.filter(a => a.item_id === it.id);
+      const li = as.filter(a => a.listened).length, ov = as.filter(isOverdue).length;
+      const ans = as.filter(a => answeredCount(a) > 0).length;
+      return `<article class="card" data-action="open-item" data-id="${it.id}">
+        <div class="card-top"><span class="badge">${esc(KIND[it.kind] || it.kind)}</span>${ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : ''}</div>
+        <h3>${esc(it.title)}</h3>
+        ${it.brief ? `<p class="brief">${esc(it.brief)}</p>` : ''}
+        <div class="card-foot"><div class="chips">
+          <span class="chip">${as.length} asignado${as.length === 1 ? '' : 's'}</span>
+          <span class="chip ${li ? 'ok' : ''}">${li} escuchado${li === 1 ? '' : 's'}</span>
+          <span class="chip ${ans ? 'acc' : ''}">${ans} con respuestas</span>
+        </div></div>
+      </article>`;
+    }).join('')}</div>` : `<div class="empty">El catálogo está vacío. Crea tu primer elemento.</div>`}`;
+}
+
+function teacherStudents() {
+  const pending = S.students.filter(s => !s.approved), ok = S.students.filter(s => s.approved);
+  const stat = s => {
+    const as = S.assigns.filter(a => a.student_id === s.id);
+    return { n: as.length, li: as.filter(a => a.listened).length, ov: as.filter(isOverdue).length };
+  };
+  return `
+    ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
+      <div class="row"><div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
+      <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div>`).join('')}</div>` : ''}
+    <h2 class="h2">Alumnos</h2>
+    ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
+      <div class="row click" data-action="open-student" data-id="${s.id}">
+        <div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
+        <div class="chips">
+          <span class="chip">${st.n} asignado${st.n === 1 ? '' : 's'}</span>
+          <span class="chip ${st.li ? 'ok' : ''}">${st.li} escuchado${st.li === 1 ? '' : 's'}</span>
+          ${st.ov ? `<span class="chip bad">${st.ov} vencido${st.ov > 1 ? 's' : ''}</span>` : ''}
+          <button class="btn ghost sm" data-action="revoke" data-id="${s.id}">Revocar acceso</button>
+        </div>
+      </div>`; }).join('')}</div>` : `<div class="empty">Aún no hay alumnos aprobados.</div>`}`;
+}
+
+function answersHtml(a) {
+  return QUESTIONS.map((q, i) => {
+    const v = ((a.answers || {})[q.k] || '').trim();
+    return `<div class="qblock"><div class="q">${i + 1}. ${esc(q.q)}</div><div class="ans ${v ? '' : 'none'}">${v ? esc(v) : 'Sin respuesta'}</div></div>`;
+  }).join('');
+}
+
+function itemFormModal(id) {
+  const it = id ? S.items.find(x => x.id === id) : null;
+  openModal(`
+    <div class="modal-head"><h2>${it ? 'Editar elemento' : 'Nuevo elemento'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="itemForm" data-id="${it ? it.id : ''}">
+      <label class="f">Título<input type="text" name="title" required maxlength="200" value="${esc(it ? it.title : '')}"></label>
+      <label class="f">Enlace (Spotify, YouTube…)<input type="text" name="url" required placeholder="https://" value="${esc(it ? it.url : '')}"></label>
+      <label class="f">Tipo<select name="kind">
+        ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
+      </select></label>
+      <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
+      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+}
+
+function itemModal(id) {
+  const it = S.items.find(x => x.id === id);
+  if (!it) return;
+  const as = S.assigns.filter(a => a.item_id === id).sort((a, b) => studentName(a.student_id).localeCompare(studentName(b.student_id)));
+  const taken = new Set(as.map(a => a.student_id));
+  const free = S.students.filter(s => s.approved && !taken.has(s.id));
+  openModal(`
+    <div class="modal-head">
+      <div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div>
+      <button class="x" data-action="close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="actions" style="margin:0 0 6px">
+      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a>
+      <button class="btn sm violet" data-action="edit-item" data-id="${it.id}">Editar</button>
+      <button class="btn sm danger" data-action="delete-item" data-id="${it.id}">Eliminar</button>
+    </div>
+    ${it.brief ? `<div class="callout"><b>Consigna general</b>${esc(it.brief)}</div>` : ''}
+    <h2 class="h2">Alumnos con este elemento (${as.length})</h2>
+    ${as.length ? as.map(a => {
+      const d = dueInfo(a), n = answeredCount(a);
+      return `<div class="arow" data-aid="${a.id}">
+        <div class="arow-head"><strong>${esc(studentName(a.student_id))}</strong>
+          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
+        <div class="grid2">
+          <label class="f" style="margin:0">Fecha límite<input type="date" data-f="due" value="${esc(a.due_date || '')}"></label>
+          <label class="f" style="margin:0">Nota solo para este alumno<input type="text" data-f="note" maxlength="2000" value="${esc(a.note || '')}"></label>
+        </div>
+        <div class="actions"><button class="btn sm" data-action="save-assign" data-id="${a.id}">Guardar cambios</button><button class="btn sm danger" data-action="del-assign" data-id="${a.id}">Quitar</button></div>
+        <details><summary>Ver respuestas de ${esc(studentName(a.student_id))}</summary>${answersHtml(a)}</details>
+      </div>`;
+    }).join('') : `<div class="empty" style="padding:22px">Nadie lo tiene asignado todavía.</div>`}
+    <h2 class="h2">Asignar a más alumnos</h2>
+    ${free.length ? `<div id="assignBox">
+      ${free.map(s => `<div class="frow">
+        <label class="chk"><input type="checkbox" data-f="pick" value="${s.id}"> ${esc(s.display_name)}</label>
+        <input type="date" data-f="due" aria-label="Fecha límite de ${esc(s.display_name)}">
+        <input type="text" data-f="note" maxlength="2000" placeholder="Nota individual (opcional)" aria-label="Nota para ${esc(s.display_name)}">
+      </div>`).join('')}
+      <div class="actions"><button class="btn" data-action="assign-selected" data-id="${it.id}">Asignar a los seleccionados</button></div>
+    </div>` : `<div class="empty" style="padding:22px">${S.students.some(s => s.approved) ? 'Todos tus alumnos ya lo tienen asignado.' : 'No hay alumnos aprobados todavía.'}</div>`}
+  `);
+}
+
+function studentDetailModal(id) {
+  const s = S.students.find(x => x.id === id);
+  if (!s) return;
+  const as = S.assigns.filter(a => a.student_id === id).sort(dueSort);
+  openModal(`
+    <div class="modal-head"><div><h2>${esc(s.display_name)}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div></div>
+      <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <h2 class="h2">${esc(MODULE_LISTENING)}</h2>
+    ${as.length ? as.map(a => {
+      const it = S.items.find(x => x.id === a.item_id);
+      if (!it) return '';
+      const d = dueInfo(a), n = answeredCount(a);
+      return `<div class="arow">
+        <div class="arow-head"><div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span> <strong style="margin-left:6px">${esc(it.title)}</strong></div>
+          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
+        ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
+        <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
+      </div>`;
+    }).join('') : `<div class="empty">Este alumno no tiene nada asignado.</div>`}`);
+}
+
+/* ======================= Acciones (click delegado) ================== */
+const actions = {
+  noop() { },
+  backdrop(el, e) { if (e.target === el) closeModal(); },
+  close() { closeModal(); },
+  async logout() { await sb.auth.signOut(); },
+  async recheck() { await route(); },
+  async refresh() { if (await loadData()) { render(); toast('Datos actualizados', 'ok'); } },
+  'auth-mode'(el) { viewAuth(el.dataset.mode); },
+  async forgot() {
+    const email = prompt('Escribe el email de tu cuenta y te enviaremos un enlace para crear una nueva contraseña:');
+    if (!email) return;
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.href.split('#')[0] });
+    viewAuth('login', error ? { type: 'bad', text: error.message } : { type: 'ok', text: 'Si el email existe, te llegará un enlace para restablecer la contraseña.' });
+  },
+  filter(el) { S.filter = el.dataset.f; viewStudent(); },
+  'open-assign'(el) { studentModal(el.dataset.id); },
+  'save-now'() { if (cur) { cur.dirty = true; saveNow(); } },
+  section(el) { S.section = el.dataset.s; render(); },
+  'new-item'() { itemFormModal(null); },
+  'open-item'(el) { itemModal(el.dataset.id); },
+  'edit-item'(el) { itemFormModal(el.dataset.id); },
+  async 'delete-item'(el) {
+    const it = S.items.find(x => x.id === el.dataset.id);
+    const n = S.assigns.filter(a => a.item_id === it.id).length;
+    if (!confirm(`¿Eliminar "${it.title}"?${n ? `\n\nSe borrarán también las asignaciones y las respuestas de ${n} alumno${n > 1 ? 's' : ''}. No se puede deshacer.` : ''}`)) return;
+    const { error } = await sb.from('listening_items').delete().eq('id', it.id);
+    if (error) return toast('Error: ' + error.message, 'bad');
+    await loadData(); await closeModal(); render(); toast('Elemento eliminado', 'ok');
+  },
+  async 'save-assign'(el) {
+    const row = el.closest('.arow');
+    const due = $('[data-f=due]', row).value || null;
+    const note = $('[data-f=note]', row).value.trim() || null;
+    const { data, error } = await sb.from('listening_assignments').update({ due_date: due, note }).eq('id', el.dataset.id).select();
+    if (error || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    const a = S.assigns.find(x => x.id === el.dataset.id);
+    Object.assign(a, data[0]);
+    const open = $('details', row) && $('details', row).open;
+    itemModal(a.item_id);
+    if (open) { const r = $(`.arow[data-aid="${a.id}"] details`); if (r) r.open = true; }
+    toast('Cambios guardados', 'ok');
+  },
+  async 'del-assign'(el) {
+    const a = S.assigns.find(x => x.id === el.dataset.id);
+    if (!confirm(`¿Quitar este elemento a ${studentName(a.student_id)}?\nSe borrarán también sus respuestas.`)) return;
+    const { error } = await sb.from('listening_assignments').delete().eq('id', a.id);
+    if (error) return toast('Error: ' + error.message, 'bad');
+    S.assigns = S.assigns.filter(x => x.id !== a.id);
+    itemModal(a.item_id);
+    toast('Asignación eliminada', 'ok');
+  },
+  async 'assign-selected'(el) {
+    const rows = $$('.frow', $('#assignBox')).filter(r => $('[data-f=pick]', r).checked);
+    if (!rows.length) return toast('Marca al menos un alumno');
+    const payload = rows.map(r => ({
+      item_id: el.dataset.id,
+      student_id: $('[data-f=pick]', r).value,
+      due_date: $('[data-f=due]', r).value || null,
+      note: $('[data-f=note]', r).value.trim() || null
+    }));
+    const { error } = await sb.from('listening_assignments').insert(payload);
+    if (error) return toast('Error: ' + error.message, 'bad');
+    await loadData();
+    itemModal(el.dataset.id);
+    toast(`Asignado a ${payload.length} alumno${payload.length > 1 ? 's' : ''}`, 'ok');
+  },
+  async approve(el) { await setApproved(el.dataset.id, true); },
+  async revoke(el) {
+    const s = S.students.find(x => x.id === el.dataset.id);
+    if (!confirm(`¿Revocar el acceso de ${s.display_name}? No verá nada hasta que lo vuelvas a aprobar.`)) return;
+    await setApproved(s.id, false);
+  },
+  'open-student'(el) { studentDetailModal(el.dataset.id); },
+  ...exportActions
+};
+
+async function setApproved(id, value) {
+  const { data, error } = await sb.from('profiles').update({ approved: value }).eq('id', id).select();
+  if (error || !data.length) return toast('Error al actualizar' + (error ? ': ' + error.message : ''), 'bad');
+  S.students.find(s => s.id === id).approved = value;
+  viewTeacher();
+  toast(value ? 'Alumno aprobado' : 'Acceso revocado', 'ok');
+}
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const fn = actions[el.dataset.action];
+  if (!fn) return;
+  try { await fn(el, e); } catch (err) { console.error(err); toast('Error inesperado: ' + (err.message || err), 'bad'); }
+});
+
+/* Autoguardado del modal de alumno */
+document.addEventListener('input', e => { if (cur && e.target.matches('[data-q]')) markDirty(); });
+document.addEventListener('change', e => { if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); } });
+
+/* ------------------------------ Formularios ------------------------- */
+document.addEventListener('submit', async e => {
+  const f = e.target;
+  if (f.id === 'authForm') {
+    e.preventDefault();
+    const mode = f.dataset.mode, btn = $('#authBtn');
+    const email = f.email.value.trim(), password = f.password.value;
+    btn.disabled = true;
+    if (mode === 'login') {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) viewAuth('login', { type: 'bad', text: error.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : error.message });
+      // si todo va bien, onAuthStateChange(SIGNED_IN) hace el resto
+    } else {
+      const name = f.name.value.trim();
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name } } });
+      if (error) viewAuth('register', { type: 'bad', text: error.message });
+      else if (!data.session) viewAuth('login', { type: 'ok', text: 'Cuenta creada. Revisa tu email para confirmarla y después entra.' });
+    }
+  } else if (f.id === 'recForm') {
+    e.preventDefault();
+    const { error } = await sb.auth.updateUser({ password: f.password.value });
+    if (error) { $('#recMsg').innerHTML = `<div class="msg bad">${esc(error.message)}</div>`; return; }
+    recovering = false;
+    history.replaceState(null, '', location.pathname + location.search);
+    await route();
+    toast('Contraseña actualizada', 'ok');
+  } else if (f.id === 'itemForm') {
+    e.preventDefault();
+    const url = f.url.value.trim();
+    if (!/^https?:\/\//i.test(url)) return toast('El enlace debe empezar por http:// o https://', 'bad');
+    const row = { title: f.title.value.trim(), url, kind: f.kind.value, brief: f.brief.value.trim() || null };
+    const id = f.dataset.id;
+    const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
+    if (error) return toast('Error: ' + error.message, 'bad');
+    await loadData();
+    await closeModal();
+    render();
+    toast(id ? 'Elemento actualizado' : 'Elemento creado', 'ok');
+  }
+});
+
+/* -------------------------------- Arranque -------------------------- */
+(async function boot() {
+  if (!configured) return viewSetup();
+  sb.auth.onAuthStateChange((event, session) => {
+    // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
+    setTimeout(() => {
+      if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
+      else if (event === 'SIGNED_OUT') { S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; viewAuth(); }
+      else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
+    }, 0);
+  });
+  if (recovering) return viewRecovery();
+  await route();
+})();
+</script>
+</body>
+</html>
