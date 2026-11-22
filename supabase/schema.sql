@@ -653,6 +653,39 @@ revoke execute on function public.is_teacher(), public.is_approved() from public
 grant  execute on function public.is_teacher(), public.is_approved() to authenticated;
 
 -- =====================================================================
+--  FOTO DE PERFIL: copia reducida de la original + posición del encuadre
+--  Sirve para reencuadrar sin volver a subir la foto. Solo la ven su dueño
+--  y el profesor (reglas de profiles); get_directory NO la expone.
+-- =====================================================================
+alter table public.profiles add column if not exists avatar_src text
+  check (avatar_src is null or (char_length(avatar_src) <= 120000
+         and avatar_src ~ '^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'));
+alter table public.profiles add column if not exists avatar_crop jsonb
+  check (avatar_crop is null or octet_length(avatar_crop::text) <= 200);
+
+-- =====================================================================
+--  TIEMPO REAL (Supabase Realtime)
+--  La app recibe al momento los cambios de estas tablas. Realtime aplica
+--  las mismas reglas RLS: nadie recibe en directo lo que no podría leer.
+--  (Los borrados llegan solo con la clave primaria, sin contenido.)
+-- =====================================================================
+do $$
+declare t text;
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+  foreach t in array array['feed_posts', 'feed_comments', 'listening_comments', 'reactions',
+                           'board_posts', 'board_recipients', 'board_reads', 'listening_items',
+                           'listening_assignments', 'profiles', 'moderation_reports'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
+
+-- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto
 --    (cambia el email por el tuyo) para convertirte en profesor:

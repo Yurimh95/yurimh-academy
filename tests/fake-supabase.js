@@ -62,17 +62,37 @@
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'] };
+
+  // ---- Tiempo real simulado: como Supabase Realtime, INSERT/UPDATE solo llegan si RLS deja leer la fila;
+  //      los DELETE llegan a todos, pero solo con la clave primaria.
+  const channels=[];
+  function emit(table, eventType, row){
+    const snap={...row};
+    setTimeout(()=>{ channels.forEach(ch=>ch.handlers.filter(h=>h.table===table).forEach(h=>{
+      if(!me) return;
+      if(eventType!=='DELETE' && !canRead[table](DB[table].find(r=>(pk[table]||['id']).every(k=>r[k]===snap[k]))||snap)) return;
+      const old={}; if(eventType==='DELETE') (pk[table]||['id']).forEach(k=>old[k]=snap[k]);
+      h.cb({eventType, table, schema:'public', new: eventType==='DELETE'?{}:{...snap}, old});
+    })); }, 15);
+  }
+  function removeRows(table, pred){ const gone=DB[table].filter(pred); DB[table]=DB[table].filter(r=>!pred(r)); gone.forEach(r=>emit(table,'DELETE',r)); return gone; }
+  // Para las pruebas: simula que OTRA persona inserta/borra algo (window.__rtExternal('feed_posts', {...}))
+  window.__rtExternal=(table,row)=>{ const r={created_at:new Date().toISOString(),...row}; DB[table].push(r); emit(table,'INSERT',r); return r; };
+  window.__rtExternalUpdate=(table,id,patch)=>{ const r=DB[table].find(x=>x.id===id); Object.assign(r,patch); emit(table,'UPDATE',r); };
+  window.__rtExternalDelete=(table,id)=>{ const rows=removeRows(table,r=>r.id===id); cascade(table,rows); };
+
   function cleanup(table, rows){
     if(!typeOf[table]) return;
     const ids=new Set(rows.map(r=>r.id));
-    DB.reactions=DB.reactions.filter(x=>!(x.target_type===typeOf[table] && ids.has(x.target_id)));
-    DB.moderation_reports=DB.moderation_reports.filter(x=>!(x.target_type===typeOf[table] && ids.has(x.target_id)));
+    removeRows('reactions',x=>x.target_type===typeOf[table] && ids.has(x.target_id));
+    removeRows('moderation_reports',x=>x.target_type===typeOf[table] && ids.has(x.target_id));
   }
   function cascade(table, rows){
     const ids=new Set(rows.map(r=>r.id));
-    if(table==='feed_posts'){ const cs=DB.feed_comments.filter(c=>ids.has(c.post_id)); DB.feed_comments=DB.feed_comments.filter(c=>!ids.has(c.post_id)); cleanup('feed_comments',cs); }
-    if(table==='listening_items'){ const cs=DB.listening_comments.filter(c=>ids.has(c.item_id)); DB.listening_comments=DB.listening_comments.filter(c=>!ids.has(c.item_id)); cleanup('listening_comments',cs); DB.listening_assignments=DB.listening_assignments.filter(a=>!ids.has(a.item_id)); }
-    if(table==='board_posts'){ DB.board_recipients=DB.board_recipients.filter(r=>!ids.has(r.post_id)); DB.board_reads=DB.board_reads.filter(r=>!ids.has(r.post_id)); }
+    if(table==='feed_posts'){ const cs=removeRows('feed_comments',c=>ids.has(c.post_id)); cleanup('feed_comments',cs); }
+    if(table==='listening_items'){ const cs=removeRows('listening_comments',c=>ids.has(c.item_id)); cleanup('listening_comments',cs); removeRows('listening_assignments',a=>ids.has(a.item_id)); }
+    if(table==='board_posts'){ removeRows('board_recipients',r=>ids.has(r.post_id)); removeRows('board_reads',r=>ids.has(r.post_id)); }
     cleanup(table,rows);
   }
   function guard(table, old, nw){
@@ -85,14 +105,13 @@
       if(nw.nickname && nw.nickname.length>30) throw new Error('violates check constraint nickname');
       if(nw.avatar!=null && !(nw.avatar.length<=40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(nw.avatar))) throw new Error('violates check constraint avatar');
     }
+    if (table==='profiles' && nw.avatar_src!=null && !(nw.avatar_src.length<=120000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(nw.avatar_src))) throw new Error('violates check constraint avatar_src');
     if (table==='listening_assignments' && !isTeacher()) {
       if (nw.item_id!==old.item_id||nw.student_id!==old.student_id||nw.note!==old.note||nw.due_date!==old.due_date) throw new Error('Solo el profesor puede modificar esos campos');
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
     if (table==='board_posts') nw.updated_at=new Date().toISOString();
   }
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'] };
-
   function q(table){
     const st={op:'select',filters:[],order:null,payload:null,embed:false,single:false,maybe:false,opts:null,lim:null};
     const b={
@@ -128,7 +147,7 @@
       }
       if(st.op==='update'){
         const rows=DB[table].filter(canRead[table]).filter(match).filter(r=>canWriteRow[table]('update',r));
-        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>Object.assign(r,nw)); }catch(e){ return finish([],e.message); }
+        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ Object.assign(r,nw); emit(table,'UPDATE',r); }); }catch(e){ return finish([],e.message); }
         return st.sel?finish(rows):{data:null,error:null};
       }
       if(st.op==='insert'||st.op==='upsert'){
@@ -145,13 +164,13 @@
           if(pk[table] && DB[table].some(e=>pk[table].every(k=>e[k]===row[k]))){ if(st.op==='upsert'&&st.opts.ignoreDuplicates) continue; return finish([],'duplicate key value violates unique constraint'); }
           if(table==='moderation_reports' && DB[table].some(e=>e.reporter_id===row.reporter_id&&e.target_type===row.target_type&&e.target_id===row.target_id)) return finish([],'duplicate key value violates unique constraint');
           if(table==='listening_assignments' && DB[table].some(e=>e.item_id===row.item_id&&e.student_id===row.student_id)) return finish([],'duplicate key value');
-          DB[table].push(row); made.push(row);
+          DB[table].push(row); made.push(row); emit(table,'INSERT',row);
         }
         return st.sel?finish(made):{data:null,error:null};
       }
       if(st.op==='delete'){
         const rows=DB[table].filter(canRead[table]).filter(match).filter(r=>canWriteRow[table]('delete',r));
-        DB[table]=DB[table].filter(r=>!rows.includes(r));
+        removeRows(table,r=>rows.includes(r));
         cascade(table,rows);
         return {data:null,error:null};
       }
@@ -166,6 +185,8 @@
   });
   window.supabase={createClient(){ return {
     from:q, rpc,
+    channel(){ const ch={handlers:[], on(type,f,cb){ ch.handlers.push({table:f.table,cb}); return ch; }, subscribe(cb){ channels.push(ch); setTimeout(()=>cb&&cb('SUBSCRIBED'),0); return ch; }}; return ch; },
+    removeChannel(ch){ const i=channels.indexOf(ch); if(i>=0) channels.splice(i,1); },
     auth:{
       getSession: async()=>({data:{session: me?{user:{id:me}}:null}}),
       onAuthStateChange(cb){ listeners.push(cb); return {data:{subscription:{}}}; },

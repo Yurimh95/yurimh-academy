@@ -243,7 +243,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .composer-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
 .composer-main textarea{min-height:64px}
 .composer .actions{justify-content:flex-end}
-.feed{display:flex;flex-direction:column;gap:14px}
+.feed{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.newposts-wrap{position:sticky;top:12px;z-index:20;display:flex;justify-content:center;height:0;overflow:visible}
+.newposts{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:999px;padding:9px 18px;color:var(--on-accent);background:var(--accent);box-shadow:var(--glow),0 8px 24px rgba(0,0,0,.25);animation:tin .25s ease-out;transform:translateY(-6px)}
+.newposts:hover{filter:brightness(1.08)}
 .fpost{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
 .fpost.by-teacher{border-color:var(--line-strong)}
 .fhead{display:flex;align-items:center;gap:12px}
@@ -415,7 +418,6 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
-  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13a3 3 0 1 1-2-2.8V6.3L11 7.6V18a3 3 0 1 1-2-2.8z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.5-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></symbol>
@@ -469,7 +471,8 @@ const S = {
   items: [], assigns: [], students: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
-  section: 'home', filter: 'pend'
+  section: 'home', filter: 'pend',
+  feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
 let recovering = location.hash.includes('type=recovery');
 let modalOnClose = null;
@@ -654,6 +657,153 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
   S.reports = S.reports.filter(r => !(r.target_type === type && r.target_id === id));
 }
 
+/* ===================== TIEMPO REAL (Supabase Realtime) =====================
+   La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
+   nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
+const RT_TABLES = ['feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
+  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports'];
+const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports' };
+const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
+  : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id : r.id;
+function addUnique(list, row, table) { // añade sin duplicar (lo local y lo que llega en directo pueden cruzarse)
+  const k = rowKey(table, row);
+  if (list.some(x => rowKey(table, x) === k)) return false;
+  list.push(row); return true;
+}
+function rtApply(list, table, ev, row, old) { // inserta/actualiza/borra en una lista y la devuelve
+  if (ev === 'DELETE') { const k = rowKey(table, old); return list.filter(x => rowKey(table, x) !== k); }
+  const k = rowKey(table, row), i = list.findIndex(x => rowKey(table, x) === k);
+  if (i >= 0) list[i] = { ...list[i], ...row }; else list.push(row);
+  return list;
+}
+let rtChannel = null, rtWasLive = false, hiddenAt = 0;
+function rtStart() {
+  rtStop();
+  rtChannel = sb.channel('app-changes');
+  RT_TABLES.forEach(t => rtChannel.on('postgres_changes', { event: '*', schema: 'public', table: t },
+    p => rtHandle(t, p).catch(e => console.warn('Tiempo real:', e))));
+  rtChannel.subscribe(status => {
+    // Si se corta (móvil en reposo, wifi…) y vuelve, recargamos por si nos perdimos algo
+    if (status === 'SUBSCRIBED') { if (rtWasLive) rtResync(); rtWasLive = true; }
+  });
+}
+function rtStop() { if (rtChannel) { sb.removeChannel(rtChannel); rtChannel = null; } rtWasLive = false; }
+async function rtResync() { if (S.profile && S.profile.approved && await loadData(true)) softRender(); }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 60000) rtResync(); // vuelves a la pestaña tras más de 1 minuto
+  hiddenAt = 0;
+});
+
+/* Repintar sin molestar: si estás escribiendo o tienes una ventana abierta, solo se actualizan
+   los contadores del menú; el resto se repinta al cerrar la ventana. */
+let uiStale = false;
+function uiBusy() {
+  if ($('#modalRoot').firstChild) return true;
+  const a = document.activeElement;
+  if (a && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) && a.closest('#app')) return true;
+  return $$('#app textarea').some(x => x.value.trim()) || $$('#feedForm input[type=text]').some(x => x.value.trim());
+}
+function refreshChrome() {
+  const secs = sections();
+  const nav = $('.sidebar .nav'); if (nav) nav.outerHTML = navHtml(secs);
+  const tb = $('.tabbar'); if (tb) tb.outerHTML = tabbar(secs);
+  const rl = $('.rail'); if (rl) rl.innerHTML = railView();
+}
+function softRender() {
+  if (!S.profile || !$('.shell')) return;
+  if (uiBusy()) { uiStale = true; refreshChrome(); return; }
+  uiStale = false;
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+}
+
+async function rtHandle(t, p) {
+  if (!S.profile || !S.user) return;
+  const ev = p.eventType, row = p.new || {}, old = p.old || {}, me = S.user.id, teacher = isTeacher();
+  // Alguien que aún no está en el directorio (alumno recién aprobado…): lo recargamos para su nombre y foto
+  if (ev !== 'DELETE' && row.author_id && !S.dir[row.author_id]) await loadDirectory();
+
+  if (t === 'feed_posts') {
+    if (ev === 'INSERT') {
+      if (S.fposts.some(x => x.id === row.id) || S.feedQueue.some(x => x.id === row.id)) return;
+      if (row.author_id !== me && S.section === 'feed') { S.feedQueue.push(row); return updateNewPill(); }
+      S.fposts.unshift(row); return softRender();
+    }
+    if (ev === 'DELETE') {
+      S.feedQueue = S.feedQueue.filter(x => x.id !== old.id); updateNewPill();
+      if (!S.fposts.some(x => x.id === old.id)) return;
+      dropTargetLocal('feed_post', old.id);
+      const el = $(`[data-fpost="${old.id}"]`); if (el) el.remove();
+      if (S.section !== 'feed') softRender();
+      return;
+    }
+    return;
+  }
+  if (t === 'feed_comments' || t === 'listening_comments') {
+    const kind = t === 'feed_comments' ? 'feed' : 'listening', c = CM[kind];
+    if (ev === 'INSERT') { if (addUnique(cmList(kind), row, t)) updateComments(kind, row[c.key]); return; }
+    if (ev === 'DELETE') {
+      const x = cmList(kind).find(y => y.id === old.id); if (!x) return;
+      dropTargetLocal(c.type, old.id); updateComments(kind, x[c.key]); return;
+    }
+    return;
+  }
+  if (t === 'reactions') {
+    if (ev === 'INSERT') { if (addUnique(S.reactions, row, t)) updateRx(row.target_type, row.target_id); return; }
+    if (ev === 'DELETE') {
+      const k = rowKey(t, old), x = S.reactions.find(r => rowKey(t, r) === k); if (!x) return;
+      S.reactions = S.reactions.filter(r => r !== x); updateRx(x.target_type, x.target_id); return;
+    }
+    return;
+  }
+  if (t === 'profiles') {
+    if (row.id === me || old.id === me) {
+      if (ev === 'DELETE') return;
+      S.profile = { ...S.profile, ...row };
+      if (!S.profile.approved) { rtStop(); return route(); } // le han retirado el acceso
+    }
+    if (teacher) {
+      const { avatar_src, avatar_crop, ...lite } = row; // la copia grande de la foto no hace falta en la lista
+      if (ev === 'DELETE') S.students = S.students.filter(s => s.id !== old.id);
+      else if (row.role === 'student') S.students = rtApply(S.students, t, ev, lite, old);
+    }
+    await loadDirectory(); // nombres, apodos y fotos
+    return softRender();
+  }
+  if (!teacher) { // casos del alumno en los que el aviso en directo no trae todo lo necesario
+    if (t === 'board_recipients') { // te han incluido en (o quitado de) un aviso dirigido
+      if (ev === 'INSERT' && row.student_id === me) {
+        const { data } = await sb.from('board_posts').select('*').eq('id', row.post_id).maybeSingle();
+        if (data) S.posts = rtApply(S.posts, 'board_posts', 'INSERT', data);
+      } else if (ev === 'DELETE' && old.student_id === me) {
+        const { data } = await sb.from('board_posts').select('id').eq('id', old.post_id).maybeSingle();
+        if (!data) S.posts = S.posts.filter(x => x.id !== old.post_id);
+      } else return;
+      return softRender();
+    }
+    if (t === 'listening_assignments') { // la escucha llega sin su elemento: lo pedimos
+      if (ev === 'DELETE') { S.assigns = S.assigns.filter(a => a.id !== old.id); return softRender(); }
+      if (row.student_id !== me) return;
+      const ex = S.assigns.find(a => a.id === row.id);
+      if (ex) Object.assign(ex, row);
+      else {
+        const { data } = await sb.from('listening_assignments').select('*, item:listening_items(*)').eq('id', row.id).maybeSingle();
+        if (data && data.item) S.assigns.push(data);
+      }
+      return softRender();
+    }
+    if (t === 'listening_items') {
+      if (ev === 'UPDATE') S.assigns.forEach(a => { if (a.item_id === row.id) a.item = { ...a.item, ...row }; });
+      if (ev === 'DELETE') S.assigns = S.assigns.filter(a => a.item_id !== old.id);
+      return softRender();
+    }
+    if (t === 'board_posts' && ev === 'DELETE') { S.posts = S.posts.filter(x => x.id !== old.id); return softRender(); }
+  }
+  const key = RT_LIST[t]; if (!key) return;
+  S[key] = rtApply(S[key], t, ev, row, old);
+  softRender();
+}
+
 function toast(msg, type = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
@@ -672,6 +822,7 @@ async function closeModal() {
   if (modalOnClose) { const f = modalOnClose; modalOnClose = null; await f(); }
   $('#modalRoot').innerHTML = '';
   document.body.classList.remove('noscroll');
+  if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
@@ -756,10 +907,11 @@ async function route() {
   if (!prof.approved) return viewPending();
   $('#app').innerHTML = '<div class="loading">Cargando…</div>';
   const ok = await loadData();
-  if (ok) render();
+  if (ok) { render(); rtStart(); }
 }
 
-async function loadData() {
+// quiet = true: resincronización en segundo plano (si falla, no muestra la pantalla de error)
+async function loadData(quiet = false) {
   try {
     const me = S.user.id;
     const common = [
@@ -773,7 +925,8 @@ async function loadData() {
       const [i, a, p, bp, br, bd, rp, fp, fc, lc, rx, dr] = await Promise.all([
         sb.from('listening_items').select('*').order('created_at', { ascending: false }),
         sb.from('listening_assignments').select('*'),
-        sb.from('profiles').select('*').eq('role', 'student').order('display_name'),
+        // sin avatar_src (la copia grande de la foto): no hace falta y pesa. Al añadir campos al perfil, añádelos aquí.
+        sb.from('profiles').select('id, display_name, nickname, avatar, email, role, approved, created_at').eq('role', 'student').order('display_name'),
         sb.from('board_posts').select('*'),
         sb.from('board_recipients').select('*'),
         sb.from('board_reads').select('*'),
@@ -804,6 +957,7 @@ async function loadData() {
     return true;
   } catch (e) {
     const m = String(e.message || e);
+    if (quiet) { console.warn('Resincronización fallida:', m); return false; }
     viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|relation|schema cache|function/i.test(m)
       ? 'Falta ejecutar la última versión de supabase.sql en el SQL Editor de Supabase. (' + m + ')'
       : 'Error cargando los datos: ' + m);
@@ -862,15 +1016,15 @@ function themeSwitch() {
     <button data-action="theme" data-t="light" aria-pressed="${th === 'light'}">${ic('sun')}Claro</button>
     <button data-action="theme" data-t="dark" aria-pressed="${th !== 'light'}">${ic('moon')}Oscuro</button></div>`;
 }
+const navHtml = secs => `<nav class="nav">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.id)}${esc(s.label)}${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
 function sidebar(secs) {
   const t = isTeacher();
   return `<aside class="sidebar">
     <div class="brand"><img src="logo.png" alt=""><div><b>${esc(APP_NAME)}</b><small>Clases de guitarra</small></div></div>
-    <nav class="nav">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.id)}${esc(s.label)}${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>
+    ${navHtml(secs)}
     <div class="side-foot">
       ${themeSwitch()}
       <div class="me">${avatarHtml(S.user.id, 36)}<div class="who">${esc(S.profile.display_name)}<small>${t ? 'Profesor' : 'Alumno'}</small></div>
-        <button class="iconbtn sm" data-action="refresh" title="Actualizar" aria-label="Actualizar">${ic('refresh')}</button>
         <button class="iconbtn sm" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button></div>
     </div>
   </aside>`;
@@ -882,7 +1036,6 @@ function topbar(cur) {
     ${S.section !== 'home' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
     <div class="top-r only-m">
       <button class="iconbtn" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
-      <button class="iconbtn" data-action="refresh" title="Actualizar" aria-label="Actualizar">${ic('refresh')}</button>
       <button class="iconbtn" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button>
     </div>
   </header>`;
@@ -1015,14 +1168,22 @@ function feedView() {
         <input type="text" name="link" maxlength="500" placeholder="Enlace (opcional): Spotify, YouTube…">
         <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
       </div></form>
+    ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
       : `<div class="empty">Todavía no hay publicaciones. ¡Estrena el feed!</div>`}`;
 }
 
+// Botón "↑ N publicaciones nuevas" (no mete los posts de golpe para que la página no salte mientras lees)
+function newPill() {
+  const n = S.feedQueue.length;
+  return `<div id="newPosts" class="newposts-wrap">${n ? `<button class="newposts" data-action="show-new">↑ ${n} publicaci${n === 1 ? 'ón nueva' : 'ones nuevas'}</button>` : ''}</div>`;
+}
+const updateNewPill = () => { const el = $('#newPosts'); if (el) el.outerHTML = newPill(); };
+
 function feedCard(p) {
   const mine = p.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
-  return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}">
+  return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
     <div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
     <div class="fbody">${linkify(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
@@ -1080,7 +1241,7 @@ function boardTeacher() {
 async function markRead(postId) {
   if (isTeacher() || myReadSet().has(postId)) return;
   const { error } = await sb.from('board_reads').upsert({ post_id: postId, student_id: S.user.id }, { onConflict: 'post_id,student_id', ignoreDuplicates: true });
-  if (!error) S.reads.push({ post_id: postId, student_id: S.user.id, read_at: new Date().toISOString() });
+  if (!error) addUnique(S.reads, { post_id: postId, student_id: S.user.id, read_at: new Date().toISOString() }, 'board_reads');
 }
 
 function postModal(id) {
@@ -1155,8 +1316,9 @@ function profileView() {
       <h2 class="h2" style="margin-top:0">Foto de perfil</h2>
       <div class="avrow">${avatarHtml(S.user.id, 84)}
         <div class="stack">
-          <label class="btn primary" for="avatarFile">Elegir foto</label>
+          <label class="btn primary" for="avatarFile">${safeAvatar(p.avatar) ? 'Cambiar foto' : 'Elegir foto'}</label>
           <input type="file" id="avatarFile" accept="image/*" hidden>
+          ${safeAvatar(p.avatar) && p.avatar_src ? '<button class="btn sm" data-action="avatar-edit">Editar encuadre</button>' : ''}
           ${safeAvatar(p.avatar) ? '<button class="btn ghost sm" data-action="avatar-remove">Quitar foto</button>' : ''}
         </div></div>
       <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verá todo el grupo, así que elige una que quieras compartir.</p>
@@ -1179,21 +1341,49 @@ async function saveProfileFields(fields, okMsg) {
   return true;
 }
 /* ---- Foto de perfil: encuadre (arrastrar para mover, deslizador o rueda para ampliar) ---- */
-let crop = null; // { img, zoom, cx, cy } · cx/cy = punto de la imagen que queda en el centro del círculo
+/* Se guardan dos cosas: la foto final de 160×160 (la que ve el grupo, columna avatar) y, solo para
+   ti y el profesor, una copia reducida de la original (avatar_src) con la posición del encuadre
+   (avatar_crop), para poder reencuadrar sin volver a subirla. */
+let crop = null; // { img, src, zoom, cx, cy } · cx/cy = punto de la imagen que queda en el centro del círculo
 const CROP_VIEW = 260; // tamaño en pantalla del recuadro de encuadre
+const SRC_MAX = 640;   // lado máximo de la copia de la original
+const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 async function processAvatar(file) {
   if (!file || !/^image\//.test(file.type)) return toast('Elige una imagen', 'bad');
   const url = URL.createObjectURL(file);
-  const img = new Image();
-  await new Promise(res => { img.onload = res; img.onerror = res; img.src = url; });
+  const raw = await loadImg(url);
   URL.revokeObjectURL(url);
-  if (!img.naturalWidth) return toast('No se pudo leer esa imagen. Prueba con JPG o PNG', 'bad');
-  crop = { img, zoom: 1, cx: img.naturalWidth / 2, cy: img.naturalHeight / 2 };
+  if (!raw || !raw.naturalWidth) return toast('No se pudo leer esa imagen. Prueba con JPG o PNG', 'bad');
+  // copia reducida de la original (se guarda para poder reencuadrar más tarde)
+  const k = Math.min(1, SRC_MAX / Math.max(raw.naturalWidth, raw.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.round(raw.naturalWidth * k); c.height = Math.round(raw.naturalHeight * k);
+  const cx = c.getContext('2d'); cx.fillStyle = '#0b1530'; cx.fillRect(0, 0, c.width, c.height);
+  cx.imageSmoothingQuality = 'high'; cx.drawImage(raw, 0, 0, c.width, c.height);
+  let src = c.toDataURL('image/jpeg', 0.82);
+  if (src.length > 115000) src = c.toDataURL('image/jpeg', 0.62);
+  if (src.length > 120000) src = null; // demasiado pesada: se podrá encuadrar ahora, pero no reencuadrar luego
+  openCrop(src ? await loadImg(src) : raw, src, null);
+}
+async function editAvatar() {
+  const p = S.profile;
+  const img = p.avatar_src ? await loadImg(p.avatar_src) : null;
+  if (!img) return toast('No hay foto original guardada. Vuelve a elegirla', 'bad');
+  openCrop(img, p.avatar_src, p.avatar_crop);
+}
+function openCrop(img, src, saved) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  crop = { img, src, zoom: 1, cx: w / 2, cy: h / 2 };
+  if (saved && typeof saved === 'object') {
+    crop.zoom = Math.min(4, Math.max(1, +saved.zoom || 1));
+    crop.cx = (+saved.x || 0.5) * w; crop.cy = (+saved.y || 0.5) * h;
+    cropClamp();
+  }
   openModal(`
     <div class="modal-head"><h2>Encuadra tu foto</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="crop">
       <div class="crop-stage" id="cropStage"><canvas id="cropCanvas" width="${CROP_VIEW * 2}" height="${CROP_VIEW * 2}"></canvas></div>
-      <label class="crop-zoom">${ic('zoom-out')}<input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Ampliar">${ic('zoom-in')}</label>
+      <label class="crop-zoom">${ic('zoom-out')}<input type="range" id="cropZoom" min="1" max="4" step="0.01" value="${crop.zoom}" aria-label="Ampliar">${ic('zoom-in')}</label>
       <p class="sub center" style="margin:0">Arrastra la foto para moverla y usa el deslizador para ampliarla. Lo que quede dentro del círculo es lo que verá el grupo.</p>
       <div class="actions" style="justify-content:center"><button class="btn primary" data-action="avatar-save">Guardar foto</button><button class="btn ghost" data-action="close">Cancelar</button></div>
     </div>`, async () => { crop = null; });
@@ -1249,8 +1439,11 @@ async function cropSave() {
   let data = c.toDataURL('image/jpeg', 0.85);
   if (data.length > 38000) data = c.toDataURL('image/jpeg', 0.6);
   if (data.length > 40000) return toast('La imagen es demasiado pesada', 'bad');
+  const w = crop.img.naturalWidth, h = crop.img.naturalHeight;
+  const fields = { avatar: data, avatar_src: crop.src || null,
+    avatar_crop: crop.src ? { x: +(crop.cx / w).toFixed(4), y: +(crop.cy / h).toFixed(4), zoom: +crop.zoom.toFixed(3) } : null };
   await closeModal();
-  await saveProfileFields({ avatar: data }, 'Foto actualizada');
+  await saveProfileFields(fields, 'Foto actualizada');
 }
 
 /* ============================== ALUMNO ============================== */
@@ -1627,7 +1820,11 @@ const actions = {
   close() { closeModal(); },
   async logout() { await sb.auth.signOut(); },
   async recheck() { await route(); },
-  async refresh() { if (await loadData()) { render(); toast('Datos actualizados', 'ok'); } },
+  'show-new'() { // muestra las publicaciones que han llegado en directo
+    S.feedQueue.forEach(p => { if (!S.fposts.some(x => x.id === p.id)) S.fposts.unshift(p); });
+    S.feedQueue = []; render();
+    const f = $('.feed'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
   'auth-mode'(el) { viewAuth(el.dataset.mode); },
   async forgot() {
     const email = prompt('Escribe el email de tu cuenta y te enviaremos un enlace para crear una nueva contraseña:');
@@ -1729,7 +1926,7 @@ const actions = {
       const row = { target_type: t, target_id: i, user_id: me, emoji: e };
       const { error } = await sb.from('reactions').insert(row);
       if (error) return toast('No se pudo reaccionar: ' + error.message, 'bad');
-      S.reactions.push({ ...row, created_at: new Date().toISOString() });
+      addUnique(S.reactions, { ...row, created_at: new Date().toISOString() }, 'reactions');
     }
     updateRx(t, i);
   },
@@ -1741,7 +1938,7 @@ const actions = {
     const { data, error } = await sb.from(c.table).insert({ [c.key]: pid, author_id: S.user.id, body }).select().single();
     el.disabled = false;
     if (error) return toast('No se pudo comentar: ' + error.message, 'bad');
-    cmList(kind).push(data);
+    addUnique(cmList(kind), data, c.table); // el tiempo real puede haberlo traído ya
     ta.value = '';
     updateComments(kind, pid);
   },
@@ -1761,7 +1958,7 @@ const actions = {
     const row = { reporter_id: S.user.id, target_type: type, target_id: id, reason: reason.trim().slice(0, 300) || null };
     const { error } = await sb.from('moderation_reports').insert(row);
     if (error) return toast('No se pudo enviar: ' + error.message, 'bad');
-    S.reports.push({ ...row, resolved: false, created_at: new Date().toISOString() });
+    if (!S.reports.some(r => r.reporter_id === row.reporter_id && r.target_type === row.target_type && r.target_id === row.target_id)) S.reports.push({ ...row, resolved: false, created_at: new Date().toISOString() });
     el.outerHTML = '<span class="sub">Denunciado</span>';
     toast('Denuncia enviada. Gracias', 'ok');
   },
@@ -1788,7 +1985,8 @@ const actions = {
     r.resolved = true;
     render(); toast('Denuncia descartada', 'ok');
   },
-  async 'avatar-remove'() { await saveProfileFields({ avatar: null }, 'Foto eliminada'); },
+  async 'avatar-remove'() { await saveProfileFields({ avatar: null, avatar_src: null, avatar_crop: null }, 'Foto eliminada'); },
+  'avatar-edit'() { editAvatar(); },
   'new-post'() { postFormModal(null); },
   'edit-post'(el) { postFormModal(el.dataset.id); },
   async 'toggle-pin'(el) {
@@ -1892,7 +2090,8 @@ document.addEventListener('submit', async e => {
     const { data, error } = await sb.from('feed_posts').insert({ author_id: S.user.id, body, link_url: link || null }).select().single();
     btn.disabled = false;
     if (error) return toast('No se pudo publicar: ' + error.message, 'bad');
-    S.fposts.unshift(data); render(); toast('Publicado', 'ok');
+    if (!S.fposts.some(x => x.id === data.id)) S.fposts.unshift(data);
+    render(); toast('Publicado', 'ok');
   } else if (f.id === 'nameForm') {
     e.preventDefault();
     const name = f.elements['display_name'].value.trim();
@@ -1929,7 +2128,7 @@ document.addEventListener('submit', async e => {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.section = 'home'; viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.section = 'home'; viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });

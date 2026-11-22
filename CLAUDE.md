@@ -84,7 +84,15 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
   - **Navegación estilo app**: `sidebar()` (menú lateral `.nav`), `topbar()`, `tabbar()` (barra inferior en móvil de 760px o menos) y `railView()` (columna derecha de 1180px o más, oculta en Inicio). Las secciones se definen en `sections()`. Los iconos son un sprite SVG en `<body>` y se usan con `ic('nombre')`; cada sección usa el icono con su mismo id.
   - Botones: `.btn` es secundario (tintado); `.btn.primary` y `.btn[type=submit]` son sólidos con glow.
   - El logo es `logo.png`, en la raíz del repo; se usa en el menú, el login y el favicon.
-  - **Foto de perfil**: `processAvatar` abre un modal de encuadre (arrastrar, deslizador y rueda) y `cropSave` genera un JPEG de 160×160.
+  - **Foto de perfil**: `processAvatar` abre un modal de encuadre (arrastrar, deslizador y rueda) y `cropSave` genera un JPEG de 160×160 (`avatar`). Además guarda `avatar_src`, una copia de la original de 640 px como máximo y 120.000 caracteres, y `avatar_crop` (`{x, y, zoom}` relativos), para que "Editar encuadre" (`editAvatar`) no obligue a resubirla. `avatar_src` solo la leen su dueño y el profesor; `get_directory` no la expone, y la lista de alumnos del profesor pide columnas concretas para no traerla. **Si añades campos a `profiles`, añádelos a ese `select`.**
+- **Tiempo real (2026-11-22)**: ya no hay botón Actualizar. `rtStart()` se suscribe a un canal con `postgres_changes` de las tablas de `RT_TABLES`, que están en la publicación `supabase_realtime` (en `schema.sql`), y `rtHandle()` aplica cada cambio.
+  - **Feed**: los posts de otros van a `S.feedQueue` y se muestran con el botón "↑ N publicaciones nuevas" (`newPill`/`show-new`).
+  - **Reacciones y comentarios**: se actualizan en su sitio (`updateRx`/`updateComments`).
+  - **El resto**: llama a `softRender()`, que no repinta si hay un modal abierto o texto a medias. En ese caso solo refresca el menú, la barra inferior y la columna derecha (`refreshChrome`) y repinta al cerrar el modal.
+  - **Duplicados**: los añadidos locales usan `addUnique` para no duplicar el eco.
+  - **Alumno**: algunos cambios llegan incompletos y la app pide lo que falta, como `board_recipients` → el aviso, o `listening_assignments` → el elemento.
+  - **Reconexión**: al reconectar, o al volver a la pestaña tras más de 1 minuto, `rtResync()` recarga en silencio.
+  - Realtime respeta RLS en INSERT/UPDATE; los DELETE llegan a todos, pero solo con la clave primaria.
 - **Navegador**: guarda la sesión de Supabase Auth y la preferencia de tema en localStorage (`ya-theme`, con try/catch). Ningún dato de la app va a localStorage.
 
 ## Modelo de datos y seguridad (`supabase.sql`)
@@ -128,7 +136,7 @@ No empieces un módulo nuevo sin confirmar el alcance con Yuri mediante pregunta
 cd tests && npm install && npx playwright install chromium && npm test
 ```
 
-- Yuri no quiere nada instalado en C:. **No uses `npx playwright install`** (descarga Chromium en C:). Instala con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` y lanza las pruebas con su Chrome: `CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe" npm test`. En la última ejecución pasaron 118 comprobaciones.
+- Yuri no quiere nada instalado en C:. **No uses `npx playwright install`** (descarga Chromium en C:). Instala con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` y lanza las pruebas con su Chrome: `CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe" npm test`. En la última ejecución pasaron 140 comprobaciones. `test-realtime.js` simula cambios de otras personas con `window.__rtExternal(tabla, fila)`, `__rtExternalUpdate` y `__rtExternalDelete`. El falso Supabase emite eventos imitando RLS.
 - Para verlo en el navegador integrado: `.claude/launch.json` → "pruebas" sirve `tests/` con un servidor estático; `test.html?me=s1` (alumna) o `?me=t1` (profesor) simula la sesión. El servidor está en el scratchpad de la sesión: si no existe, vuelve a crearlo.
 - `build-test.js` genera `tests/test.html` a partir de `../index.html`, sustituyendo supabase-js y `config.js` por `seed.js`, `fake-supabase.js` y `config.test.js`.
 - `test-core.js` tiene 48 comprobaciones y `test-social.js` tiene 68. Las capturas se guardan en `tests/shots/`. **Mira las capturas** después de cambiar la interfaz.
