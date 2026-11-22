@@ -154,6 +154,7 @@ cd tests && npm install && npx playwright install chromium && npm test
 
 ## Reglas de trabajo con Supabase y GitHub
 
+- **Seguridad (decisión de Yuri, 2026-11-23)**: los arreglos de seguridad y privacidad **no destructivos** (permisos, RLS, endurecer funciones) se aplican sin preguntar y después se le explican. Ejemplo: `can_dm` solo responde a los implicados y `dm_ok` no se puede ejecutar desde fuera, para que nadie deduzca quién es menor.
 - **Producción con datos reales de menores**. Enseña el SQL antes de ejecutarlo y pide aprobación. Nada destructivo (`drop`, `delete`, `truncate`, cambios de tipo) sin avisar explícitamente. Si hace falta, propón primero una copia de seguridad: exportar a CSV o hacer un `select` previo.
 - Limita el conector MCP de Supabase al proyecto (`project_ref`). Las políticas y los cambios de esquema van **siempre** también en `supabase/schema.sql`, que debe seguir siendo idempotente.
 - Ajustes del panel que quizá no estén en el MCP: Authentication → URL Configuration (Site URL y Redirect URLs = la URL de la web). Si no puedes hacerlo tú, explícale a Yuri dónde pulsar, paso a paso.
