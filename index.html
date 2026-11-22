@@ -1380,13 +1380,21 @@ function feedView() {
   return `${forYou()}<form id="feedForm" class="panel composer">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
-        <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión o un enlace de música…"></textarea>
-        <input type="text" name="link" maxlength="500" placeholder="Enlace (opcional): Spotify, YouTube…">
+        <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión o pega un enlace de Spotify o YouTube…"></textarea>
         <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
       : `<div class="empty">Todavía no hay publicaciones. ¡Estrena el feed!</div>`}`;
+}
+
+// Primer enlace de un texto (con o sin https://), normalizado; null si no hay o no es válido
+function firstLink(text) {
+  const m = String(text).match(/https?:\/\/[^\s<]+|\b(?:www\.|open\.spotify\.com\/|spotify\.link\/|youtu\.be\/|(?:m\.|music\.)?youtube\.com\/)[^\s<]*/i);
+  if (!m) return null;
+  let u = m[0].replace(/[.,;:!?)\]]+$/, '');
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  try { return u.length <= 500 ? new URL(u).href : null; } catch { return null; }
 }
 
 // Botón "↑ N publicaciones nuevas" (no mete los posts de golpe para que la página no salte mientras lees)
@@ -2618,10 +2626,8 @@ document.addEventListener('submit', async e => {
   } else if (f.id === 'feedForm') {
     e.preventDefault();
     const body = f.elements['body'].value.trim();
-    let link = f.elements['link'].value.trim();
     if (!body) return toast('Escribe algo para publicar', 'bad');
-    if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
-    if (link) { try { new URL(link); } catch { return toast('Ese enlace no parece válido', 'bad'); } }
+    const link = firstLink(body); // el primer enlace del texto se muestra como tarjeta (Spotify, YouTube…)
     const btn = $('button[type=submit]', f); btn.disabled = true;
     const { data, error } = await sb.from('feed_posts').insert({ author_id: S.user.id, body, link_url: link || null }).select().single();
     btn.disabled = false;

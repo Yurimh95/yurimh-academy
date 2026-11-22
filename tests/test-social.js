@@ -27,11 +27,12 @@ const { chromium } = require('playwright');
   ok(await p.locator('.fpost:has-text("Joe Pass") .linkcard:has-text("Spotify")').count()===1, 'Enlace con tarjeta Spotify');
   ok((await p.locator('img[src^="javascript"]').count())===0 && (await p.locator('.av.ini').count())>0, 'Avatar manipulado (javascript:) NO se pinta; se usa la inicial');
   ok((await p.locator('.fpost:has-text("Bienvenidos") [data-action=comment-delete], .fpost:has-text("Bienvenidos") [data-action=feed-delete]').count())===0, 'Marta no puede eliminar contenido ajeno');
-  // publicar con enlace sin esquema
-  await p.fill('#feedForm [name=body]','Probando mi primera publicación'); await p.fill('#feedForm [name=link]','open.spotify.com/x');
+  // publicar con un enlace dentro del texto (sin https://): ya no hay recuadro aparte para el enlace
+  ok((await p.locator('#feedForm [name=link]').count())===0, 'Al publicar no hay recuadro aparte de "Enlace"');
+  await p.fill('#feedForm [name=body]','Probando mi primera publicación open.spotify.com/x.');
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(300);
-  const np = await dbq(p,()=>window.__DB.feed_posts.find(x=>x.body==='Probando mi primera publicación'));
-  ok(np&&np.link_url==='https://open.spotify.com/x'&&np.author_id==='s1', 'Publicación guardada, enlace normalizado a https://');
+  const np = await dbq(p,()=>window.__DB.feed_posts.find(x=>x.body.startsWith('Probando mi primera publicación')));
+  ok(np&&np.link_url==='https://open.spotify.com/x'&&np.author_id==='s1', 'El enlace del texto se detecta solo y se normaliza a https:// (tarjeta de Spotify)');
   ok((await p.locator('.fpost').count())===4, 'Aparece en el feed (4)');
   // reacciones
   const card = '.fpost:has-text("Bienvenidos")';
