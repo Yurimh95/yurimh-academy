@@ -1,3 +1,6 @@
 # Copias de seguridad de la base de datos: contienen emails y datos de alumnos.
 # El repositorio es PÚBLICO, así que nunca deben subirse a GitHub.
 backups/
+
+# Configuración local de vista previa (rutas de este ordenador)
+.claude/launch.json

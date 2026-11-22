@@ -80,8 +80,12 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
   - `REACTIONS`: un set fijo de 6, que son 👍🏼 ❤️ 😂 😮 😢 😡.
   - `TARGET_TABLE` / `TARGET_LABEL`: los tipos de contenido a los que se puede reaccionar o denunciar.
 - **Exportar respuestas** (alumno): copiar para WhatsApp, compartir nativo, TXT y PNG.
-- **Diseño**: oscuro con un glow neón **muy sutil**. Los tokens CSS son `--accent` (cian), `--violet`, `--ok`, `--warn` y `--bad`. En pantallas de 520px o menos, la navegación pasa a dos filas. Debe verse bien en móvil, porque muchos alumnos entrarán desde ahí.
-- **Navegador**: solo guarda la sesión de Supabase Auth. Ningún dato de la app va a localStorage.
+- **Diseño (v3, 2026-11-22)**: usa los colores de la marca personal de Yuri: azul eléctrico `#2f86ff`, cian neón `#3ff0ff` y fondo azul marino `#050b1c`, sacados de su app "Lista de Deseos". Hay **dos temas**, `html[data-theme="dark"|"light"]`, con las mismas variables (`--bg`, `--panel`, `--panel2`, `--field`, `--line`, `--text`, `--strong`, `--muted`, `--faint`, `--accent`, `--neon`, `--violet`, `--ok`, `--warn`, `--bad`, más sus `-rgb`, y `--glow`). **No metas colores fijos en el CSS**: usa siempre las variables, o el modo claro se rompe. El neón solo va en acentos: la sección activa, los botones principales y el aro del profesor.
+  - **Navegación estilo app**: `sidebar()` (menú lateral `.nav`), `topbar()`, `tabbar()` (barra inferior en móvil de 760px o menos) y `railView()` (columna derecha de 1180px o más, oculta en Inicio). Las secciones se definen en `sections()`. Los iconos son un sprite SVG en `<body>` y se usan con `ic('nombre')`; cada sección usa el icono con su mismo id.
+  - Botones: `.btn` es secundario (tintado); `.btn.primary` y `.btn[type=submit]` son sólidos con glow.
+  - El logo es `logo.png`, en la raíz del repo; se usa en el menú, el login y el favicon.
+  - **Foto de perfil**: `processAvatar` abre un modal de encuadre (arrastrar, deslizador y rueda) y `cropSave` genera un JPEG de 160×160.
+- **Navegador**: guarda la sesión de Supabase Auth y la preferencia de tema en localStorage (`ya-theme`, con try/catch). Ningún dato de la app va a localStorage.
 
 ## Modelo de datos y seguridad (`supabase.sql`)
 
@@ -124,6 +128,8 @@ No empieces un módulo nuevo sin confirmar el alcance con Yuri mediante pregunta
 cd tests && npm install && npx playwright install chromium && npm test
 ```
 
+- Yuri no quiere nada instalado en C:. **No uses `npx playwright install`** (descarga Chromium en C:). Instala con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` y lanza las pruebas con su Chrome: `CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe" npm test`. En la última ejecución pasaron 118 comprobaciones.
+- Para verlo en el navegador integrado: `.claude/launch.json` → "pruebas" sirve `tests/` con un servidor estático; `test.html?me=s1` (alumna) o `?me=t1` (profesor) simula la sesión. El servidor está en el scratchpad de la sesión: si no existe, vuelve a crearlo.
 - `build-test.js` genera `tests/test.html` a partir de `../index.html`, sustituyendo supabase-js y `config.js` por `seed.js`, `fake-supabase.js` y `config.test.js`.
 - `test-core.js` tiene 48 comprobaciones y `test-social.js` tiene 68. Las capturas se guardan en `tests/shots/`. **Mira las capturas** después de cambiar la interfaz.
 - `fake-supabase.js` imita las RLS a mano. **Si cambias el esquema o las políticas, actualízalo**, porque si no los tests mienten.

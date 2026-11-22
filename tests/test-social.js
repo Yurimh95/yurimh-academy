@@ -14,7 +14,8 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(400);
     return page;
   }
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]`); await p.waitForTimeout(150); };
+  // Menú lateral en escritorio, barra inferior en móvil: se pulsa el que esté visible.
+  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
   const dbq = (p,fn,arg)=>p.evaluate(fn,arg);
 
   // ================= ALUMNA: Marta =================
@@ -127,10 +128,19 @@ const { chromium } = require('playwright');
   await p.fill('#nameForm [name=nickname]','Marti'); await p.click('#nameForm button[type=submit]'); await p.waitForTimeout(300);
   ok((await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').nickname))==='Marti', 'Apodo guardado');
   const png = await p.evaluate(()=>{const c=document.createElement('canvas');c.width=300;c.height=200;const x=c.getContext('2d');x.fillStyle='#e33';x.fillRect(0,0,300,200);x.fillStyle='#39f';x.fillRect(100,50,100,100);return c.toDataURL('image/png').split(',')[1];});
-  await p.setInputFiles('#avatarFile',{name:'a.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')}); await p.waitForTimeout(600);
+  const avBefore = await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar);
+  await p.setInputFiles('#avatarFile',{name:'a.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')}); await p.waitForTimeout(400);
+  ok(await p.locator('.modal #cropStage canvas').count()===1, 'Al elegir foto se abre el encuadre');
+  // Encuadre: arrastrar a la izquierda y ampliar
+  const box = await p.locator('#cropStage').boundingBox();
+  await p.mouse.move(box.x+box.width/2, box.y+box.height/2); await p.mouse.down(); await p.mouse.move(box.x+box.width/2-60, box.y+box.height/2, {steps:5}); await p.mouse.up();
+  await p.fill('#cropZoom','2');
+  await p.screenshot({path:require('path').join(__dirname,'shots','s_encuadre.png')});
+  ok(await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar)===avBefore, 'Nada se guarda hasta pulsar Guardar');
+  await p.click('[data-action=avatar-save]'); await p.waitForTimeout(500);
   const av = await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar);
   ok(av&&av.startsWith('data:image/jpeg;base64,')&&av.length<40000, 'Foto recortada y reducida a JPEG ('+(av?av.length:0)+' caracteres)');
-  ok((await p.locator('.top-r img.av').count())===1 && (await p.locator('#app .panel img.av').count())===1, 'Foto visible en cabecera y en el perfil');
+  ok((await p.locator('.me img.av').count())===1 && (await p.locator('#app .panel img.av').count())===1, 'Foto visible en el menú y en el perfil');
   await goto(p,'feed');
   ok((await p.textContent('.fpost:has-text("Probando mi primera")')).includes('Marti'), 'En el feed ahora aparece como "Marti"');
   ok(await p.locator('.fpost:has-text("Probando mi primera") img.av').count()===1, 'Con su foto en el feed');

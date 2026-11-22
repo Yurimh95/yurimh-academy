@@ -8,5 +8,6 @@ if (!cdn.test(html) || !html.includes('<script src="config.js"></script>')) {
 html = html.replace(cdn, '<script src="seed.js"></script><script src="fake-supabase.js"></script>')
            .replace('<script src="config.js"></script>', '<script src="config.test.js"></script>');
 fs.writeFileSync(path.join(__dirname, 'test.html'), html);
+fs.copyFileSync(path.join(__dirname, '..', 'logo.png'), path.join(__dirname, 'logo.png')); // el logo que usa la interfaz
 fs.mkdirSync(path.join(__dirname, 'shots'), { recursive: true });
 console.log('tests/test.html generado');
