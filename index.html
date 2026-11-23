@@ -1351,16 +1351,8 @@ function railView() {
   const faces = Object.values(S.dir).filter(d => d.id !== S.user.id).slice(0, 24);
   const facesCard = faces.length ? `<section class="rail-card"><h3>${isTeacher() ? 'Tu grupo' : 'Compañeros'}</h3>
     <div class="faces">${faces.map(d => `<span title="${esc(d.public_name)}">${whoLink(d.id, avatarHtml(d.id, 34))}</span>`).join('')}</div></section>` : '';
-  if (isTeacher()) {
-    const pend = S.students.filter(s => !s.approved).length;
-    const reps = S.reports.filter(r => !r.resolved).length;
-    const over = S.assigns.filter(isOverdue).length;
-    const row = (icon, label, n, cls, s) => `<div class="rail-row" data-action="section" data-s="${s}"><span class="ic">${ic(icon)}</span><div class="t"><b>${label}</b></div><span class="num ${n ? cls : ''}">${n}</span></div>`;
-    return `<section class="rail-card"><h3>Pendiente</h3>
-      ${row('students', 'Por aprobar', pend, 'warn', 'students')}
-      ${row('flag', 'Denuncias', reps, 'warn', 'mod')}
-      ${row('clock', 'Escuchas vencidas', over, 'bad', 'mod')}</section>${facesCard}`;
-  }
+  // Profesor: lo pendiente (alumnos por aprobar, denuncias, vencidas) está en Moderación, no aquí
+  if (isTeacher()) return facesCard;
   const pend = S.assigns.filter(a => !a.listened).sort(dueSort).slice(0, 4);
   return `<section class="rail-card"><h3>Tus escuchas</h3>
     ${pend.length ? pend.map(a => { const d = dueInfo(a); return `<div class="rail-row" data-action="home-open-assign" data-id="${a.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(a.item.title)}</b><span class="sub" style="${d.cls ? `color:var(--${d.cls})` : ''}">${esc(d.text)}</span></div></div>`; }).join('')
