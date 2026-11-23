@@ -28,7 +28,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 ## Qué es la app
 
 - **Web**: https://yurimh95.github.io/yurimh-music-academy/ (GitHub Pages, repo público `yurimh-music-academy`, rama `main`, raíz).
-- **Backend**: Supabase. Proyecto `yurimh-academy` en la organización "Yurimh Academy", región Europa, plan gratuito. Usa Auth con email y contraseña, Postgres con Row Level Security y supabase-js v2 cargado desde jsDelivr.
+- **Backend**: Supabase. Proyecto "Yurimh Music Academy" (ref `gyzwevayeloishhldumd`) en la organización "Yurimh Music Academy", región Europa, plan gratuito. Usa Auth con email y contraseña, Postgres con Row Level Security y supabase-js v2 cargado desde jsDelivr.
 - **Usuarios**: alumnos de guitarra, **mezcla de adultos y menores**. La privacidad entre alumnos es un requisito fuerte. Hay un único profesor: Yuri.
 - **Registro**: libre. Toda cuenta nueva nace como `student` y sin aprobar, y el profesor la aprueba. El rol `teacher` solo se asigna por SQL.
 
@@ -60,7 +60,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 ## Convenciones de nombres
 
-- La app se llama **Yurimh Music Academy** (constante `APP_NAME`; renombrada el 2026-11-23, antes "Yurimh Academy", porque Yuri enseña también composición, teoría y producción). Donde no cabe se usa `APP_SHORT = 'Yurimh'` (barra superior del móvil, `short_name` del manifest y título de Apple). El subtítulo "Clases de guitarra" se queda. El repo y la web pasaron a `yurimh-music-academy`; la dirección vieja da 404. Supabase sigue llamándose `yurimh-academy` por dentro (no se ve). Cada módulo tiene su constante de nombre visible, por ejemplo `MODULE_LISTENING = 'Escucha analítica'`.
+- La app se llama **Yurimh Music Academy** (constante `APP_NAME`; renombrada el 2026-11-23, antes "Yurimh Academy", porque Yuri enseña también composición, teoría y producción). Donde no cabe se usa `APP_SHORT = 'Yurimh'` (barra superior del móvil, `short_name` del manifest y título de Apple). El subtítulo "Clases de guitarra" se queda. El repo y la web pasaron a `yurimh-music-academy`; la dirección vieja da 404. La organización y el proyecto de Supabase también se renombraron (solo etiquetas; el ref no cambia). Cada módulo tiene su constante de nombre visible, por ejemplo `MODULE_LISTENING = 'Escucha analítica'`.
 - **Tablas**: lo común va sin prefijo (`profiles`, `reactions`, `moderation_reports`). Cada módulo lleva su prefijo: `listening_*` (Escucha analítica), `board_*` (Avisos), `feed_*` (Feed). Los módulos futuros serán `chat_*`, `payments_*` y `homework_*`. Todo en inglés y `snake_case`.
 - **Políticas**: `<tabla>_<acción>[_<rol>]`. **Triggers**: `<tabla>_<algo>_trg`.
 - **Interfaz**: un menú superior con una pestaña por módulo (Inicio, Avisos, Feed, Escucha analítica, Alumnos solo para el profesor, Perfil).

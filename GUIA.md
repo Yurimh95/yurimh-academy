@@ -16,7 +16,7 @@
 | Qué | Nombre |
 |---|---|
 | App | **Yurimh Music Academy** (cambiable en `APP_NAME`, dentro de `index.html`) |
-| Organización / proyecto en Supabase | Yurimh Academy / `yurimh-academy` (nombres internos, no se ven) |
+| Organización / proyecto en Supabase | Yurimh Music Academy / Yurimh Music Academy (solo se ven en el panel; el identificador interno es `gyzwevayeloishhldumd`) |
 | Repositorio de GitHub | `yurimh-music-academy` |
 | Web | `https://yurimh95.github.io/yurimh-music-academy/` |
 
@@ -71,7 +71,7 @@ Cuando acabes, bórralas en *Authentication → Users*.
 
 ## B. INSTALACIÓN desde cero (resumen)
 
-1. **Supabase**: crea la organización y el proyecto (`yurimh-academy`, región Europa). En *Data access* deja marcado *Enable Data API* y marca *Enable RLS on new tables automatically*.
+1. **Supabase**: crea la organización y el proyecto (Yurimh Music Academy, región Europa). En *Data access* deja marcado *Enable Data API* y marca *Enable RLS on new tables automatically*.
 2. **SQL**: ejecuta `supabase/schema.sql` completo en el SQL Editor.
 3. **Claves**: crea `config.js` con tu Project URL y tu Publishable key.
 4. **GitHub Pages**: repositorio público `yurimh-music-academy` con `index.html` y `config.js`. Después, *Settings → Pages → Deploy from a branch → `main` / `(root)`*.
