@@ -1612,8 +1612,7 @@ function profileView() {
         <label class="f a-3">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
         <label class="f a-3">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
         <label class="f a-3">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
-        <label class="f a-2">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
-        <label class="f a-2">Ahora estoy aprendiendo<input type="text" name="learning" maxlength="200" value="${esc(p.learning || '')}" placeholder="Ej.: el solo de Fade to Black, sweep picking"></label>
+        <label class="f a-bio">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
       </div>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
     </form>
@@ -2247,9 +2246,8 @@ async function profileModal(id) {
       ${p.bio ? `<p class="pf-bio">${linkify(p.bio)}</p>` : ''}
     </div>
     ${field('Grupos y estilos favoritos', p.favorites)}
-    ${field('Ahora está aprendiendo', p.learning)}
     ${field('Su equipo', p.gear)}
-    ${!p.bio && !p.favorites && !p.learning && !p.gear && !chips.length ? `<p class="sub center">${mine ? 'Aún no has rellenado tu perfil.' : 'Todavía no ha rellenado su perfil.'}</p>` : ''}
+    ${!p.bio && !p.favorites && !p.gear && !chips.length ? `<p class="sub center">${mine ? 'Aún no has rellenado tu perfil.' : 'Todavía no ha rellenado su perfil.'}</p>` : ''}
     <div class="actions" style="justify-content:center;margin-top:16px">
       ${mine ? '<button class="btn" data-action="section" data-s="profile">Editar mi perfil</button>'
         : p.can_message ? `<button class="btn primary" data-action="dm-open" data-id="${id}">Enviar mensaje</button>`
@@ -2762,7 +2760,7 @@ document.addEventListener('submit', async e => {
   } else if (f.id === 'aboutForm') {
     e.preventDefault();
     const v = k => f.elements[k].value.trim() || null;
-    await saveProfileFields({ bio: v('bio'), instrument: v('instrument'), level: v('level'), favorites: v('favorites'), learning: v('learning'), gear: v('gear') }, 'Perfil guardado');
+    await saveProfileFields({ bio: v('bio'), instrument: v('instrument'), level: v('level'), favorites: v('favorites'), gear: v('gear') }, 'Perfil guardado');
   } else if (f.id === 'dmForm') {
     e.preventDefault();
     const ta = f.elements['body'], body = ta.value.trim(), to = f.dataset.to;

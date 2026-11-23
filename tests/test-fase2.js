@@ -63,9 +63,9 @@ const { chromium } = require('playwright');
   // Su propio perfil
   await goto(p,'profile');
   await p.fill('#aboutForm [name=bio]','Me encanta el metal'); await p.selectOption('#aboutForm [name=instrument]','electric'); await p.selectOption('#aboutForm [name=level]','beginner');
-  await p.fill('#aboutForm [name=learning]','Seek & Destroy'); await p.click('#aboutForm button[type=submit]'); await wait(p,350);
+  ok((await p.locator('#aboutForm [name=learning]').count())===0, 'Sin el campo \"Ahora estoy aprendiendo\"'); await p.click('#aboutForm button[type=submit]'); await wait(p,350);
   const me1 = await db(p,()=>window.__DB.profiles.find(x=>x.id==='s1'));
-  ok(me1.bio==='Me encanta el metal' && me1.instrument==='electric' && me1.level==='beginner' && me1.learning==='Seek & Destroy', 'Guarda "Sobre ti" (bio, instrumento, nivel, aprendiendo)');
+  ok(me1.bio==='Me encanta el metal' && me1.instrument==='electric' && me1.level==='beginner', 'Guarda "Sobre ti" (bio, instrumento, nivel)');
   ok(!(await p.evaluate(async()=>JSON.stringify((await sb.rpc('get_directory')).data))).includes('2013'), 'Su fecha de nacimiento no sale en el directorio');
 
   // Notificaciones
