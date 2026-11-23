@@ -896,10 +896,26 @@ const plainText = text => String(text ?? '').replace(MENTION_RE, (m, u, l, s) =>
 /* ---- Escribir menciones: al teclear @ o # sale una lista para elegir (flechas + Enter, o pulsar) ---- */
 const MENTION_INPUTS = '#feedForm textarea, #postForm textarea, .cm-new textarea';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-function mentionCandidates(kind) {
-  if (kind === '@') return Object.values(S.dir).filter(d => d.id !== S.user.id)
+// A quién puede mencionar un alumno: al profesor, a sus compañeros y a quien participa en esa misma
+// conversación (autor y comentaristas), como en Facebook. Nunca una lista de todo el grupo: a los demás
+// se les descubre en lo que publican. El profesor puede mencionar a cualquiera.
+function mentionPeople(ta) {
+  if (isTeacher()) return Object.keys(S.dir).filter(id => id !== S.user.id);
+  const ids = new Set(myMates());
+  Object.values(S.dir).forEach(d => { if (d.role === 'teacher') ids.add(d.id); });
+  const m = ta && ta.id && ta.id.match(/^cmInput-(feed|listening)-(.+)$/);
+  if (m) {
+    const kind = m[1], pid = m[2], c = CM[kind];
+    cmList(kind).filter(x => x[c.key] === pid).forEach(x => ids.add(x.author_id));
+    if (kind === 'feed') { const p = S.fposts.find(x => x.id === pid); if (p) ids.add(p.author_id); }
+  }
+  ids.delete(S.user.id);
+  return [...ids].filter(id => S.dir[id]);
+}
+function mentionCandidates(kind, ta) {
+  if (kind === '@') return mentionPeople(ta).map(id => S.dir[id])
     .sort((a, b) => String(a.public_name).localeCompare(String(b.public_name), 'es'))
-    .map(d => ({ label: d.public_name, token: `<@${d.id}>`, pic: avatarHtml(d.id, 28), sub: d.role === 'teacher' ? 'Profesor' : '' }));
+    .map(d => ({ label: d.public_name, token: `<@${d.id}>`, pic: avatarHtml(d.id, 28), sub: d.role === 'teacher' ? 'Profesor' : (isTeacher() || mateState(d.id) !== 'mates' ? '' : 'Compañero') }));
   const items = isTeacher() ? S.items : S.assigns.map(a => a.item).filter(Boolean), seen = new Set();
   return sections().map(s => ({ label: s.label, token: `<#${s.id}>`, pic: `<span class="ic">${ic(s.icon || s.id)}</span>`, sub: 'Sección' }))
     .concat(items.filter(i => !seen.has(i.id) && seen.add(i.id))
@@ -912,7 +928,7 @@ function mentionCheck(ta) {
   if (!m) return mentionClose();
   const q = fold(m[3]);
   const score = c => { const f = fold(c.label); return f.startsWith(q) ? 0 : f.split(/[\s\-_.,(]+/).some(w => w.startsWith(q)) ? 1 : -1; };
-  const list = mentionCandidates(m[2]).map(c => ({ ...c, sc: score(c) })).filter(c => c.sc >= 0)
+  const list = mentionCandidates(m[2], ta).map(c => ({ ...c, sc: score(c) })).filter(c => c.sc >= 0)
     .sort((a, b) => a.sc - b.sc).slice(0, 8);
   if (!list.length) return mentionClose();
   mx = { ta, start: pos - m[3].length - 1, kind: m[2], list, sel: 0 };
@@ -951,7 +967,7 @@ function mentionEncode(ta) {
   const text = ta.value.trim(), map = new Map(), dup = new Set();
   (ta._mentions || []).forEach(k => map.set(k.text.toLowerCase(), k.token));
   const picked = new Set(map.keys());
-  ['@', '#'].forEach(kind => mentionCandidates(kind).forEach(c => {
+  ['@', '#'].forEach(kind => mentionCandidates(kind, ta).forEach(c => {
     const k = (kind + c.label).toLowerCase(); if (picked.has(k)) return;
     if (map.has(k) && map.get(k) !== c.token) dup.add(k); else map.set(k, c.token);
   }));
@@ -2077,7 +2093,7 @@ function settingsView() {
       <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
       ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
         : `<ul class="plist">
-          <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. Si no participas, solo tu profesor sabe que estás.</li>
+          <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo tu profesor sabe que estás.</li>
           <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
           <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
         <h3 class="h3">Personas bloqueadas</h3>
@@ -2927,10 +2943,15 @@ async function refreshDmContacts() {
 }
 async function newDmModal() {
   await refreshDmContacts();
-  const people = S.dmContacts.filter(id => S.dir[id]).sort((a, b) => whoName(a).localeCompare(whoName(b)));
+  // El alumno solo ve aquí al profesor y a sus compañeros: no es un buscador de gente.
+  // A cualquier otro se le escribe desde su perfil (pulsando su nombre en lo que publica).
+  const mates = new Set(myMates());
+  const people = S.dmContacts.filter(id => S.dir[id] && (isTeacher() || isTeacherId(id) || mates.has(id)))
+    .sort((a, b) => whoName(a).localeCompare(whoName(b)));
   openModal(`<div class="modal-head"><h2>Nuevo mensaje</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     ${people.length ? `<div class="list">${people.map(id => `<div class="row click" data-action="dm-open" data-id="${id}"><div class="rowav">${avatarHtml(id, 36)}<strong>${esc(whoName(id))}</strong>${teacherTag(id)}</div></div>`).join('')}</div>`
       : '<div class="empty small">Ahora mismo no puedes escribir en privado a nadie más.</div>'}
+    ${isTeacher() ? '' : '<p class="sub" style="margin:14px 0 0">Aquí salen tu profesor y tus compañeros. Para escribir a otra persona, pulsa su nombre o su foto en algo que haya publicado o comentado.</p>'}
     ${!isTeacher() && !S.profile.family_dm_ok && isMinorProfile(S.profile) ? '<p class="sub" style="margin:14px 0 0">Como eres menor, solo puedes escribir a tu profesor. Si tu familia lo autoriza, él puede activarte los mensajes con compañeros.</p>' : ''}`);
   $('.modal').classList.add('narrow');
 }
@@ -3653,7 +3674,7 @@ function privacyModal() {
       <p><b>Quién es el responsable.</b> Yuri, el profesor de las clases, es quien gestiona esta app y tus datos. Para cualquier duda o petición sobre ellos, escríbele por Mensajes.</p>
       <p><b>Qué datos se guardan.</b> Los que tú das al registrarte y al usar la app: nombre (y apodo, si pones uno), email, fecha de nacimiento, foto de perfil, lo que escribes en "Sobre ti", tus publicaciones, comentarios, reacciones y mensajes, tus respuestas de las escuchas y tus deberes. El profesor apunta además las fechas de tus clases y, solo para él, los pagos.</p>
       <p><b>Para qué.</b> Únicamente para organizar las clases: avisos, escuchas, deberes, comunicación entre el grupo y el seguimiento de las clases. No se usan para publicidad, no se venden y no se comparten con nadie.</p>
-      <p><b>Quién ve qué.</b> Los demás alumnos solo te ven cuando participas (publicas, comentas o reaccionas), si os habéis agregado como compañeros o si os habéis escrito. Entonces ven tu nombre o apodo, tu foto, tu "Sobre ti" y lo que publicas. Si no participas, solo el profesor sabe que estás. Solo el profesor ve tu email, tu fecha de nacimiento, tus respuestas, tus deberes y tus pagos. Los mensajes privados solo los leéis quienes participáis; el profesor solo ve un mensaje si alguien lo denuncia.</p>
+      <p><b>Quién ve qué.</b> Los demás alumnos solo te ven cuando participas (publicas, comentas o reaccionas), si os habéis agregado como compañeros o si os habéis escrito. Entonces ven tu nombre o apodo, tu foto, tu "Sobre ti" y lo que publicas. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo el profesor sabe que estás. Solo el profesor ve tu email, tu fecha de nacimiento, tus respuestas, tus deberes y tus pagos. Los mensajes privados solo los leéis quienes participáis; el profesor solo ve un mensaje si alguien lo denuncia.</p>
       <p><b>Dónde se guardan.</b> En Supabase, con servidores en la Unión Europea, protegidos con contraseña y con reglas que impiden que nadie lea lo que no le corresponde. La web se sirve desde GitHub Pages. La app no usa cookies de publicidad ni rastreadores; tu navegador solo guarda tu sesión y si prefieres el tema claro u oscuro.</p>
       <p><b>Cuánto tiempo.</b> Mientras tengas cuenta. Si dejas las clases o lo pides, se borra tu cuenta y, con ella, tus datos.</p>
       <p><b>Tus derechos.</b> Puedes pedir en cualquier momento ver, corregir o borrar tus datos, o retirar tu permiso. Pídelo al profesor por Mensajes. Si crees que algo no se ha hecho bien, puedes reclamar a la Agencia Española de Protección de Datos (aepd.es).</p>

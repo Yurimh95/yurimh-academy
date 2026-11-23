@@ -113,7 +113,29 @@ const { chromium } = require('playwright');
   p = await open('s4', silent);
   d = await dir(p);
   ok(d.includes('t1') && d.includes('s1') && d.includes('s2'), 'Sara ve al profesor y a los que han participado');
-  ok((await p.evaluate(() => S.dmContacts)).every(id => ['t1', 's2'].includes(id)), 'En "Nuevo mensaje" solo salen personas visibles');
+  ok((await p.evaluate(() => S.dmContacts)).every(id => ['t1', 's2'].includes(id)), 'Los contactos de mensajes solo incluyen personas visibles');
+  // No hay listas de gente: ni "Nuevo mensaje" ni las menciones enseñan a quien no es compañero
+  await goto(p, 'messages');
+  await p.click('[data-action=dm-new]'); await p.waitForTimeout(250);
+  const dmList = await p.$$eval('.modal .list [data-action=dm-open]', els => els.map(e => e.dataset.id));
+  ok(dmList.length === 1 && dmList[0] === 't1', '"Nuevo mensaje" solo enseña al profesor (Sara aún no tiene compañeros): ' + dmList.join(','));
+  await p.click('.modal [data-action=close]'); await p.waitForTimeout(150);
+  await goto(p, 'feed');
+  await p.click('#feedForm [name=body]'); await p.type('#feedForm [name=body]', 'Hola @');
+  await p.waitForTimeout(100);
+  const atNew = await p.$$eval('#mentionBox .mopt b', els => els.map(e => e.textContent));
+  ok(atNew.length === 1 && atNew[0] === '@Yuri', 'En una publicación nueva, @ solo sugiere al profesor (no hay lista del grupo): ' + atNew.join(','));
+  await p.keyboard.press('Escape'); await p.fill('#feedForm [name=body]', '');
+  // En los comentarios de la publicación de Luis sí salen quienes participan en ella
+  await p.locator('.fpost:has-text("Joe Pass") [data-action=open-fpost]').first().click();
+  await p.waitForTimeout(250);
+  const cta = p.locator('textarea[id="cmInput-feed-f1"]').first();
+  if (await cta.count()) {
+    await cta.click(); await cta.type('Muy bueno @');
+    await p.waitForTimeout(100);
+    const atCm = await p.$$eval('#mentionBox .mopt b', els => els.map(e => e.textContent));
+    ok(atCm.includes('@Lu') && atCm.includes('@Marta') && atCm.includes('@Yuri'), 'En los comentarios de un post, @ sugiere al autor y a quien comenta: ' + atCm.join(','));
+  } else ok(false, 'No se encontró el cuadro de comentarios del post de Luis');
   await p.context().close();
 
   // ================= El profesor ve a todos =================

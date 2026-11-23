@@ -55,6 +55,8 @@ window.__DB_SEED = {
     {id:'d3',sender_id:'t1',recipient_id:'s1',body:'Marta, repasa el ejercicio de escalas',created_at:T(40),read_at:null}
   ],
   user_blocks:[],
+  // Marta y Luis son compañeros (así ella puede mencionarle fuera de sus conversaciones)
+  classmates:[ {id:'cm1',requester_id:'s2',addressee_id:'s1',status:'accepted',created_at:T(500),accepted_at:T(480)} ],
   notifications:[
     {id:'n1',user_id:'s1',kind:'dm',actor_id:'t1',target_id:'t1',extra:null,created_at:T(40),read_at:null,pushed_at:null}
   ]
