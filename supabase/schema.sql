@@ -1891,3 +1891,88 @@ alter table public.notifications add constraint notifications_kind_check
   check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
                   'mention_feed', 'mention_board', 'mention_listening', 'lesson',
                   'classmate_request', 'classmate_accept', 'account_deleted', 'goal'));
+
+-- =====================================================================
+-- Límite de emails de Supabase: cuánto falta para que se recupere (2026-11-23)
+-- El SMTP gratuito de Supabase funciona como una hucha de 2 emails que se
+-- rellena a 1 email por hora, de forma continua (Supabase Auth,
+-- internal/ratelimit/burst.go). Supabase no guarda en la base de datos cuándo
+-- envió cada email, así que lo apuntamos aquí con un trigger en auth.users.
+-- La tabla no la lee nadie desde fuera: solo email_wait_seconds(), que
+-- devuelve un número (segundos de espera), sin emails ni nombres.
+-- Si se cambia el límite en el panel (Authentication → Rate Limits), cambia
+-- también email_cap y email_period en email_wait_seconds().
+-- =====================================================================
+create table if not exists public.auth_email_log (
+  id bigint generated always as identity primary key,
+  sent_at timestamptz not null default now(),
+  kind text not null check (kind in ('confirmation', 'recovery', 'email_change', 'reauthentication'))
+);
+alter table public.auth_email_log enable row level security;
+revoke all on table public.auth_email_log from public, anon, authenticated;
+create index if not exists auth_email_log_sent_at_idx on public.auth_email_log (sent_at);
+
+create or replace function public.auth_email_log_trg_fn()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.confirmation_sent_at is not null and (tg_op = 'INSERT' or new.confirmation_sent_at is distinct from old.confirmation_sent_at) then
+    insert into public.auth_email_log (sent_at, kind) values (new.confirmation_sent_at, 'confirmation');
+  end if;
+  if new.recovery_sent_at is not null and (tg_op = 'INSERT' or new.recovery_sent_at is distinct from old.recovery_sent_at) then
+    insert into public.auth_email_log (sent_at, kind) values (new.recovery_sent_at, 'recovery');
+  end if;
+  if new.email_change_sent_at is not null and (tg_op = 'INSERT' or new.email_change_sent_at is distinct from old.email_change_sent_at) then
+    insert into public.auth_email_log (sent_at, kind) values (new.email_change_sent_at, 'email_change');
+  end if;
+  if new.reauthentication_sent_at is not null and (tg_op = 'INSERT' or new.reauthentication_sent_at is distinct from old.reauthentication_sent_at) then
+    insert into public.auth_email_log (sent_at, kind) values (new.reauthentication_sent_at, 'reauthentication');
+  end if;
+  -- Solo hace falta el historial de las últimas horas
+  delete from public.auth_email_log where sent_at < now() - interval '1 day';
+  return new;
+end;
+$$;
+revoke execute on function public.auth_email_log_trg_fn() from public, anon, authenticated;
+create or replace trigger auth_email_log_trg
+  after insert or update of confirmation_sent_at, recovery_sent_at, email_change_sent_at, reauthentication_sent_at
+  on auth.users
+  for each row execute function public.auth_email_log_trg_fn();
+
+-- Segundos que faltan para que se pueda mandar otro email (0 = ya se puede).
+-- Repite la cuenta de Supabase: la hucha empieza llena y cada email gasta 1.
+-- Si el servidor de Auth se reinicia, la hucha real se llena antes: el
+-- resultado puede pecar de largo, nunca de corto.
+create or replace function public.email_wait_seconds()
+returns integer
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  email_cap constant numeric := 2;        -- emails en la hucha
+  email_period constant numeric := 3600;  -- segundos para recuperar 1 email
+  tokens numeric := email_cap;
+  last_at timestamptz;
+  ev record;
+begin
+  for ev in select sent_at from public.auth_email_log
+            where sent_at > now() - interval '6 hours' order by sent_at loop
+    if last_at is not null then
+      tokens := least(email_cap, tokens + extract(epoch from ev.sent_at - last_at) / email_period);
+    end if;
+    tokens := greatest(tokens - 1, 0);
+    last_at := ev.sent_at;
+  end loop;
+  if last_at is null then return 0; end if;
+  tokens := least(email_cap, tokens + extract(epoch from now() - last_at) / email_period);
+  if tokens >= 1 then return 0; end if;
+  return ceil((1 - tokens) * email_period)::integer;
+end;
+$$;
+revoke execute on function public.email_wait_seconds() from public;
+grant execute on function public.email_wait_seconds() to anon, authenticated;

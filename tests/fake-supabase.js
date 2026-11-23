@@ -312,6 +312,8 @@
     return b;
   }
   const rpc = (name,args) => Promise.resolve().then(()=>{
+    // email_wait_seconds la puede llamar cualquiera (también sin sesión): solo devuelve un número
+    if(name==='email_wait_seconds') return window.__EMAIL_WAIT===undefined?{data:0,error:null}:(window.__EMAIL_WAIT===null?{data:null,error:{message:'function public.email_wait_seconds() does not exist'}}:{data:window.__EMAIL_WAIT,error:null});
     if(!me) return {data:null,error:{message:'No autenticado'}};
     if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id) && canSeeProfile(p.id)).map(p=>p.id), error:null};
     if(name==='can_dm') return {data: (args.a===me||args.b===me) && canDm(args.a,args.b), error:null}; // solo responde a los implicados
@@ -347,9 +349,9 @@
       onAuthStateChange(cb){ listeners.push(cb); return {data:{subscription:{}}}; },
       signOut: async()=>{ me=null; listeners.forEach(cb=>cb('SIGNED_OUT',null)); return {error:null}; },
       signInWithPassword: async()=>({error:null}),
-      signUp: async()=>({data:{session:null},error:null}),
+      signUp: async()=>(window.__EMAIL_LIMITED?{data:{session:null,user:null},error:{code:'over_email_send_rate_limit',status:429,message:'email rate limit exceeded'}}:{data:{session:null},error:null}),
       updateUser: async(x)=>{ window.__lastPassword=x.password; return {error:null}; },
-      resetPasswordForEmail: async()=>({error:null})
+      resetPasswordForEmail: async()=>(window.__EMAIL_LIMITED?{data:null,error:{code:'over_email_send_rate_limit',status:429,message:'email rate limit exceeded'}}:{error:null})
     }
   };}};
 })();

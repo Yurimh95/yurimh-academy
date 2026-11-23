@@ -921,7 +921,21 @@ function errEs(e) {
   for (const [re, out] of ERR_TEXTS) { const m = msg.match(re); if (m) return typeof out === 'function' ? out(m) : out; }
   return msg;
 }
-const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+// Errores de Auth que mandan email (registro, recuperar contraseña). Si se ha llenado el cupo
+// de emails de Supabase, pregunta a la base de datos cuánto falta (email_wait_seconds) y da la hora exacta.
+async function errEsAuth(e) {
+  const limited = e && (e.code === 'over_email_send_rate_limit' || /email rate limit/i.test(String(e.message || '')));
+  if (!limited) return errEs(e);
+  let secs = null;
+  try { const r = await sb.rpc('email_wait_seconds'); if (!r.error && typeof r.data === 'number') secs = r.data; } catch (_) {}
+  const head = 'Se han enviado demasiados emails en poco tiempo.';
+  if (secs === null) return errEs(e);
+  if (secs <= 0) return `${head} Vuelve a intentarlo en unos minutos.`;
+  const at = new Date(Date.now() + secs * 1000), mins = Math.ceil(secs / 60);
+  const hhmm = at.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return `${head} Podrás intentarlo de nuevo a partir de las ${hhmm} (dentro de ${mins === 1 ? '1 minuto' : mins + ' minutos'}).`;
+}
+const safeUrl =u => /^https?:\/\//i.test(u || '') ? u : '#';
 const pad = n => String(n).padStart(2, '0');
 function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
 function daysDiff(iso) {
@@ -3449,7 +3463,7 @@ const actions = {
     const email = prompt('Escribe el email de tu cuenta y te enviaremos un enlace para crear una nueva contraseña:');
     if (!email) return;
     const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.href.split('#')[0] });
-    viewAuth('login', error ? { type: 'bad', text: errEs(error) } : { type: 'ok', text: 'Si el email existe, te llegará un enlace para restablecer la contraseña.' });
+    viewAuth('login', error ? { type: 'bad', text: await errEsAuth(error) } : { type: 'ok', text: 'Si el email existe, te llegará un enlace para restablecer la contraseña.' });
   },
   filter(el) { S.filter = el.dataset.f; render(); },
   'open-assign'(el) { studentModal(el.dataset.id); },
@@ -3796,7 +3810,7 @@ document.addEventListener('submit', async e => {
       // emailRedirectTo: sin él, Supabase vuelve al dominio sin la ruta /yurimh-music-academy/ (404 de GitHub)
       const birth = f.birth.value; // AAAA-MM-DD; la base de datos la valida al crear el perfil
       const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name, birth_date: birth }, emailRedirectTo: location.href.split('#')[0] } });
-      if (error) viewAuth('register', { type: 'bad', text: errEs(error) });
+      if (error) viewAuth('register', { type: 'bad', text: await errEsAuth(error) });
       else if (!data.session) viewAuth('login', { type: 'ok', text: 'Cuenta creada. Revisa tu email para confirmarla y después entra.' });
     }
   } else if (f.id === 'recForm') {
