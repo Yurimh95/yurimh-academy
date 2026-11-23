@@ -788,6 +788,15 @@ alter table public.listening_items add column if not exists thumb_url text
   check (thumb_url is null or (char_length(thumb_url) <= 300
          and thumb_url ~ '^https://(i\.scdn\.co|image-cdn-[a-z0-9-]+\.spotifycdn\.com|mosaic\.scdn\.co|i\.ytimg\.com)/'));
 
+-- Escucha analítica: duración total en segundos y número de temas (álbum/playlist).
+-- La saca la Edge Function "media-info" al guardar; el profesor puede corregirla a mano.
+-- duration_partial = solo se han podido sumar los primeros 100 temas (se muestra con "+").
+alter table public.listening_items add column if not exists duration_sec integer
+  check (duration_sec is null or duration_sec between 1 and 1000000);
+alter table public.listening_items add column if not exists track_count integer
+  check (track_count is null or track_count between 1 and 100000);
+alter table public.listening_items add column if not exists duration_partial boolean not null default false;
+
 -- =====================================================================
 --  FASE 2 · MENSAJES PRIVADOS  (prefijo dm_)
 --   · Con el profesor puede hablar todo el mundo.
@@ -973,6 +982,35 @@ create policy notifications_update_own on public.notifications for update to aut
 drop policy if exists notifications_delete_own on public.notifications;
 create policy notifications_delete_own on public.notifications for delete to authenticated using (user_id = auth.uid());
 
+-- Menciones (@persona, #sección, #escucha): la app las guarda en el texto como <@id>, <#seccion> y <#l:id>.
+-- mention_ids: a quién menciona un texto. mention_plain: el texto legible, para las notificaciones
+-- (las escuchas salen como "#escucha" para no revelar su título a quien no la tiene asignada).
+create or replace function public.mention_ids(p text)
+returns setof uuid language sql immutable set search_path = public as $$
+  select distinct (m[1])::uuid
+  from regexp_matches(coalesce(p, ''), '<@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})>', 'g') as m;
+$$;
+create or replace function public.mention_plain(p text)
+returns text language plpgsql stable security definer set search_path = public as $$
+declare m text[]; r text := p; nm text;
+begin
+  if r is null then return null; end if;
+  for m in select regexp_matches(p, '<@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})>', 'g') loop
+    select coalesce(nullif(trim(nickname), ''), display_name) into nm from public.profiles where id = m[1]::uuid;
+    r := replace(r, '<@' || m[1] || '>', '@' || coalesce(nm, 'usuario'));
+  end loop;
+  r := regexp_replace(r, '<#l:[0-9a-f-]{36}>', '#escucha', 'g');
+  for m in select regexp_matches(r, '<#([a-z]+)>', 'g') loop
+    r := replace(r, '<#' || m[1] || '>', '#' || case m[1]
+      when 'feed' then 'Inicio' when 'messages' then 'Mensajes' when 'board' then 'Avisos'
+      when 'listening' then 'Escucha analítica' when 'homework' then 'Deberes' when 'payments' then 'Pagos'
+      when 'students' then 'Alumnos' when 'profile' then 'Perfil' when 'mod' then 'Moderación'
+      when 'settings' then 'Ajustes' else m[1] end);
+  end loop;
+  return r;
+end;
+$$;
+
 -- Crea una notificación (sin repetir una igual que siga sin leer)
 create or replace function public.notify(p_user uuid, p_kind text, p_actor uuid, p_target uuid, p_extra text)
 returns void language plpgsql security definer set search_path = public as $$
@@ -989,17 +1027,31 @@ $$;
 
 create or replace function public.notify_trg()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare r record; owner uuid;
+declare r record; owner uuid; mid uuid;
 begin
+  -- En los avisos, a quien se menciona le llega "te ha mencionado" en vez de "nuevo aviso" (solo si el aviso es para él)
   if tg_table_name = 'board_posts' then            -- aviso para todos
     if new.audience = 'all' then
       for r in select id from public.profiles where role = 'student' and approved loop
-        perform public.notify(r.id, 'board_post', new.author_id, new.id, new.title);
+        perform public.notify(r.id, case when r.id in (select public.mention_ids(new.body)) then 'mention_board' else 'board_post' end,
+                              new.author_id, new.id, new.title);
       end loop;
     end if;
   elsif tg_table_name = 'board_recipients' then    -- aviso dirigido
     select * into r from public.board_posts where id = new.post_id;
-    perform public.notify(new.student_id, 'board_post', r.author_id, r.id, r.title);
+    perform public.notify(new.student_id, case when new.student_id in (select public.mention_ids(r.body)) then 'mention_board' else 'board_post' end,
+                          r.author_id, r.id, r.title);
+  elsif tg_table_name = 'feed_posts' then          -- menciones en una publicación del Inicio (la ven todos los aprobados)
+    for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
+               where p.approved and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
+      perform public.notify(mid, 'mention_feed', new.author_id, new.id, left(public.mention_plain(new.body), 120));
+    end loop;
+  elsif tg_table_name = 'listening_comments' then  -- menciones en una escucha: solo a quien la puede ver
+    for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
+               where p.approved and (p.role = 'teacher' or exists (select 1 from public.listening_assignments a where a.item_id = new.item_id and a.student_id = u))
+                 and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
+      perform public.notify(mid, 'mention_listening', new.author_id, new.item_id, left(public.mention_plain(new.body), 120));
+    end loop;
   elsif tg_table_name = 'listening_assignments' then
     select title into r from public.listening_items where id = new.item_id;
     perform public.notify(new.student_id, 'assignment', null, new.item_id, r.title);
@@ -1007,7 +1059,13 @@ begin
     perform public.notify(new.recipient_id, 'dm', new.sender_id, new.sender_id, null);
   elsif tg_table_name = 'feed_comments' then
     select author_id into owner from public.feed_posts where id = new.post_id;
-    perform public.notify(owner, 'comment', new.author_id, new.post_id, left(new.body, 80));
+    perform public.notify(owner, 'comment', new.author_id, new.post_id, left(public.mention_plain(new.body), 80));
+    -- los mencionados (menos el dueño, que ya recibe "ha comentado tu publicación")
+    for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
+               where u is distinct from owner and p.approved
+                 and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
+      perform public.notify(mid, 'mention_feed', new.author_id, new.post_id, left(public.mention_plain(new.body), 120));
+    end loop;
   elsif tg_table_name = 'reactions' then
     if new.target_type = 'feed_post' then
       select author_id into owner from public.feed_posts where id = new.target_id;
@@ -1024,6 +1082,8 @@ begin
     for r in select id from public.profiles where role = 'teacher' and approved loop
       perform public.notify(r.id, 'report', null, new.id, null);
     end loop;
+  elsif tg_table_name = 'homework_tasks' then       -- deberes nuevos (la tabla está más abajo)
+    perform public.notify(new.student_id, 'homework', new.created_by, new.id, new.title);
   end if;
   return null;
 end;
@@ -1039,6 +1099,10 @@ drop trigger if exists notify_dm_messages on public.dm_messages;
 create trigger notify_dm_messages after insert on public.dm_messages for each row execute function public.notify_trg();
 drop trigger if exists notify_feed_comments on public.feed_comments;
 create trigger notify_feed_comments after insert on public.feed_comments for each row execute function public.notify_trg();
+drop trigger if exists notify_feed_posts on public.feed_posts;
+create trigger notify_feed_posts after insert on public.feed_posts for each row execute function public.notify_trg();
+drop trigger if exists notify_listening_comments on public.listening_comments;
+create trigger notify_listening_comments after insert on public.listening_comments for each row execute function public.notify_trg();
 drop trigger if exists notify_reactions on public.reactions;
 create trigger notify_reactions after insert on public.reactions for each row execute function public.notify_trg();
 drop trigger if exists notify_profiles on public.profiles;
@@ -1047,6 +1111,7 @@ drop trigger if exists notify_moderation_reports on public.moderation_reports;
 create trigger notify_moderation_reports after insert on public.moderation_reports for each row execute function public.notify_trg();
 
 -- Permisos de ejecución de las funciones nuevas
+revoke execute on function public.mention_ids(text), public.mention_plain(text) from public, anon, authenticated;
 revoke execute on function public.notify(uuid, text, uuid, uuid, text), public.notify_trg(),
   public.dm_messages_guard(), public.notifications_guard() from public, anon, authenticated;
 -- dm_ok solo la usan otras funciones internas: no se puede llamar desde fuera (revelaría si alguien es menor)
@@ -1136,6 +1201,124 @@ grant select, delete on public.push_subscriptions to service_role; -- dispositiv
 --   app_installed_at:    ya abrió la app instalada en el móvil (deja de recordárselo para siempre)
 alter table public.profiles add column if not exists install_prompted_at timestamptz;
 alter table public.profiles add column if not exists app_installed_at timestamptz;
+
+-- =====================================================================
+--  MÓDULO: DEBERES  (prefijo homework_)
+--   homework_tasks: una fila por alumno y tarea. Texto, sin archivos (los vídeos y fotos van por otras vías).
+--   El profesor las crea (puede poner la misma a varios alumnos de golpe), las edita y las borra.
+--   El alumno solo ve las suyas y solo puede marcarlas como practicadas (done_at).
+-- =====================================================================
+create table if not exists public.homework_tasks (
+  id          uuid primary key default gen_random_uuid(),
+  student_id  uuid not null references public.profiles(id) on delete cascade,
+  title       text not null check (char_length(trim(title)) between 1 and 200),
+  details     text check (details is null or char_length(details) <= 1500),
+  due_date    date,
+  done_at     timestamptz,
+  created_by  uuid default auth.uid() references public.profiles(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists homework_tasks_student_idx on public.homework_tasks (student_id, created_at desc);
+
+grant select, insert, update, delete on public.homework_tasks to authenticated;
+revoke all on public.homework_tasks from anon;
+alter table public.homework_tasks enable row level security;
+
+drop policy if exists homework_tasks_select on public.homework_tasks;
+create policy homework_tasks_select on public.homework_tasks for select to authenticated
+  using (public.is_teacher() or (student_id = auth.uid() and public.is_approved()));
+drop policy if exists homework_tasks_insert_teacher on public.homework_tasks;
+create policy homework_tasks_insert_teacher on public.homework_tasks for insert to authenticated
+  with check (public.is_teacher());
+drop policy if exists homework_tasks_update_teacher on public.homework_tasks;
+create policy homework_tasks_update_teacher on public.homework_tasks for update to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+drop policy if exists homework_tasks_update_own on public.homework_tasks;
+create policy homework_tasks_update_own on public.homework_tasks for update to authenticated
+  using (student_id = auth.uid() and public.is_approved()) with check (student_id = auth.uid());
+drop policy if exists homework_tasks_delete_teacher on public.homework_tasks;
+create policy homework_tasks_delete_teacher on public.homework_tasks for delete to authenticated
+  using (public.is_teacher());
+
+-- El alumno solo puede cambiar done_at (marcar / desmarcar como practicada)
+create or replace function public.homework_tasks_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and auth.uid() is not null and not public.is_teacher() then
+    if new.id is distinct from old.id or new.student_id is distinct from old.student_id
+    or new.title is distinct from old.title or new.details is distinct from old.details
+    or new.due_date is distinct from old.due_date or new.created_by is distinct from old.created_by
+    or new.created_at is distinct from old.created_at then
+      raise exception 'Solo puedes marcar tus deberes como practicados';
+    end if;
+  end if;
+  new.title = trim(new.title);
+  new.details = nullif(trim(coalesce(new.details, '')), '');
+  return new;
+end;
+$$;
+drop trigger if exists homework_tasks_guard_trg on public.homework_tasks;
+create trigger homework_tasks_guard_trg before insert or update on public.homework_tasks
+  for each row execute function public.homework_tasks_guard();
+revoke execute on function public.homework_tasks_guard() from public, anon, authenticated;
+
+-- Aviso (campanita + móvil) al alumno cuando le pones deberes
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening'));
+drop trigger if exists notify_homework_tasks on public.homework_tasks;
+create trigger notify_homework_tasks after insert on public.homework_tasks for each row execute function public.notify_trg();
+
+-- Tiempo real: al alumno le aparecen solos; el profesor ve al momento lo que marcan
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'homework_tasks') then
+    execute 'alter publication supabase_realtime add table public.homework_tasks';
+  end if;
+end $$;
+
+-- =====================================================================
+--  MÓDULO: PAGOS  (prefijo payments_)  ·  SOLO EL PROFESOR
+--   payments_plans:   el trato de cada alumno (mensual, por clase o gratis) y su precio.
+--   payments_records: cada pago apuntado. Mensual = uno por mes (period = día 1 del mes);
+--                     por clase = tantos como clases pagadas en el mes.
+--   "Se desmarca al terminar el mes" sin borrar nada: cada mes empieza sin pago apuntado,
+--   y los meses anteriores quedan como historial.
+--   Los alumnos no pueden leer nada de esto (ni lo suyo).
+-- =====================================================================
+create table if not exists public.payments_plans (
+  student_id  uuid primary key references public.profiles(id) on delete cascade,
+  mode        text not null default 'monthly' check (mode in ('monthly', 'per_class', 'free')),
+  amount      numeric(8,2) check (amount is null or (amount >= 0 and amount < 100000)),
+  note        text check (note is null or char_length(note) <= 300),
+  updated_at  timestamptz not null default now()
+);
+create table if not exists public.payments_records (
+  id          uuid primary key default gen_random_uuid(),
+  student_id  uuid not null references public.profiles(id) on delete cascade,
+  period      date not null check (extract(day from period) = 1),
+  kind        text not null check (kind in ('monthly', 'class')),
+  amount      numeric(8,2) check (amount is null or (amount >= 0 and amount < 100000)),
+  paid_on     date not null default current_date,
+  note        text check (note is null or char_length(note) <= 300),
+  created_at  timestamptz not null default now()
+);
+create index if not exists payments_records_period_idx on public.payments_records (period, student_id);
+-- Un solo pago mensual por alumno y mes (por clase, los que hagan falta)
+create unique index if not exists payments_records_monthly_uq on public.payments_records (student_id, period) where kind = 'monthly';
+
+grant select, insert, update, delete on public.payments_plans, public.payments_records to authenticated;
+revoke all on public.payments_plans, public.payments_records from anon;
+alter table public.payments_plans   enable row level security;
+alter table public.payments_records enable row level security;
+drop policy if exists payments_plans_all_teacher on public.payments_plans;
+create policy payments_plans_all_teacher on public.payments_plans for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+drop policy if exists payments_records_all_teacher on public.payments_records;
+create policy payments_records_all_teacher on public.payments_records for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
 
 -- =====================================================================
 -- TU CUENTA DE PROFESOR

@@ -33,7 +33,10 @@
     moderation_reports: r => isTeacher() || r.reporter_id===me,
     dm_messages: r => r.sender_id===me || r.recipient_id===me || (isTeacher() && dmReported(r.id)),
     user_blocks: r => r.blocker_id===me,
-    notifications: r => r.user_id===me
+    notifications: r => r.user_id===me,
+    homework_tasks: r => isTeacher() || (r.student_id===me && isApproved()),
+    payments_plans: () => isTeacher(),
+    payments_records: () => isTeacher()
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -56,7 +59,10 @@
     moderation_reports: () => isTeacher(),
     dm_messages: (op,r) => op==='update' ? r.recipient_id===me : (r.sender_id===me || (isTeacher() && dmReported(r.id))),
     user_blocks: (op,r) => op==='delete' && r.blocker_id===me,
-    notifications: (op,r) => r.user_id===me
+    notifications: (op,r) => r.user_id===me,
+    homework_tasks: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
+    payments_plans: () => isTeacher(),
+    payments_records: () => isTeacher()
   };
   const canInsert = {
     profiles: () => false,
@@ -72,17 +78,23 @@
     moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message'].includes(r.target_type) && canSee(r.target_type,r.target_id),
     dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id),
     user_blocks: r => r.blocker_id===me && isApproved() && r.blocker_id!==r.blocked_id,
-    notifications: () => false
+    notifications: () => false,
+    homework_tasks: () => isTeacher(),
+    payments_plans: () => isTeacher(),
+    payments_records: () => isTeacher()
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
     feed_comments: r => r.body && r.body.length<=1000,
     listening_comments: r => r.body && r.body.length<=1000,
     dm_messages: r => r.body && r.body.length<=2000 && r.sender_id!==r.recipient_id,
+    homework_tasks: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (!r.details || r.details.length<=1500),
+    payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
+    payments_plans: r => ['monthly','per_class','free'].includes(r.mode) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){
@@ -91,16 +103,25 @@
     const n={id:uid('nt'),user_id:user,kind,actor_id:actor||null,target_id:target||null,extra:extra==null?null:String(extra).slice(0,160),created_at:new Date().toISOString(),read_at:null,pushed_at:null};
     DB.notifications.push(n); emit('notifications','INSERT',n);
   }
+  // Menciones: imitan mention_ids / mention_plain del SQL
+  const mentionIds=t=>[...new Set([...String(t||'').matchAll(/<@([0-9a-z_-]+)>/g)].map(m=>m[1]))];
+  const mentionPlain=t=>String(t||'').replace(/<@([0-9a-z_-]+)>/g,(m,id)=>{ const p=DB.profiles.find(x=>x.id===id); return '@'+(p?((p.nickname||'').trim()||p.display_name):'usuario'); }).replace(/<#l:[0-9a-z_-]+>/g,'#escucha').replace(/<#([a-z]+)>/g,'#$1');
+  const blockedBy=(u,author)=>DB.user_blocks.some(b=>b.blocker_id===u&&b.blocked_id===author);
   function notifyFor(table,row){
     const teachers=()=>DB.profiles.filter(p=>p.role==='teacher'&&p.approved).map(p=>p.id);
-    if(table==='board_posts' && row.audience==='all') DB.profiles.filter(p=>p.role==='student'&&p.approved).forEach(p=>notify(p.id,'board_post',row.author_id,row.id,row.title));
-    if(table==='board_recipients'){ const bp=DB.board_posts.find(p=>p.id===row.post_id)||{}; notify(row.student_id,'board_post',bp.author_id,bp.id,bp.title); }
+    const approvedIds=ids=>ids.filter(u=>DB.profiles.some(p=>p.id===u&&p.approved));
+    if(table==='board_posts' && row.audience==='all') DB.profiles.filter(p=>p.role==='student'&&p.approved).forEach(p=>notify(p.id,mentionIds(row.body).includes(p.id)?'mention_board':'board_post',row.author_id,row.id,row.title));
+    if(table==='board_recipients'){ const bp=DB.board_posts.find(p=>p.id===row.post_id)||{}; notify(row.student_id,mentionIds(bp.body).includes(row.student_id)?'mention_board':'board_post',bp.author_id,bp.id,bp.title); }
+    if(table==='feed_posts') approvedIds(mentionIds(row.body)).filter(u=>!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.id,mentionPlain(row.body).slice(0,120)));
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; approvedIds(mentionIds(row.body)).filter(u=>u!==fp.author_id&&!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.post_id,mentionPlain(row.body).slice(0,120))); }
+    if(table==='listening_comments') approvedIds(mentionIds(row.body)).filter(u=>!blockedBy(u,row.author_id)&&(teachers().includes(u)||DB.listening_assignments.some(a=>a.item_id===row.item_id&&a.student_id===u))).forEach(u=>notify(u,'mention_listening',row.author_id,row.item_id,mentionPlain(row.body).slice(0,120)));
     if(table==='listening_assignments'){ const it=DB.listening_items.find(i=>i.id===row.item_id)||{}; notify(row.student_id,'assignment',null,row.item_id,it.title); }
     if(table==='dm_messages') notify(row.recipient_id,'dm',row.sender_id,row.sender_id,null);
-    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; notify(fp.author_id,'comment',row.author_id,row.post_id,String(row.body).slice(0,80)); }
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; notify(fp.author_id,'comment',row.author_id,row.post_id,mentionPlain(row.body).slice(0,80)); }
     if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));
+    if(table==='homework_tasks') notify(row.student_id,'homework',row.created_by,row.id,row.title);
   }
 
   // ---- Tiempo real simulado: como Supabase Realtime, INSERT/UPDATE solo llegan si RLS deja leer la fila;
@@ -153,6 +174,7 @@
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
     if (table==='board_posts') nw.updated_at=new Date().toISOString();
+    if (table==='homework_tasks' && !isTeacher() && (nw.title!==old.title||nw.details!==old.details||nw.due_date!==old.due_date||nw.student_id!==old.student_id)) throw new Error('Solo puedes marcar tus deberes como practicados');
   }
   function q(table){
     const st={op:'select',filters:[],order:null,payload:null,embed:false,single:false,maybe:false,opts:null,lim:null};
@@ -201,6 +223,8 @@
           if(table==='board_reads') row.read_at=new Date().toISOString();
           if(table==='board_posts'){ row.pinned=!!row.pinned; row.updated_at=row.created_at; }
           if(table==='moderation_reports') row.resolved=false;
+          if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; }
+          if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(pk[table]) delete row.id;
           if(table!=='listening_assignments'){ delete row.assigned_at; delete row.listened; delete row.answers; }
           if(checks[table] && !checks[table](row)) return finish([], 'new row for relation "'+table+'" violates check constraint');

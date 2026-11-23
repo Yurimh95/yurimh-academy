@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node build-test.js",
-    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js"
+    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js && node test-modulos.js && node test-menciones.js && node test-duracion.js"
   },
   "devDependencies": { "playwright": "^1.48.0" }
 }

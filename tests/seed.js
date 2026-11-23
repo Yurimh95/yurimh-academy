@@ -8,8 +8,8 @@ window.__DB_SEED = {
     {id:'s3',display_name:'Nuevo',email:'n@x.com',role:'student',approved:false,nickname:null,avatar:null,birth_date:null,family_dm_ok:false}
   ],
   listening_items:[
-    {id:'i1',title:'Kind of Blue',url:'https://open.spotify.com/album/x',kind:'album',brief:'Fíjate en los voicings',created_at:'2026-01-01'},
-    {id:'i2',title:'Cliffs of Dover',url:'https://youtu.be/abc',kind:'song',brief:null,created_at:'2026-01-02'}
+    {id:'i1',title:'Kind of Blue',url:'https://open.spotify.com/album/x',kind:'album',brief:'Fíjate en los voicings',created_at:'2026-01-01',duration_sec:2756,track_count:5,duration_partial:false},
+    {id:'i2',title:'Cliffs of Dover',url:'https://youtu.be/abc',kind:'song',brief:null,created_at:'2026-01-02',duration_sec:431,track_count:null,duration_partial:false}
   ],
   listening_assignments:[
     {id:'a1',item_id:'i1',student_id:'s1',note:'Solo Marta',due_date:'2026-11-10',assigned_at:'2026-11-01',listened:false,listened_at:null,answers:{},updated_at:'2026-11-01T10:00:00Z'},
@@ -55,4 +55,12 @@ window.__DB_SEED = {
   notifications:[
     {id:'n1',user_id:'s1',kind:'dm',actor_id:'t1',target_id:'t1',extra:null,created_at:T(40),read_at:null,pushed_at:null}
   ]
+  ,homework_tasks:[
+    {id:'h1',student_id:'s1',title:'Pentatónica de La en las 5 posiciones',details:'A 80 bpm con metrónomo, subiendo y bajando.',due_date:null,done_at:null,created_by:'t1',created_at:T(900)},
+    {id:'h2',student_id:'s1',title:'Acordes con cejilla: F y Bm',details:null,due_date:'2026-01-10',done_at:null,created_by:'t1',created_at:T(800)},
+    {id:'h3',student_id:'s1',title:'Ritmo de rasgueo de la semana pasada',details:null,due_date:null,done_at:T(120),created_by:'t1',created_at:T(2000)},
+    {id:'h4',student_id:'s2',title:'Walking bass sobre Autumn Leaves',details:'Mira https://youtu.be/abc',due_date:null,done_at:null,created_by:'t1',created_at:T(500)}
+  ],
+  payments_plans:[ {student_id:'s1',mode:'monthly',amount:60,note:null,updated_at:T(5000)}, {student_id:'s2',mode:'free',amount:null,note:'Intercambio',updated_at:T(5000)} ],
+  payments_records:[]
 };

@@ -109,6 +109,7 @@ Un "Success. No rows returned" **no demuestra que haya cambiado nada**. Por eso 
 - **Comentarios en Escucha analítica**: solo los ven el profesor y los alumnos que tienen ese elemento asignado. **Las 6 respuestas siguen siendo privadas**: solo las ve su autor y tú.
 - **Moderación**: todo se publica al momento. Cualquiera puede **Denunciar** algo; te aparece en *Inicio → Denuncias pendientes* con el motivo, y tú decides si **Borrar contenido** o **Descartar**. Cada uno puede borrar lo suyo.
 - **Identidad**: se muestra el nombre o, si lo ha elegido, el **apodo**. Tú ves siempre los dos, por ejemplo "Lu (Luis)". La **foto de perfil** se recorta y comprime sola en el navegador.
+- **Menciones (como en Discord)**: en el Inicio, en los avisos y en los comentarios, escribe **@** y sale la lista de personas; escribe **#** y salen las secciones (#Ajustes, #Avisos…) y las escuchas. Eliges con las flechas + Enter, o tocando. Se ven resaltadas en azul y al pulsarlas llevan al perfil, a la sección o a la escucha. A quien mencionas le llega una notificación (campanita y móvil). Si mencionas una escucha o una sección que alguien no tiene (por ejemplo #Alumnos), a esa persona le sale como texto normal, sin enlace. En un aviso, la mención solo avisa si el aviso va dirigido a esa persona.
 
 **Pendiente:** el check "Enviar también por email" de los avisos sigue desactivado. Necesita un servicio de correo externo y lo montamos cuando quieras.
 

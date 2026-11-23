@@ -141,6 +141,37 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .about-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 14px}
 .about-grid .a-bio{grid-column:1/-1}.about-grid .a-3{grid-column:span 2}.about-grid .a-2{grid-column:span 3}
 @media (max-width:760px){.about-grid{grid-template-columns:1fr}.about-grid .a-3,.about-grid .a-2{grid-column:1/-1}}
+/* ---- Deberes ---- */
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 16px}
+.hwgroups{display:grid;gap:14px}
+.hwgroup .dhead h2{display:flex;align-items:center;gap:10px;margin:0}
+.hwlist{display:flex;flex-direction:column;gap:8px}
+.hw{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.dcard .hw{background:var(--panel2)}
+.hwcheck{flex:none;width:28px;height:28px;margin-top:1px;border-radius:50%;border:2px solid var(--line-strong);background:transparent;color:transparent;cursor:pointer;display:grid;place-items:center;transition:all .15s}
+.hwcheck svg{width:16px;height:16px}
+.hwcheck:hover{border-color:var(--accent);color:rgba(var(--accent-rgb),.5)}
+.hwcheck[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.hwbody{flex:1;min-width:0}
+.hwtitle{font-weight:650;color:var(--strong);overflow-wrap:anywhere}
+.hw.done .hwtitle{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(var(--ok-rgb),.6)}
+.hwdet{color:var(--text);font-size:14px;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+.hwmeta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.hwmeta:empty{display:none}
+.hwtools{display:flex;gap:4px;flex:none}
+.hwdone{margin-top:14px}
+.hwdone summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:8px}
+/* ---- Pagos ---- */
+.monthnav{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+.monthnav h2{margin:0;font-size:20px;min-width:170px;text-align:center;text-transform:capitalize}
+.paylist{display:flex;flex-direction:column;gap:8px}
+.payrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.payrow .who{display:flex;align-items:center;gap:12px;min-width:0}
+.payrow .who strong{display:block;color:var(--strong)}
+.payrow .who .linkbtn{font-weight:500}
+.paystatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hwtools .iconbtn.sm,.paystatus .iconbtn.sm{width:30px;height:30px;font-size:17px;border-color:var(--line);background:var(--panel)}
+.hwtools .iconbtn.sm svg{width:16px;height:16px}
 .prof-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
 .prof-bar .btn svg{width:17px;height:17px}
 .settings .h2{display:flex;align-items:center;gap:9px}
@@ -334,6 +365,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .cmt-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .cmt-head b{color:var(--strong);font-size:13.5px}
 .cmt-body{white-space:pre-wrap;overflow-wrap:anywhere;margin:1px 0 0;font-size:14.5px}
+/* Menciones (@persona, #sección, #escucha) y la lista que sale al escribirlas */
+.mention{color:var(--accent-hi);background:rgba(var(--accent-rgb),.13);border-radius:6px;padding:0 4px;font-weight:600;cursor:pointer;white-space:nowrap}
+.mention:hover,.mention:focus-visible{background:rgba(var(--accent-rgb),.24);text-decoration:underline;outline:none}
+.mention.off{color:var(--muted);background:none;cursor:default;font-weight:500}
+.mention.off:hover{text-decoration:none}
+.mbox{position:fixed;z-index:80;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);padding:4px;max-height:280px;overflow-y:auto}
+.mopt{display:flex;align-items:center;gap:10px;width:100%;font:inherit;color:var(--text);background:none;border:0;border-radius:9px;padding:6px 8px;text-align:left;cursor:pointer}
+.mopt.on,.mopt:hover{background:rgba(var(--accent-rgb),.14)}
+.mopt .t{min-width:0;display:flex;flex-direction:column}
+.mopt b{font-weight:600;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mopt small{color:var(--muted);font-size:12px}
+.mopt .ic{width:28px;height:28px;border-radius:8px;background:rgba(var(--accent-rgb),.12);color:var(--accent-hi);display:grid;place-items:center;flex:none}
+.mopt .ic svg{width:16px;height:16px}
 .cmt-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px;padding-left:4px}
 .cm-new{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
 .cm-new textarea{min-height:44px}
@@ -420,6 +464,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tsub{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .kicon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:rgba(var(--accent-rgb),.14);color:var(--accent-hi);flex:none}
 .kicon svg{width:12px;height:12px}
+.durrow{display:grid;grid-template-columns:1fr 150px;gap:10px}
+@media (max-width:480px){ .durrow{grid-template-columns:1fr} }
+.tbrief{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tdur{flex:none;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tdur::after{content:'·';margin-left:6px;color:var(--faint)}
 .tans{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;white-space:nowrap}
 .tans svg{width:15px;height:15px;vertical-align:-3px}
 .meter{flex:1;max-width:70px;height:6px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
@@ -603,6 +652,9 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-homework" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1"/><path d="m8.5 12 2.2 2.2L15.5 9.5M8.5 17.5h7"/></symbol>
+  <symbol id="i-payments" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.6A4 4 0 1 0 15.5 15.4M7 10.6h6M7 13.4h6"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3"/></symbol>
   <symbol id="i-clock"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </svg>
@@ -651,6 +703,7 @@ const S = {
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
   dms: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [],
+  homework: [], payPlans: [], payRecords: [], payMonth: null,
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -709,6 +762,133 @@ function linkify(text) {
   return esc(text).replace(/(https?:\/\/[^\s<]+?)([.,;:!?)]*)(?=\s|$)/g,
     (m, url, tail) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${tail}`);
 }
+
+/* ---- Menciones, como en Discord: @persona, #sección o #escucha ----
+   En la base de datos se guardan como códigos: <@id_persona>, <#seccion> o <#l:id_escucha>.
+   Así, si alguien cambia de nombre o de apodo, sus menciones antiguas salen con el nombre nuevo.
+   Al escribir se ve el nombre normal ("@Lucía"); mentionEncode() lo convierte al guardar. */
+const ID_PAT = '[0-9a-z_-]{2,36}'; // en producción son uuid; en las pruebas, ids cortos ('s1')
+const MENTION_RE = new RegExp(`<@(${ID_PAT})>|<#l:(${ID_PAT})>|<#([a-z]+)>`, 'g');
+// Nombres de las secciones que quien mira no tiene (p. ej. un alumno ve "#Alumnos" como texto normal)
+const SECTION_LABEL = { feed: 'Inicio', messages: 'Mensajes', board: 'Avisos', listening: MODULE_LISTENING, homework: 'Deberes', payments: 'Pagos', students: 'Alumnos', profile: 'Perfil', mod: 'Moderación', settings: 'Ajustes' };
+// Título de una escucha si quien mira puede abrirla (el profesor, todas; el alumno, solo las suyas)
+function mentionItem(id) {
+  if (isTeacher()) { const it = S.items.find(i => i.id === id); return it ? it.title : null; }
+  const a = S.assigns.find(x => x.item_id === id); return a && a.item ? a.item.title : null;
+}
+// Qué se ve en lugar de cada código: { text, go }. Sin go, se pinta como texto normal (no enlaza).
+function mentionView(u, l, s) {
+  if (u) { const d = S.dir[u]; return d ? { text: '@' + d.public_name, go: `data-action="open-profile" data-id="${u}"` } : { text: '@usuario' }; }
+  if (l) { const t = mentionItem(l); return t ? { text: '#' + t, go: `data-action="mention-item" data-id="${l}"` } : { text: '#escucha' }; }
+  const sec = sections().find(x => x.id === s);
+  return sec ? { text: '#' + sec.label, go: `data-action="mention-go" data-s="${s}"` } : { text: '#' + (SECTION_LABEL[s] || s) };
+}
+// Texto de usuario → HTML seguro, con enlaces y menciones pulsables (sustituye a linkify en Inicio, Avisos y comentarios)
+function richText(text) {
+  text = String(text ?? ''); let out = '', last = 0;
+  text.replace(MENTION_RE, (m, u, l, s, off) => {
+    const v = mentionView(u, l, s);
+    out += linkify(text.slice(last, off)) + (v.go ? `<span class="mention" role="button" tabindex="0" ${v.go}>${esc(v.text)}</span>` : `<span class="mention off">${esc(v.text)}</span>`);
+    last = off + m.length; return m;
+  });
+  return out + linkify(text.slice(last));
+}
+// Lo mismo en texto plano (resúmenes, denuncias, el cuadro de texto al editar). Ojo: SIN escapar.
+const plainText = text => String(text ?? '').replace(MENTION_RE, (m, u, l, s) => mentionView(u, l, s).text);
+
+/* ---- Escribir menciones: al teclear @ o # sale una lista para elegir (flechas + Enter, o pulsar) ---- */
+const MENTION_INPUTS = '#feedForm textarea, #postForm textarea, .cm-new textarea';
+const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function mentionCandidates(kind) {
+  if (kind === '@') return Object.values(S.dir).filter(d => d.id !== S.user.id)
+    .sort((a, b) => String(a.public_name).localeCompare(String(b.public_name), 'es'))
+    .map(d => ({ label: d.public_name, token: `<@${d.id}>`, pic: avatarHtml(d.id, 28), sub: d.role === 'teacher' ? 'Profesor' : '' }));
+  const items = isTeacher() ? S.items : S.assigns.map(a => a.item).filter(Boolean), seen = new Set();
+  return sections().map(s => ({ label: s.label, token: `<#${s.id}>`, pic: `<span class="ic">${ic(s.icon || s.id)}</span>`, sub: 'Sección' }))
+    .concat(items.filter(i => !seen.has(i.id) && seen.add(i.id))
+      .map(i => ({ label: i.title, token: `<#l:${i.id}>`, pic: `<span class="ic">${ic('listening')}</span>`, sub: MODULE_LISTENING })));
+}
+let mx = null; // lista abierta: { ta, start, kind, list, sel }
+function mentionCheck(ta) {
+  const pos = ta.selectionStart;
+  const m = pos === ta.selectionEnd && ta.value.slice(0, pos).match(/(^|[\s(¿¡"'])([@#])([^\s@#<>]{0,30})$/);
+  if (!m) return mentionClose();
+  const q = fold(m[3]);
+  const score = c => { const f = fold(c.label); return f.startsWith(q) ? 0 : f.split(/[\s\-_.,(]+/).some(w => w.startsWith(q)) ? 1 : -1; };
+  const list = mentionCandidates(m[2]).map(c => ({ ...c, sc: score(c) })).filter(c => c.sc >= 0)
+    .sort((a, b) => a.sc - b.sc).slice(0, 8);
+  if (!list.length) return mentionClose();
+  mx = { ta, start: pos - m[3].length - 1, kind: m[2], list, sel: 0 };
+  mentionDraw();
+}
+function mentionDraw() {
+  let box = $('#mentionBox');
+  if (!box) { box = document.createElement('div'); box.id = 'mentionBox'; box.className = 'mbox'; box.setAttribute('role', 'listbox'); document.body.appendChild(box); }
+  box.innerHTML = mx.list.map((c, i) => `<button type="button" class="mopt ${i === mx.sel ? 'on' : ''}" data-mi="${i}" role="option" aria-selected="${i === mx.sel}">${c.pic}<span class="t"><b>${esc(mx.kind + c.label)}</b>${c.sub ? `<small>${esc(c.sub)}</small>` : ''}</span></button>`).join('');
+  mentionPlace();
+  const on = box.querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+}
+function mentionPlace() { // debajo del cuadro de texto; encima si abajo no cabe (p. ej. con el teclado del móvil)
+  const box = $('#mentionBox'); if (!box || !mx) return;
+  if (!mx.ta.isConnected) return mentionClose();
+  const r = mx.ta.getBoundingClientRect(), w = Math.min(Math.max(r.width, 240), 340, innerWidth - 16);
+  box.style.width = w + 'px';
+  box.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+  const below = innerHeight - r.bottom;
+  if (below < 230 && r.top > below) { box.style.top = ''; box.style.bottom = (innerHeight - r.top + 4) + 'px'; }
+  else { box.style.bottom = ''; box.style.top = (r.bottom + 4) + 'px'; }
+}
+function mentionClose() { mx = null; const b = $('#mentionBox'); if (b) b.remove(); }
+function mentionPick(i) {
+  const { ta, start, kind, list } = mx, c = list[i], end = ta.selectionStart;
+  const ins = kind + c.label + ' ';
+  ta.value = ta.value.slice(0, start) + ins + ta.value.slice(end);
+  const p = start + ins.length; ta.focus(); ta.setSelectionRange(p, p);
+  (ta._mentions = ta._mentions || []).push({ text: kind + c.label, token: c.token });
+  mentionClose();
+}
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Antes de guardar: "@Lucía" → <@id>. Vale lo elegido de la lista y también lo escrito a mano
+// si coincide exacto con un nombre (sin distinguir mayúsculas) y ese nombre no está repetido.
+function mentionEncode(ta) {
+  const text = ta.value.trim(), map = new Map(), dup = new Set();
+  (ta._mentions || []).forEach(k => map.set(k.text.toLowerCase(), k.token));
+  const picked = new Set(map.keys());
+  ['@', '#'].forEach(kind => mentionCandidates(kind).forEach(c => {
+    const k = (kind + c.label).toLowerCase(); if (picked.has(k)) return;
+    if (map.has(k) && map.get(k) !== c.token) dup.add(k); else map.set(k, c.token);
+  }));
+  dup.forEach(k => map.delete(k));
+  const keys = [...map.keys()].filter(k => k.length > 1).sort((a, b) => b.length - a.length);
+  if (!keys.length) return text;
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}_])(${keys.map(reEsc).join('|')})(?![\\p{L}\\p{N}_])`, 'giu');
+  return text.replace(re, (m, pre, k) => pre + map.get(k.toLowerCase()));
+}
+// Al editar algo ya guardado: los códigos vuelven a ser nombres y se recuerdan para guardarlos igual
+function mentionSeed(ta, body) {
+  if (!ta) return;
+  ta.value = plainText(body); ta._mentions = [];
+  String(body ?? '').replace(MENTION_RE, (m, u, l, s) => { const v = mentionView(u, l, s); if (v.go) ta._mentions.push({ text: v.text, token: m }); return m; });
+}
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches(MENTION_INPUTS)) mentionCheck(e.target); });
+document.addEventListener('keydown', e => { // en fase de captura: así Esc cierra la lista y no la ventana
+  if (!mx || e.target !== mx.ta) return;
+  const n = mx.list.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { mx.sel = (mx.sel + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; mentionDraw(); }
+  else if (e.key === 'Enter' || e.key === 'Tab') mentionPick(mx.sel);
+  else if (e.key === 'Escape') mentionClose();
+  else return;
+  e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('#mentionBox')) e.preventDefault(); }); // no quitar el foco al cuadro de texto
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('#mentionBox [data-mi]');
+  if (b && mx) return mentionPick(+b.dataset.mi);
+  if (e.target.matches && e.target.matches(MENTION_INPUTS)) mentionCheck(e.target);
+  else if (mx) mentionClose();
+});
+addEventListener('scroll', mentionPlace, true);
+addEventListener('resize', mentionPlace);
 
 /* ---- Tablón: utilidades de datos ---- */
 const myReadSet = () => new Set(S.reads.filter(r => r.student_id === S.user.id).map(r => r.post_id));
@@ -784,7 +964,7 @@ function commentRow(kind, x) {
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
   return `<div class="cmt">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
-    <div class="cmt-body">${linkify(x.body)}</div></div>
+    <div class="cmt-body">${richText(x.body)}</div></div>
     <div class="cmt-foot">${rxBar(c.type, x.id)}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="${c.type}" data-id="${x.id}">Denunciar</button>`) : ''}
@@ -794,15 +974,15 @@ function commentsInner(kind, pid) {
   const c = CM[kind];
   const list = cmList(kind).filter(x => x[c.key] === pid).sort((a, b) => a.created_at.localeCompare(b.created_at));
   return `${list.length ? list.map(x => commentRow(kind, x)).join('') : '<div class="sub" style="margin:6px 0 10px">Aún no hay comentarios.</div>'}
-    <div class="cm-new"><textarea id="cmInput-${kind}-${pid}" maxlength="1000" rows="2" placeholder="Escribe un comentario…"></textarea>
+    <div class="cm-new"><textarea id="cmInput-${kind}-${pid}" maxlength="1000" rows="2" placeholder="Escribe un comentario… (@ para mencionar)"></textarea>
     <button class="btn sm" data-action="comment-send" data-kind="${kind}" data-pid="${pid}">Comentar</button></div>`;
 }
 const commentsBlock = (kind, pid) => `<div class="cm" data-cm="${kind}:${pid}">${commentsInner(kind, pid)}</div>`;
 function updateComments(kind, pid) {
   $$(`[data-cm="${kind}:${pid}"]`).forEach(n => {
-    const ta = n.querySelector('textarea'), v = ta ? ta.value : '';
+    const ta = n.querySelector('textarea'), v = ta ? ta.value : '', mm = ta && ta._mentions;
     n.innerHTML = commentsInner(kind, pid);
-    const t2 = n.querySelector('textarea'); if (t2 && v) t2.value = v; // conserva lo que estabas escribiendo
+    const t2 = n.querySelector('textarea'); if (t2 && v) { t2.value = v; t2._mentions = mm; } // conserva lo que estabas escribiendo
   });
   if (kind === 'feed') $$(`[data-cmcount="${pid}"]`).forEach(n => { n.textContent = cmCountLabel(pid); });
 }
@@ -827,7 +1007,7 @@ function reportRow(r) {
   const x = targetOf(r.target_type, r.target_id);
   return `<div class="row rep"><div style="min-width:0;flex:1">
       <div class="sub">${esc(TARGET_LABEL[r.target_type] || 'Contenido')} · denunciado por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
-      ${x ? `<div style="overflow-wrap:anywhere"><strong>${esc(whoName(x.author_id))}</strong>: ${esc(x.body.slice(0, 200))}</div>` : '<div class="sub">Contenido no disponible</div>'}
+      ${x ? `<div style="overflow-wrap:anywhere"><strong>${esc(whoName(x.author_id))}</strong>: ${esc(plainText(x.body).slice(0, 200))}</div>` : '<div class="sub">Contenido no disponible</div>'}
       ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
     <div class="actions" style="margin:0"><button class="btn sm danger" data-action="mod-delete" data-id="${r.id}">Borrar contenido</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
 }
@@ -845,8 +1025,8 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
    La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
 const RT_TABLES = ['feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
-  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications'];
-const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports' };
+  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks'];
+const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
   : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id : r.id;
 function addUnique(list, row, table) { // añade sin duplicar (lo local y lo que llega en directo pueden cruzarse)
@@ -1208,7 +1388,7 @@ async function loadData(quiet = false) {
     S.dmContacts = (extra[2].data || []).map(x => typeof x === 'string' ? x : x.get_dm_contacts || x.id);
     S.dmCan = {}; S.dmContacts.forEach(id => { S.dmCan[id] = true; });
     if (S.profile.role === 'teacher') {
-      const [i, a, p, bp, br, bd, rp, fp, fc, lc, rx, dr] = await Promise.all([
+      const [i, a, p, bp, br, bd, rp, hw, pp, pr, fp, fc, lc, rx, dr] = await Promise.all([
         sb.from('listening_items').select('*').order('created_at', { ascending: false }),
         sb.from('listening_assignments').select('*'),
         // sin avatar_src (la copia grande de la foto): no hace falta y pesa. Al añadir campos al perfil, añádelos aquí.
@@ -1217,26 +1397,31 @@ async function loadData(quiet = false) {
         sb.from('board_recipients').select('*'),
         sb.from('board_reads').select('*'),
         sb.from('moderation_reports').select('*'),
+        sb.from('homework_tasks').select('*').order('created_at', { ascending: false }).limit(2000),
+        sb.from('payments_plans').select('*'),
+        sb.from('payments_records').select('*').order('period', { ascending: false }).limit(3000),
         ...common
       ]);
-      const err = [i, a, p, bp, br, bd, rp, fp, fc, lc, rx, dr].map(x => x.error).find(Boolean);
+      const err = [i, a, p, bp, br, bd, rp, hw, pp, pr, fp, fc, lc, rx, dr].map(x => x.error).find(Boolean);
       if (err) throw err;
       S.items = i.data; S.assigns = a.data; S.students = p.data;
       S.posts = bp.data; S.recipients = br.data; S.reads = bd.data; S.reports = rp.data;
+      S.homework = hw.data || []; S.payPlans = pp.data || []; S.payRecords = pr.data || [];
       S.fposts = fp.data; S.fcomments = fc.data; S.lcomments = lc.data; S.reactions = rx.data;
       S.dir = {}; (dr.data || []).forEach(d => { S.dir[d.id] = d; });
     } else {
-      const [a, bp, bd, rp, fp, fc, lc, rx, dr] = await Promise.all([
+      const [a, bp, bd, rp, hw, fp, fc, lc, rx, dr] = await Promise.all([
         sb.from('listening_assignments').select('*, item:listening_items(*)').eq('student_id', me),
         sb.from('board_posts').select('*'),
         sb.from('board_reads').select('*').eq('student_id', me),
         sb.from('moderation_reports').select('*').eq('reporter_id', me),
+        sb.from('homework_tasks').select('*').eq('student_id', me).order('created_at', { ascending: false }).limit(500),
         ...common
       ]);
-      const err = [a, bp, bd, rp, fp, fc, lc, rx, dr].map(x => x.error).find(Boolean);
+      const err = [a, bp, bd, rp, hw, fp, fc, lc, rx, dr].map(x => x.error).find(Boolean);
       if (err) throw err;
       S.assigns = (a.data || []).filter(x => x.item);
-      S.posts = bp.data; S.reads = bd.data; S.reports = rp.data;
+      S.posts = bp.data; S.reads = bd.data; S.reports = rp.data; S.homework = hw.data || [];
       S.fposts = fp.data; S.fcomments = fc.data; S.lcomments = lc.data; S.reactions = rx.data;
       S.dir = {}; (dr.data || []).forEach(d => { S.dir[d.id] = d; });
     }
@@ -1244,7 +1429,7 @@ async function loadData(quiet = false) {
   } catch (e) {
     const m = String(e.message || e);
     if (quiet) { console.warn('Resincronización fallida:', m); return false; }
-    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|relation|schema cache|function/i.test(m)
+    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|homework_|payments_|relation|schema cache|function/i.test(m)
       ? 'Falta ejecutar la última versión de supabase.sql en el SQL Editor de Supabase. (' + m + ')'
       : 'Error cargando los datos: ' + m);
     return false;
@@ -1259,7 +1444,7 @@ function render() {
   if (!S.profile) return;
   const t = isTeacher();
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
-  if (!['feed', 'messages', 'board', 'listening', 'profile', 'settings'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
+  if (!['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].concat(t ? ['students', 'payments', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
   switch (S.section) {
     case 'messages': body = messagesView(); break;
@@ -1268,11 +1453,13 @@ function render() {
     case 'students': body = teacherStudents(); break;
     case 'profile': body = profileView(); break;
     case 'settings': body = settingsView(); break;
+    case 'homework': body = t ? homeworkTeacher() : homeworkStudent(); break;
+    case 'payments': body = paymentsView(); break;
     case 'mod': body = homeTeacher(); break;
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = ['mod', 'messages', 'profile', 'settings'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
+  const rail = ['mod', 'messages', 'profile', 'settings', 'payments'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
   $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
@@ -1292,13 +1479,17 @@ function sections() {
   // Cada módulo nuevo (Pagos, Deberes semanales, Chat…) se añade aquí como una sección más.
   // icon: nombre del icono (si no, el id). mob: false = no sale en la barra inferior del móvil.
   const dmu = unreadDms();
+  const hwn = t ? 0 : hwPending().length;
   const list = [
     { id: 'feed', label: 'Inicio', short: 'Inicio', icon: 'home' },
     { id: 'messages', label: 'Mensajes', short: 'Mensajes', icon: 'chat', n: dmu, badge: dmu ? `${dmu} sin leer` : '' },
     { id: 'board', label: 'Avisos', short: 'Avisos', n: unread, badge: unread ? `${unread} nuevo${unread > 1 ? 's' : ''}` : '' },
-    { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' }
+    { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' },
+    { id: 'homework', label: MODULE_HOMEWORK, short: 'Deberes', icon: 'homework', n: hwn, badge: hwn ? `${hwn} pendiente${hwn > 1 ? 's' : ''}` : '' }
   ];
   if (t) list.push({ id: 'students', label: 'Alumnos', short: 'Alumnos', n: pending, badge: pending ? `${pending} por aprobar` : '', cls: 'warn' });
+  // Pagos: solo el profesor. En el móvil se entra desde el botón de Alumnos (la barra de abajo va llena)
+  if (t) list.push({ id: 'payments', label: 'Pagos', short: 'Pagos', icon: 'payments', mob: false });
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
   list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
@@ -1368,9 +1559,11 @@ function forYou() {
   const rs = myReadSet();
   const unread = S.posts.filter(p => !rs.has(p.id)).sort(postSort);
   const next = S.assigns.filter(a => !a.listened).sort(dueSort)[0];
-  if (!unread.length && !next) return '';
+  const hw = hwPending().sort(hwSort), hwOver = hw.filter(hwOverdue).length;
+  if (!unread.length && !next && !hw.length) return '';
   const p = unread[0], d = next ? dueInfo(next) : null;
   return `<section class="foryou">
+    ${hw.length ? `<div class="fy-row" data-action="section" data-s="homework"><span class="ic">${ic('homework')}</span><div class="t"><b>${esc(hw[0].title)}</b><span class="sub">${hw.length > 1 ? `Deberes · y ${hw.length - 1} más` : 'Deberes pendientes'}</span></div>${hwOver ? '<span class="chip bad">Vencidos</span>' : `<span class="chip acc">${hw.length}</span>`}</div>` : ''}
     ${p ? `<div class="fy-row" data-action="home-open-post" data-id="${p.id}"><span class="ic">${ic('board')}</span><div class="t"><b>${esc(p.title)}</b><span class="sub">${unread.length > 1 ? `Aviso nuevo · y ${unread.length - 1} más` : 'Aviso nuevo'}</span></div><span class="chip new">Nuevo</span></div>` : ''}
     ${next ? `<div class="fy-row" data-action="home-open-assign" data-id="${next.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(next.item.title)}</b><span class="sub">Escucha pendiente</span></div><span class="chip ${d.cls}">${esc(d.text)}</span></div>` : ''}
   </section>`;
@@ -1429,7 +1622,7 @@ function feedView() {
   return `${forYou()}<form id="feedForm" class="panel composer">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
-        <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión o pega un enlace de Spotify o YouTube…"></textarea>
+        <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión, menciona con @ o # o pega un enlace de Spotify o YouTube…"></textarea>
         <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}
@@ -1458,7 +1651,7 @@ function feedCard(p) {
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
     <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
-    <div class="fbody">${linkify(p.body)}</div>
+    <div class="fbody">${richText(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
     <div class="factions">
@@ -1474,7 +1667,7 @@ function feedPostModal(id) {
   openModal(`
     <div class="modal-head"><div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <div class="fbody">${linkify(p.body)}</div>
+    <div class="fbody">${richText(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
     <div style="margin:12px 0">${rxBar('feed_post', p.id)}</div>
     <h2 class="h2">Comentarios</h2>
@@ -1491,7 +1684,7 @@ function postCard(p, isNew) {
   return `<article class="card post ${isNew ? 'isnew' : ''}" data-action="open-post" data-id="${p.id}">
     <div class="card-top"><div class="chips">${p.pinned ? '<span class="chip acc">Fijado</span>' : ''}${isNew ? '<span class="chip new">Nuevo</span>' : ''}</div><span class="sub">${fmtDateTime(p.created_at)}</span></div>
     <h3>${esc(p.title)}</h3>
-    <p class="brief">${esc(p.body)}</p>
+    <p class="brief">${esc(plainText(p.body))}</p>
     ${extra}
   </article>`;
 }
@@ -1540,7 +1733,7 @@ function postModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     ${buttons}
-    <div class="postbody">${linkify(p.body)}</div>
+    <div class="postbody">${richText(p.body)}</div>
     <div style="margin:10px 0">${rxBar('board_post', p.id)}</div>
     ${teacherBlock}`, async () => render());
   markRead(p.id);
@@ -1555,7 +1748,7 @@ function postFormModal(id) {
     <div class="modal-head"><h2>${p ? 'Editar aviso' : 'Nuevo aviso'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="postForm" data-id="${p ? p.id : ''}">
       <label class="f">Título<input type="text" name="title" required maxlength="150" value="${esc(p ? p.title : '')}"></label>
-      <label class="f">Mensaje<textarea name="body" required maxlength="5000" rows="7">${esc(p ? p.body : '')}</textarea></label>
+      <label class="f">Mensaje<textarea name="body" required maxlength="5000" rows="7" placeholder="Usa @ para mencionar a alguien y # para enlazar una sección o una escucha">${esc(p ? plainText(p.body) : '')}</textarea></label>
       <div class="f">Destinatarios
         <div class="radios">
           <label class="chk"><input type="radio" name="audience" value="all" ${aud === 'all' ? 'checked' : ''}> Todos los alumnos</label>
@@ -1571,6 +1764,7 @@ function postFormModal(id) {
       </div>
       <div class="actions"><button class="btn" type="submit">${p ? 'Guardar cambios' : 'Publicar'}</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
+  if (p) mentionSeed($('#postForm textarea[name=body]'), p.body);
 }
 
 /* ================================ PERFIL ============================== */
@@ -1799,6 +1993,7 @@ function guessKind(url) {
   return null;
 }
 // Profesor: rellena en segundo plano las portadas que falten (elementos creados antes de esta función)
+const durTried = new Set();
 async function backfillThumbs() {
   if (!isTeacher() || CFG.NO_EXTERNAL) return;
   for (const it of S.items.filter(i => !i.thumb_url).slice(0, 30)) {
@@ -1807,12 +2002,61 @@ async function backfillThumbs() {
     const { error } = await sb.from('listening_items').update({ thumb_url: th }).eq('id', it.id);
     if (!error) { it.thumb_url = th; S.assigns.forEach(a => { if (a.item && a.item.id === it.id) a.item.thumb_url = th; }); }
   }
+  // Duraciones que falten (una vez por sesión: si un enlace no la da, no se insiste)
+  for (const it of S.items.filter(i => !i.duration_sec && !durTried.has(i.id)).slice(0, 30)) {
+    durTried.add(it.id);
+    const d = await fetchDuration(it.url);
+    if (!d.duration_sec) continue;
+    const row = { duration_sec: d.duration_sec, track_count: d.track_count, duration_partial: d.partial };
+    const { error } = await sb.from('listening_items').update(row).eq('id', it.id);
+    if (!error) { Object.assign(it, row); S.assigns.forEach(a => { if (a.item && a.item.id === it.id) Object.assign(a.item, row); }); }
+  }
   if (S.section === 'listening') softRender();
 }
 // Miniatura con el icono del tipo debajo: si la imagen no carga, se queda el icono
 function coverHtml(it, size = 48) {
   const th = safeThumb(it.thumb_url);
   return `<span class="cover k-${esc(it.kind)}" style="width:${size}px;height:${size}px">${ic(it.kind in KIND ? it.kind : 'song')}${th ? `<img src="${esc(th)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>`;
+}
+// Duración: canción "3:33"; álbum/playlist "12 temas · 42 min" o "1 h 12 min". "+" = solo se sumaron los primeros 100 temas
+function fmtSecs(sec, exact) {
+  sec = Math.round(sec);
+  if (exact) { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = String(sec % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`; }
+  const mins = Math.max(1, Math.round(sec / 60)), h = Math.floor(mins / 60), m = mins % 60;
+  return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${mins} min`;
+}
+function durText(it) {
+  const sec = Number(it.duration_sec) || 0, n = Number(it.track_count) || 0;
+  if (!sec && !n) return '';
+  const part = !!it.duration_partial;
+  const d = sec ? fmtSecs(sec, it.kind === 'song' && !n) + (part ? '+' : '') : '';
+  const t = n && it.kind !== 'song' ? `${n}${part && n === 100 ? '+' : ''} tema${n === 1 ? '' : 's'}` : '';
+  return [t, d].filter(Boolean).join(' · ');
+}
+const durHtml = it => { const t = durText(it); return t ? `<span class="tdur">${esc(t)}</span>` : ''; };
+// "3:33", "1:12:05", "42", "42 min", "1 h 12 min" → segundos. Vacío → null. No válido → NaN
+function parseDur(v) {
+  v = String(v || '').trim().toLowerCase();
+  if (!v) return null;
+  if (/^\d+(:\d{1,2}){1,2}$/.test(v)) return v.split(':').reduce((s, p) => s * 60 + Number(p), 0) || NaN;
+  if (/^\d+$/.test(v)) return Number(v) * 60 || NaN;
+  const m = v.match(/^(?:(\d+)\s*h)?\s*(?:(\d+)\s*(?:m|min|mins|minutos?)?)?$/);
+  return m && (m[1] || m[2]) ? ((Number(m[1]) || 0) * 3600 + (Number(m[2]) || 0) * 60) || NaN : NaN;
+}
+// Duración con la Edge Function "media-info" (Spotify/YouTube no la dan al navegador). { duration_sec, track_count, partial }
+const durCache = {};
+async function fetchDuration(url) {
+  const none = { duration_sec: null, track_count: null, partial: false };
+  if (typeof window.__DUR_STUB === 'function') return window.__DUR_STUB(url); // pruebas
+  if (CFG.NO_EXTERNAL || !linkService(url)) return none;
+  if (durCache[url]) return durCache[url];
+  try {
+    const { data, error } = await sb.functions.invoke('media-info', { body: { url } });
+    if (error || !data) return none;
+    const ok = x => Number.isInteger(x) && x > 0 ? x : null;
+    return (durCache[url] = { duration_sec: ok(data.duration_sec), track_count: ok(data.track_count), partial: !!data.partial });
+  } catch { return none; }
 }
 const kindIcon = k => `<span class="kicon" title="${esc(KIND[k] || k)}" aria-label="${esc(KIND[k] || k)}">${ic(k in KIND ? k : 'song')}</span>`;
 function playBtn(url) {
@@ -1843,7 +2087,7 @@ function studentCard(a, i = 0) {
   return `<article class="track ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
     <span class="tnum">${a.listened ? `<span class="tdone" title="Escuchado">${ic('check')}</span>` : i + 1}</span>
     ${coverHtml(it)}
-    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></div>
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
     <span class="tans">${answersMeter(n)}</span>
     <span class="tdue ${d.cls}">${a.due_date ? esc(d.cls ? d.text : fmtDate(a.due_date)) : '—'}</span>
     ${playBtn(it.url)}
@@ -1857,7 +2101,7 @@ function studentModal(id) {
   cur = { id, dirty: false, timer: null, saving: false };
   openModal(`
     <div class="modal-head">
-      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="chips" style="margin-bottom:6px"><span class="chip ${d.cls}">${esc(d.text)}</span></div>
@@ -2068,7 +2312,7 @@ function teacherCatalog() {
       return `<article class="track" data-action="open-item" data-id="${it.id}">
         <span class="tnum">${i + 1}</span>
         ${coverHtml(it)}
-        <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></div>
+        <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
         <span class="tans" title="${as.length} asignado${as.length === 1 ? '' : 's'} · ${li} escuchado${li === 1 ? '' : 's'} · ${ans} con respuestas">${ic('students')} ${as.length} · ${ic('check')} ${li}</span>
         <span class="tdue">${ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : ans ? `<span class="chip acc">${ans} con respuestas</span>` : '—'}</span>
         ${playBtn(it.url)}
@@ -2086,7 +2330,7 @@ function teacherStudents() {
     ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
       <div class="row"><div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
       <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div>`).join('')}</div>` : ''}
-    <h2 class="h2">Alumnos</h2>
+    <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div>
     ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
       <div class="row click" data-action="open-student" data-id="${s.id}">
         <div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
@@ -2111,6 +2355,7 @@ let itemUrlTimer = null;
 function itemUrlChanged(input) {
   const f = input.form, url = input.value.trim();
   const k = guessKind(url); if (k) f.kind.value = k;
+  f.duration.value = ''; f.tracks.value = ''; // eran del enlace anterior: se vuelven a calcular al guardar
   clearTimeout(itemUrlTimer);
   itemUrlTimer = setTimeout(async () => {
     const full = /^https?:\/\//i.test(url) ? url : 'https://' + url;
@@ -2126,6 +2371,10 @@ function itemFormModal(id) {
     <form id="itemForm" data-id="${it ? it.id : ''}">
       <label class="f">Enlace (Spotify, YouTube…)<input type="text" name="url" required placeholder="Pega aquí el enlace" value="${esc(it ? it.url : '')}"></label>
       <label class="f">Título <span class="sub">(opcional: si lo dejas vacío, se usa el de Spotify o YouTube)</span><input type="text" name="title" maxlength="200" value="${esc(it ? it.title : '')}" placeholder="Se rellenará solo"></label>
+      <div class="durrow">
+        <label class="f">Duración <span class="sub">(opcional: se rellena sola)</span><input type="text" name="duration" maxlength="20" value="${esc(it && it.duration_sec ? fmtSecs(it.duration_sec, true) : '')}" placeholder="Ej.: 3:33 · 42 min · 1 h 12 min"></label>
+        <label class="f">Temas <span class="sub">(álbum o playlist)</span><input type="number" name="tracks" min="1" max="100000" value="${esc(it && it.track_count ? String(it.track_count) : '')}" placeholder="Auto"></label>
+      </div>
       <label class="f">Tipo<select name="kind">
         ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select></label>
@@ -2142,7 +2391,7 @@ function itemModal(id) {
   const free = S.students.filter(s => s.approved && !taken.has(s.id));
   openModal(`
     <div class="modal-head">
-      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}</span><h2>${esc(it.title)}</h2></div></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="actions" style="margin:0 0 6px">
@@ -2189,6 +2438,10 @@ function studentDetailModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
     <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
+    ${(() => { const pend = S.homework.filter(h => h.student_id === s.id && !h.done_at).length, pl = planOf(s.id);
+      return `<div class="chips" style="margin:8px 0 4px">
+        <button class="chip acc" style="cursor:pointer" data-action="goto" data-s="homework">📝 ${pend} deber${pend === 1 ? '' : 'es'} pendiente${pend === 1 ? '' : 's'}</button>
+        <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button></div>`; })()}
     <h2 class="h2">Edad y mensajes privados</h2>
     <div class="agebox">
       <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
@@ -2364,10 +2617,14 @@ function notifText(n) {
     case 'reaction': return `${who} ha reaccionado ${RX_EMOJI[n.extra] || ''} a tu publicación`;
     case 'signup': return `<b>${esc(n.extra || 'Alguien')}</b> se ha registrado y espera tu aprobación`;
     case 'report': return 'Hay una denuncia nueva para revisar';
+    case 'homework': return `Deberes nuevos: <b>${esc(n.extra || '')}</b>`;
+    case 'mention_feed': return `${who} te ha mencionado${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
+    case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening' }[kind] || 'bell'; }
 function notifsModal() {
   const list = S.notifs.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -2387,16 +2644,24 @@ async function markNotifsRead(ids) {
   S.notifs.forEach(n => { if (ids.includes(n.id)) n.read_at = now; });
   await sb.from('notifications').update({ read_at: now }).in('id', ids);
 }
+// Abre la ficha de una escucha (profesor) o la escucha asignada (alumno)
+function openMentionItem(id) {
+  S.section = 'listening'; render();
+  if (isTeacher()) { if (S.items.some(i => i.id === id)) itemModal(id); return; }
+  const a = S.assigns.find(x => x.item_id === id); if (a) studentModal(a.id);
+}
 async function openNotif(n) {
   await markNotifsRead([n.id]);
   await closeModal();
   switch (n.kind) {
-    case 'board_post': S.section = 'board'; render(); if (S.posts.some(p => p.id === n.target_id)) postModal(n.target_id); break;
+    case 'board_post': case 'mention_board': S.section = 'board'; render(); if (S.posts.some(p => p.id === n.target_id)) postModal(n.target_id); break;
+    case 'mention_listening': openMentionItem(n.target_id); break;
     case 'assignment': S.section = 'listening'; render(); break;
     case 'dm': await openDm(n.actor_id); break;
-    case 'comment': case 'reaction': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
+    case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
     case 'signup': S.section = 'students'; render(); break;
     case 'report': S.section = 'mod'; render(); break;
+    case 'homework': S.section = 'homework'; render(); break;
     default: render();
   }
 }
@@ -2560,6 +2825,9 @@ const actions = {
   'open-post'(el) { postModal(el.dataset.id); },
   'home-open-fpost'(el) { S.section = 'feed'; render(); feedPostModal(el.dataset.id); },
   'open-fpost'(el) { feedPostModal(el.dataset.id); },
+  // Menciones pulsables: #sección y #escucha (las @personas usan open-profile)
+  async 'mention-go'(el) { if ($('#modalRoot').firstChild) await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
+  async 'mention-item'(el) { if ($('#modalRoot').firstChild) await closeModal(); openMentionItem(el.dataset.id); },
   'rx-open'(el) { const pk = el.closest('.rx').querySelector('.rx-pick'); pk.hidden = !pk.hidden; },
   async 'rx-toggle'(el) {
     const { t, i, e } = el.dataset, me = S.user.id;
@@ -2578,14 +2846,15 @@ const actions = {
   },
   async 'comment-send'(el) {
     const { kind, pid } = el.dataset, c = CM[kind];
-    const ta = $(`#cmInput-${kind}-${pid}`), body = ta.value.trim();
+    const ta = $(`#cmInput-${kind}-${pid}`), body = mentionEncode(ta);
     if (!body) return toast('Escribe algo primero', 'bad');
+    if (body.length > 1000) return toast('El comentario es demasiado largo', 'bad');
     el.disabled = true;
     const { data, error } = await sb.from(c.table).insert({ [c.key]: pid, author_id: S.user.id, body }).select().single();
     el.disabled = false;
     if (error) return toast('No se pudo comentar: ' + error.message, 'bad');
     addUnique(cmList(kind), data, c.table); // el tiempo real puede haberlo traído ya
-    ta.value = '';
+    ta.value = ''; ta._mentions = [];
     updateComments(kind, pid);
   },
   async 'comment-delete'(el) {
@@ -2723,8 +2992,9 @@ document.addEventListener('submit', async e => {
     const audience = el['audience'].value;
     const ids = $$('input[name=pick]:checked', f).map(x => x.value);
     if (audience === 'selected' && !ids.length) return toast('Elige al menos un alumno', 'bad');
-    const row = { title: el['title'].value.trim(), body: el['body'].value.trim(), audience, pinned: el['pinned'].checked };
+    const row = { title: el['title'].value.trim(), body: mentionEncode(el['body']), audience, pinned: el['pinned'].checked };
     if (!row.title || !row.body) return toast('Escribe un título y un mensaje', 'bad');
+    if (row.body.length > 5000) return toast('El mensaje es demasiado largo', 'bad');
     const btn = $('button[type=submit]', f); btn.disabled = true;
     let id = f.dataset.id, error;
     if (id) ({ error } = await sb.from('board_posts').update(row).eq('id', id));
@@ -2741,8 +3011,9 @@ document.addEventListener('submit', async e => {
     toast(wasEdit ? 'Aviso actualizado' : 'Aviso publicado', 'ok');
   } else if (f.id === 'feedForm') {
     e.preventDefault();
-    const body = f.elements['body'].value.trim();
+    const body = mentionEncode(f.elements['body']);
     if (!body) return toast('Escribe algo para publicar', 'bad');
+    if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
     const link = firstLink(body); // el primer enlace del texto se muestra como tarjeta (Spotify, YouTube…)
     const btn = $('button[type=submit]', f); btn.disabled = true;
     const { data, error } = await sb.from('feed_posts').insert({ author_id: S.user.id, body, link_url: link || null }).select().single();
@@ -2793,12 +3064,245 @@ document.addEventListener('submit', async e => {
     if (!title) return toast('No he podido sacar el título de ese enlace. Escríbelo tú', 'bad');
     const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null };
     if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = meta.thumb; // portada de Spotify/YouTube
+    // Duración: lo escrito a mano manda; si está vacío, se saca de Spotify/YouTube
+    const dur = parseDur(f.duration.value), tracks = f.tracks.value.trim() ? Math.round(Number(f.tracks.value)) : null;
+    if (Number.isNaN(dur) || dur > 1000000) return toast('No entiendo esa duración. Escríbela como 3:33, 42 min o 1 h 12 min', 'bad');
+    if (tracks !== null && !(tracks >= 1 && tracks <= 100000)) return toast('El número de temas no es válido', 'bad');
+    const manual = prev && dur === prev.duration_sec && tracks === prev.track_count ? null : { dur, tracks };
+    if (manual && (dur || tracks)) Object.assign(row, { duration_sec: dur, track_count: tracks, duration_partial: false });
+    else if (!manual && prev && prev.url === url && prev.duration_sec) { /* sin cambios */ }
+    else {
+      btn.disabled = true; btn.textContent = 'Buscando duración…';
+      const d = await fetchDuration(url);
+      btn.disabled = false; btn.textContent = 'Guardar';
+      Object.assign(row, { duration_sec: d.duration_sec, track_count: d.track_count, duration_partial: d.partial });
+    }
     const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
     if (error) return toast('Error: ' + error.message, 'bad');
     await loadData();
     await closeModal();
     render();
     toast(id ? 'Elemento actualizado' : 'Elemento creado', 'ok');
+  }
+});
+
+/* ================================ DEBERES ============================= *
+   homework_tasks: una fila por alumno y tarea. Solo texto. El profesor las pone (a uno o a varios de golpe);
+   el alumno ve solo las suyas y las marca como practicadas. La fecha límite es opcional. */
+const MODULE_HOMEWORK = 'Deberes';
+const hwPending = () => S.homework.filter(h => !h.done_at);
+function hwDue(h) { // mismo criterio de colores que las escuchas
+  if (!h.due_date) return null;
+  const n = daysDiff(h.due_date);
+  if (h.done_at) return { cls: '', text: 'Para el ' + fmtDate(h.due_date) };
+  if (n < 0) return { cls: 'bad', text: `Vencido (${fmtDate(h.due_date)})` };
+  if (n === 0) return { cls: 'warn', text: 'Para hoy' };
+  if (n <= 2) return { cls: 'warn', text: `Para dentro de ${n} día${n > 1 ? 's' : ''} (${fmtDate(h.due_date)})` };
+  return { cls: '', text: 'Para el ' + fmtDate(h.due_date) };
+}
+const hwSort = (a, b) => {
+  if (!!a.done_at !== !!b.done_at) return a.done_at ? 1 : -1;
+  if (a.done_at) return b.done_at.localeCompare(a.done_at);
+  if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+  if (a.due_date) return -1; if (b.due_date) return 1;
+  return (a.created_at || '').localeCompare(b.created_at || '');
+};
+const hwOverdue = h => !h.done_at && h.due_date && daysDiff(h.due_date) < 0;
+function hwRow(h, teacher) {
+  const d = hwDue(h);
+  return `<div class="hw ${h.done_at ? 'done' : ''}" data-hw="${h.id}">
+    <button class="hwcheck" data-action="hw-toggle" data-id="${h.id}" aria-pressed="${!!h.done_at}" title="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}" aria-label="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}">${ic('check')}</button>
+    <div class="hwbody"><div class="hwtitle">${esc(h.title)}</div>
+      ${h.details ? `<div class="hwdet">${linkify(h.details)}</div>` : ''}
+      <div class="hwmeta">${d ? `<span class="chip ${d.cls}">${esc(d.text)}</span>` : ''}
+        ${h.done_at ? `<span class="chip ok">Practicada · ${timeAgo(h.done_at)}</span>` : ''}
+        ${teacher ? '' : `<span class="sub">${timeAgo(h.created_at)}</span>`}</div></div>
+    ${teacher ? `<div class="hwtools"><button class="iconbtn sm" data-action="hw-edit" data-id="${h.id}" title="Editar" aria-label="Editar">${ic('edit')}</button>
+      <button class="iconbtn sm" data-action="hw-delete" data-id="${h.id}" title="Borrar" aria-label="Borrar">×</button></div>` : ''}
+  </div>`;
+}
+function homeworkStudent() {
+  const list = S.homework.slice().sort(hwSort), pend = list.filter(h => !h.done_at), done = list.filter(h => h.done_at);
+  return `<p class="sub" style="margin:0 0 14px">Lo que tienes que practicar para tus próximas clases. Márcalo cuando lo hayas trabajado: tu profesor lo verá.</p>
+    ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, false)).join('')}</div>`
+      : '<div class="empty">No tienes deberes pendientes. 🤘</div>'}
+    ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 40).map(h => hwRow(h, false)).join('')}</div></details>` : ''}`;
+}
+function homeworkTeacher() {
+  const ok = S.students.filter(s => s.approved);
+  const by = id => S.homework.filter(h => h.student_id === id).sort(hwSort);
+  const withTasks = ok.filter(s => by(s.id).length), without = ok.filter(s => !by(s.id).some(h => !h.done_at));
+  return `<div class="sec-head"><p class="sub" style="margin:0">Tareas que cada alumno tiene que practicar. Ellos marcan lo que han trabajado; tú también puedes marcarlo en clase.</p>
+      <button class="btn primary" data-action="hw-new">+ Nuevos deberes</button></div>
+    ${!ok.length ? '<div class="empty">Aún no tienes alumnos aprobados.</div>' : ''}
+    <div class="hwgroups">${withTasks.map(s => {
+      const l = by(s.id), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
+      return `<section class="dcard hwgroup"><div class="dhead"><h2>${whoLink(s.id, avatarHtml(s.id, 30))} ${esc(s.display_name)}</h2>
+          <div class="chips">${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : '<span class="chip ok">Al día</span>'}
+          ${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}
+          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div></div>
+        ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
+        ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
+      </section>`;
+    }).join('')}</div>
+    ${without.length && withTasks.length ? `<p class="sub" style="margin-top:14px">Sin deberes pendientes: ${without.map(s => esc(s.display_name)).join(', ')}.</p>` : ''}
+    ${ok.length && !withTasks.length ? '<div class="empty">Todavía no has puesto deberes. Pulsa <b>+ Nuevos deberes</b>.</div>' : ''}`;
+}
+function hwFormModal(id, forStudent) {
+  const h = id ? S.homework.find(x => x.id === id) : null;
+  const ok = S.students.filter(s => s.approved);
+  openModal(`<div class="modal-head"><h2>${h ? 'Editar deberes' : 'Nuevos deberes'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="hwForm" data-id="${h ? h.id : ''}">
+      ${h ? `<p class="sub" style="margin:0 0 12px">Para <b>${esc(studentName(h.student_id))}</b></p>`
+        : `<div class="f">Para quién <button type="button" class="linkbtn" data-action="hw-all" style="margin-left:8px">Marcar todos</button>
+          <div class="pickbox">${ok.length ? ok.map(s => `<label class="chk"><input type="checkbox" name="pick" value="${s.id}" ${forStudent === s.id ? 'checked' : ''}> ${esc(s.display_name)}</label>`).join('') : '<span class="sub">No hay alumnos aprobados.</span>'}</div></div>`}
+      <label class="f">Qué tiene que practicar<input type="text" name="title" required maxlength="200" value="${esc(h ? h.title : '')}" placeholder="Ej.: Escala pentatónica de La en las 5 posiciones"></label>
+      <label class="f">Detalles (opcional)<textarea name="details" maxlength="1500" rows="4" placeholder="Tempo, compases, cómo practicarlo, enlaces…">${esc(h ? h.details || '' : '')}</textarea></label>
+      <label class="f" style="max-width:220px">Fecha límite (opcional)<input type="date" name="due_date" value="${esc(h ? h.due_date || '' : '')}"></label>
+      <div class="actions"><button class="btn" type="submit">${h ? 'Guardar cambios' : 'Poner deberes'}</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+  $('.modal').classList.add('narrow');
+}
+
+/* ================================= PAGOS ============================== *
+   Solo el profesor. payments_plans = el trato de cada alumno; payments_records = cada pago apuntado.
+   Cada mes empieza sin pagos marcados ("se desmarca al acabar el mes") y los anteriores quedan de historial. */
+const PAY_MODE = { monthly: 'Mensual', per_class: 'Por clase', free: 'Gratis' };
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const monthStart = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`;
+const monthLabel = p => { const [y, m] = p.split('-').map(Number); return `${MONTHS[m - 1]} ${y}`; };
+const shiftMonth = (p, n) => { const [y, m] = p.split('-').map(Number); return monthStart(new Date(y, m - 1 + n, 1)); };
+const money = v => v == null || v === '' ? '' : Number(v).toLocaleString('es-ES', { minimumFractionDigits: Number(v) % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' €';
+const planOf = id => S.payPlans.find(p => p.student_id === id) || null;
+function paymentsView() {
+  const per = S.payMonth || (S.payMonth = monthStart());
+  const isNow = per === monthStart(), future = per > monthStart();
+  const ok = S.students.filter(s => s.approved);
+  const recs = S.payRecords.filter(r => r.period === per);
+  const total = recs.reduce((t, r) => t + Number(r.amount || 0), 0);
+  let pendN = 0;
+  const rows = ok.map(s => {
+    const pl = planOf(s.id), mine = recs.filter(r => r.student_id === s.id);
+    const planTxt = !pl ? '<span class="sub">Sin trato</span>' : `${PAY_MODE[pl.mode]}${pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : ''}`;
+    let status = '';
+    if (!pl) status = `<button class="btn sm" data-action="pay-plan" data-id="${s.id}">Configurar trato</button>`;
+    else if (pl.mode === 'free') status = '<span class="chip">Gratis</span>';
+    else if (pl.mode === 'monthly') {
+      const r = mine.find(x => x.kind === 'monthly');
+      if (r) status = `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}</span><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
+      else { pendN++; status = `${!isNow && !future ? '<span class="chip warn">No pagado</span>' : ''}<button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
+    } else { // por clase
+      const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
+      status = `<span class="chip ${n ? 'ok' : ''}">${n} clase${n === 1 ? '' : 's'} pagada${n === 1 ? '' : 's'}${n ? ' · ' + money(sum) : ''}</span>
+        ${n ? `<button class="iconbtn sm" data-action="pay-class-undo" data-id="${s.id}" title="Quitar la última" aria-label="Quitar la última clase pagada">−</button>` : ''}
+        <button class="btn primary sm" data-action="pay-class" data-id="${s.id}">+ Clase pagada</button>`;
+    }
+    return `<div class="payrow"><div class="who">${avatarHtml(s.id, 34)}<div><strong>${esc(s.display_name)}</strong>
+        <button class="linkbtn mute" data-action="pay-plan" data-id="${s.id}" title="Cambiar el trato">${planTxt} ✎</button></div></div>
+      <div class="paystatus">${status}</div></div>`;
+  }).join('');
+  return `<div class="monthnav"><button class="iconbtn" data-action="pay-month" data-n="-1" aria-label="Mes anterior">‹</button>
+      <h2>${monthLabel(per)}</h2><button class="iconbtn" data-action="pay-month" data-n="1" aria-label="Mes siguiente">›</button>
+      ${isNow ? '' : '<button class="btn sm ghost" data-action="pay-month" data-n="0">Mes actual</button>'}</div>
+    <div class="stats"><div class="stat"><b>${money(total) || '0 €'}</b><span>Cobrado en ${MONTHS[Number(per.slice(5, 7)) - 1]}</span></div>
+      <div class="stat ${pendN && !isNow && !future ? 'warn' : ''}"><b>${pendN}</b><span>${isNow ? 'Mensuales por pagar' : future ? 'Mensuales' : 'Sin pagar ese mes'}</span></div>
+      <div class="stat"><b>${ok.filter(s => (planOf(s.id) || {}).mode === 'free').length}</b><span>Con clases gratis</span></div></div>
+    ${ok.length ? `<div class="paylist">${rows}</div>` : '<div class="empty">Aún no tienes alumnos aprobados.</div>'}
+    <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Cada mes empieza sin pagos marcados; los meses anteriores quedan guardados (usa las flechas).</p>`;
+}
+function planModal(id) {
+  const pl = planOf(id) || { mode: 'monthly', amount: null, note: '' };
+  openModal(`<div class="modal-head"><h2>Trato con ${esc(studentName(id))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="planForm" data-id="${id}">
+      <div class="f">Cómo paga<div class="radios">${Object.entries(PAY_MODE).map(([k, v]) => `<label class="chk"><input type="radio" name="mode" value="${k}" ${pl.mode === k ? 'checked' : ''}> ${v}</label>`).join('')}</div></div>
+      <label class="f" style="max-width:220px">Precio (€) <span class="sub">${'· al mes o por clase'}</span><input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${pl.amount != null ? esc(String(pl.amount)) : ''}" placeholder="Ej.: 60"></label>
+      <label class="f">Nota privada (opcional)<input type="text" name="note" maxlength="300" value="${esc(pl.note || '')}" placeholder="Ej.: paga por Bizum; descuento por hermanos"></label>
+      <p class="sub" style="margin:0 0 12px">Si cambias el precio, los pagos ya apuntados conservan su importe.</p>
+      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+  $('.modal').classList.add('narrow');
+}
+async function payInsert(studentId, kind) {
+  const pl = planOf(studentId), per = S.payMonth || monthStart();
+  const today = monthStart() === per ? new Date().toISOString().slice(0, 10) : per; // en meses pasados, se apunta con fecha del día 1
+  const row = { student_id: studentId, period: per, kind, amount: pl && pl.amount != null ? pl.amount : null, paid_on: today };
+  const { data, error } = await sb.from('payments_records').insert(row).select();
+  if (error) return toast('No se pudo apuntar: ' + error.message, 'bad');
+  S.payRecords.push(data[0]); render();
+}
+
+Object.assign(actions, {
+  async goto(el) { await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
+  'hw-new'(el) { hwFormModal(null, el.dataset.id); },
+  'hw-edit'(el) { hwFormModal(el.dataset.id); },
+  'hw-all'() { const boxes = $$('#hwForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
+  async 'hw-toggle'(el) {
+    const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
+    const val = h.done_at ? null : new Date().toISOString();
+    const { data, error } = await sb.from('homework_tasks').update({ done_at: val }).eq('id', h.id).select();
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    h.done_at = data[0].done_at;
+    if (val && !isTeacher()) toast('¡Bien! Marcada como practicada', 'ok');
+    render();
+  },
+  async 'hw-delete'(el) {
+    const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
+    if (!confirm(`¿Borrar "${h.title}" de los deberes de ${studentName(h.student_id)}?`)) return;
+    const { error } = await sb.from('homework_tasks').delete().eq('id', h.id);
+    if (error) return toast('No se pudo borrar: ' + error.message, 'bad');
+    S.homework = S.homework.filter(x => x.id !== h.id); render();
+  },
+  'pay-month'(el) { const n = Number(el.dataset.n); S.payMonth = n === 0 ? monthStart() : shiftMonth(S.payMonth || monthStart(), n); render(); },
+  'pay-plan'(el) { planModal(el.dataset.id); },
+  'pay-mark'(el) { payInsert(el.dataset.id, 'monthly'); },
+  'pay-class'(el) { payInsert(el.dataset.id, 'class'); },
+  async 'pay-undo'(el) {
+    const r = S.payRecords.find(x => x.id === el.dataset.id); if (!r) return;
+    if (!confirm(`¿Desmarcar el pago de ${studentName(r.student_id)} de ${monthLabel(r.period)}?`)) return;
+    const { error } = await sb.from('payments_records').delete().eq('id', r.id);
+    if (error) return toast('No se pudo desmarcar: ' + error.message, 'bad');
+    S.payRecords = S.payRecords.filter(x => x !== r); render();
+  },
+  async 'pay-class-undo'(el) {
+    const per = S.payMonth || monthStart();
+    const r = S.payRecords.filter(x => x.student_id === el.dataset.id && x.period === per && x.kind === 'class').sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
+    if (!r) return;
+    const { error } = await sb.from('payments_records').delete().eq('id', r.id);
+    if (error) return toast('No se pudo quitar: ' + error.message, 'bad');
+    S.payRecords = S.payRecords.filter(x => x !== r); render();
+  }
+});
+document.addEventListener('submit', async e => {
+  const f = e.target;
+  if (f.id === 'hwForm') {
+    e.preventDefault();
+    const title = f.title.value.trim(), details = f.details.value.trim() || null, due_date = f.due_date.value || null;
+    if (!title) return toast('Escribe qué tiene que practicar', 'bad');
+    if (f.dataset.id) {
+      const { data, error } = await sb.from('homework_tasks').update({ title, details, due_date }).eq('id', f.dataset.id).select();
+      if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+      Object.assign(S.homework.find(x => x.id === f.dataset.id), data[0]);
+      await closeModal(); render(); return toast('Deberes actualizados', 'ok');
+    }
+    const ids = $$('#hwForm input[name=pick]:checked').map(x => x.value);
+    if (!ids.length) return toast('Elige al menos un alumno', 'bad');
+    const { data, error } = await sb.from('homework_tasks').insert(ids.map(student_id => ({ student_id, title, details, due_date, created_by: S.user.id }))).select();
+    if (error) return toast('No se pudo guardar: ' + error.message, 'bad');
+    (data || []).forEach(r => addUnique(S.homework, r, 'homework_tasks'));
+    await closeModal(); render();
+    toast(ids.length > 1 ? `Deberes puestos a ${ids.length} alumnos. Les llegará un aviso.` : 'Deberes puestos. Le llegará un aviso.', 'ok');
+  } else if (f.id === 'planForm') {
+    e.preventDefault();
+    const id = f.dataset.id, mode = (f.querySelector('input[name=mode]:checked') || {}).value || 'monthly';
+    const raw = f.amount.value.trim(), amount = raw === '' || mode === 'free' ? null : Math.round(Number(raw.replace(',', '.')) * 100) / 100;
+    if (amount != null && !(amount >= 0 && amount < 100000)) return toast('El precio no es válido', 'bad');
+    const row = { mode, amount, note: f.note.value.trim() || null, updated_at: new Date().toISOString() };
+    const ex = planOf(id);
+    const { data, error } = ex ? await sb.from('payments_plans').update(row).eq('student_id', id).select()
+      : await sb.from('payments_plans').insert({ student_id: id, ...row }).select();
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    S.payPlans = S.payPlans.filter(p => p.student_id !== id).concat(data[0]);
+    await closeModal(); render(); toast('Trato guardado', 'ok');
   }
 });
 
@@ -2985,7 +3489,7 @@ async function openNotifFromUrl(url) {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.section = 'feed'; viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.homework = []; S.payPlans = []; S.payRecords = []; S.payMonth = null; S.section = 'feed'; viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });

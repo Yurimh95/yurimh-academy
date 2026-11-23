@@ -29,6 +29,10 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
     case "report": return { title: "Denuncia nueva", body: "Hay contenido denunciado para revisar" };
+    case "mention_feed": return { title: `${actor} te ha mencionado`, body: extra ?? "" };
+    case "mention_board": return { title: `📣 ${actor} te ha mencionado en un aviso`, body: extra ?? "" };
+    case "mention_listening": return { title: `🎧 ${actor} te ha mencionado en una escucha`, body: extra ?? "" };
+    case "homework": return { title: "📝 Deberes nuevos", body: extra ?? "Tienes deberes nuevos para practicar" };
     default: return { title: "Yurimh Music Academy", body: "Tienes una novedad" };
   }
 }
