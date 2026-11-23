@@ -75,5 +75,19 @@ window.__DB_SEED = {
     {id:'l4',event_key:'x@g|1',student_id:null,title:'Clase Pedro (prueba)',starts_at:D(1,20),ends_at:D(1,21),reminded_at:null,synced_at:T(5)}
   ],
   lessons_students:[],
-  lessons_sync:[ {id:1,last_run_at:T(5),last_ok_at:T(5),last_error:null,events:4,unmatched:1} ]
+  lessons_sync:[ {id:1,last_run_at:T(5),last_ok_at:T(5),last_error:null,events:4,unmatched:1} ],
+  goals_stages:[ {stage:1,title:'Primeros pasos'}, {stage:2,title:'Técnica de base'}, {stage:3,title:'Cejilla'} ],
+  goals_items:[
+    {id:'g1',student_id:null,stage:1,title:'Nombrar las partes de la guitarra',details:null,sort:10,created_at:T(9000)},
+    {id:'g2',student_id:null,stage:1,title:'Afinar la guitarra',details:null,sort:20,created_at:T(9000)},
+    {id:'g3',student_id:null,stage:2,title:'Técnica de mano derecha',details:'Púa correcta, apoyar en el puente',sort:10,created_at:T(9000)},
+    {id:'g4',student_id:null,stage:3,title:'Acordes con cejilla en la 6ª cuerda',details:null,sort:10,created_at:T(9000)},
+    {id:'g5',student_id:'s1',stage:null,title:'Tocar Wonderwall entera',details:null,sort:10,created_at:T(9000)},
+    {id:'g6',student_id:'s2',stage:null,title:'Walking bass a 120 bpm',details:null,sort:10,created_at:T(9000)}
+  ],
+  goals_done:[
+    {id:'gd1',goal_id:'g1',student_id:'s1',done_at:T(3000),seen_at:T(2900)},
+    {id:'gd2',goal_id:'g2',student_id:'s1',done_at:T(60),seen_at:T(50)},
+    {id:'gd3',goal_id:'g6',student_id:'s2',done_at:T(60),seen_at:T(50)}
+  ]
 };

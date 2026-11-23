@@ -54,7 +54,10 @@
     lessons: r => isTeacher() || (r.student_id===me && isApproved()),
     lessons_students: () => isTeacher(),
     lessons_sync: () => isTeacher(),
-    classmates: r => r.requester_id===me || r.addressee_id===me || isTeacher()
+    classmates: r => r.requester_id===me || r.addressee_id===me || isTeacher(),
+    goals_stages: () => isApproved(),
+    goals_items: r => isTeacher() || (isApproved() && (!r.student_id || r.student_id===me)),
+    goals_done: r => isTeacher() || (r.student_id===me && isApproved())
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -84,7 +87,10 @@
     lessons: () => false,
     lessons_students: () => isTeacher(),
     lessons_sync: () => false,
-    classmates: (op,r) => op==='update' ? r.addressee_id===me : (r.requester_id===me || r.addressee_id===me)
+    classmates: (op,r) => op==='update' ? r.addressee_id===me : (r.requester_id===me || r.addressee_id===me),
+    goals_stages: () => isTeacher(),
+    goals_items: () => isTeacher(),
+    goals_done: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved()))
   };
   const canInsert = {
     profiles: () => false,
@@ -107,20 +113,24 @@
     lessons: () => false,
     lessons_students: () => isTeacher(),
     lessons_sync: () => false,
-    classmates: r => r.requester_id===me && r.status==='pending' && !r.accepted_at && canRequestMate(r.addressee_id)
+    classmates: r => r.requester_id===me && r.status==='pending' && !r.accepted_at && canRequestMate(r.addressee_id),
+    goals_stages: () => isTeacher(),
+    goals_items: () => isTeacher(),
+    goals_done: r => isTeacher() && DB.goals_items.some(g=>g.id===r.goal_id && (!g.student_id || g.student_id===r.student_id)) // goals_done_guard
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
     feed_comments: r => r.body && r.body.length<=1000,
     listening_comments: r => r.body && r.body.length<=1000,
     dm_messages: r => r.body && r.body.length<=2000 && r.sender_id!==r.recipient_id,
+    goals_items: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (r.student_id || r.stage),
     homework_tasks: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (!r.details || r.details.length<=1500),
     payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
     payments_plans: r => ['monthly','per_class','free'].includes(r.mode) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'], lessons_students:['student_id'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){
@@ -134,6 +144,7 @@
   const mentionPlain=t=>String(t||'').replace(/<@([0-9a-z_-]+)>/g,(m,id)=>{ const p=DB.profiles.find(x=>x.id===id); return '@'+(p?((p.nickname||'').trim()||p.display_name):'usuario'); }).replace(/<#l:[0-9a-z_-]+>/g,'#escucha').replace(/<#([a-z]+)>/g,'#$1');
   const blockedBy=(u,author)=>DB.user_blocks.some(b=>b.blocker_id===u&&b.blocked_id===author);
   function notifyFor(table,row){
+    if(table==='goals_done'){ const g=DB.goals_items.find(x=>x.id===row.goal_id)||{}; notify(row.student_id,'goal',me,row.goal_id,(g.title||'').slice(0,160)); }
     const teachers=()=>DB.profiles.filter(p=>p.role==='teacher'&&p.approved).map(p=>p.id);
     const approvedIds=ids=>ids.filter(u=>DB.profiles.some(p=>p.id===u&&p.approved));
     if(table==='board_posts' && row.audience==='all') DB.profiles.filter(p=>p.role==='student'&&p.approved).forEach(p=>notify(p.id,mentionIds(row.body).includes(p.id)?'mention_board':'board_post',row.author_id,row.id,row.title));
@@ -181,6 +192,7 @@
     const ids=new Set(rows.map(r=>r.id));
     if(table==='feed_posts'){ const cs=removeRows('feed_comments',c=>ids.has(c.post_id)); cleanup('feed_comments',cs); }
     if(table==='listening_items'){ const cs=removeRows('listening_comments',c=>ids.has(c.item_id)); cleanup('listening_comments',cs); removeRows('listening_assignments',a=>ids.has(a.item_id)); }
+    if(table==='goals_items') removeRows('goals_done',d=>ids.has(d.goal_id));
     if(table==='board_posts'){ removeRows('board_recipients',r=>ids.has(r.post_id)); removeRows('board_reads',r=>ids.has(r.post_id)); }
     cleanup(table,rows);
   }
@@ -191,6 +203,7 @@
       if ((nw.archived_at||null)!==(old.archived_at||null)) throw new Error('Solo el profesor puede archivar cuentas');
     }
     if (table==='profiles' && nw.archived_at) nw.approved=false; // profiles_archive_guard
+    if (table==='goals_done' && !isTeacher() && (nw.goal_id!==old.goal_id||nw.student_id!==old.student_id||nw.done_at!==old.done_at)) throw new Error('Solo tu profesor marca los objetivos');
     if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id)) throw new Error('Solo se puede marcar como leído');
     if (table==='notifications' && (nw.kind!==old.kind||nw.user_id!==old.user_id||nw.extra!==old.extra)) throw new Error('Solo se puede marcar como leída');
     if (table==='profiles'){
@@ -272,13 +285,17 @@
           if(table==='moderation_reports') row.resolved=false;
           if(table==='classmates'){ row.status=row.status||'pending'; row.accepted_at=row.accepted_at||null;
             if(mateBetween(row.requester_id,row.addressee_id)) return finish([],'duplicate key value violates unique constraint "classmates_pair_uq"'); }
+          if(table==='goals_items'){ row.student_id=row.student_id||null; row.stage=row.stage||null; row.details=row.details||null; row.sort=row.sort||0; }
+          if(table==='goals_done'){ row.done_at=row.done_at||new Date().toISOString(); row.seen_at=null; if(DB.goals_done.some(e=>e.goal_id===row.goal_id&&e.student_id===row.student_id)) return finish([],'duplicate key value violates unique constraint'); }
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; }
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(pk[table]) delete row.id;
           if(table!=='listening_assignments'){ delete row.assigned_at; delete row.listened; delete row.answers; }
           if(checks[table] && !checks[table](row)) return finish([], 'new row for relation "'+table+'" violates check constraint');
           if(!canInsert[table](row)) return finish([], 'new row violates row-level security policy for table "'+table+'"');
-          if(pk[table] && DB[table].some(e=>pk[table].every(k=>e[k]===row[k]))){ if(st.op==='upsert'&&st.opts.ignoreDuplicates) continue; return finish([],'duplicate key value violates unique constraint'); }
+          if(pk[table] && DB[table].some(e=>pk[table].every(k=>e[k]===row[k]))){ if(st.op==='upsert'&&st.opts.ignoreDuplicates) continue;
+            if(st.op==='upsert'){ const e=DB[table].find(e=>pk[table].every(k=>e[k]===row[k])); Object.assign(e,x); made.push(e); emit(table,'UPDATE',e); continue; }
+            return finish([],'duplicate key value violates unique constraint'); }
           if(table==='moderation_reports' && DB[table].some(e=>e.reporter_id===row.reporter_id&&e.target_type===row.target_type&&e.target_id===row.target_id)) return finish([],'duplicate key value violates unique constraint');
           if(table==='listening_assignments' && DB[table].some(e=>e.item_id===row.item_id&&e.student_id===row.student_id)) return finish([],'duplicate key value');
           DB[table].push(row); made.push(row); emit(table,'INSERT',row); notifyFor(table,row);

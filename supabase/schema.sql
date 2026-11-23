@@ -1763,3 +1763,131 @@ alter table public.notifications add constraint notifications_kind_check
   check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
                   'mention_feed', 'mention_board', 'mention_listening', 'lesson',
                   'classmate_request', 'classmate_accept', 'account_deleted'));
+
+-- =====================================================================
+--  MÓDULO: OBJETIVOS (prefijo goals_)  · 2026-11-23
+--   · goals_stages: etapas de la lista general (número + título).
+--   · goals_items: objetivos. student_id null = de la lista general (todos los
+--     alumnos); con student_id = personal de ese alumno.
+--   · goals_done: una fila por objetivo conseguido y alumno. Solo el profesor
+--     marca y desmarca. El alumno solo pone seen_at (ya vio la celebración).
+--   · Privado: cada alumno ve solo sus logros y sus personales; nadie más.
+-- =====================================================================
+create table if not exists public.goals_stages (
+  stage  smallint primary key check (stage between 1 and 99),
+  title  text check (title is null or char_length(title) <= 80)
+);
+create table if not exists public.goals_items (
+  id          uuid primary key default gen_random_uuid(),
+  student_id  uuid references public.profiles(id) on delete cascade,
+  stage       smallint check (stage is null or stage between 1 and 99),
+  title       text not null check (char_length(trim(title)) between 1 and 200),
+  details     text check (details is null or char_length(details) <= 500),
+  sort        integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists goals_items_student_idx on public.goals_items (student_id);
+create table if not exists public.goals_done (
+  id          uuid primary key default gen_random_uuid(),
+  goal_id     uuid not null references public.goals_items(id) on delete cascade,
+  student_id  uuid not null references public.profiles(id) on delete cascade,
+  done_at     timestamptz not null default now(),
+  seen_at     timestamptz,
+  unique (goal_id, student_id)
+);
+create index if not exists goals_done_student_idx on public.goals_done (student_id);
+
+grant select, insert, update, delete on public.goals_stages, public.goals_items, public.goals_done to authenticated;
+revoke all on public.goals_stages, public.goals_items, public.goals_done from anon;
+alter table public.goals_stages enable row level security;
+alter table public.goals_items  enable row level security;
+alter table public.goals_done   enable row level security;
+
+drop policy if exists goals_stages_select on public.goals_stages;
+create policy goals_stages_select on public.goals_stages for select to authenticated using (public.is_approved());
+drop policy if exists goals_stages_all_teacher on public.goals_stages;
+create policy goals_stages_all_teacher on public.goals_stages for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+
+drop policy if exists goals_items_select on public.goals_items;
+create policy goals_items_select on public.goals_items for select to authenticated
+  using (public.is_teacher() or (public.is_approved() and (student_id is null or student_id = auth.uid())));
+drop policy if exists goals_items_all_teacher on public.goals_items;
+create policy goals_items_all_teacher on public.goals_items for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+
+drop policy if exists goals_done_select on public.goals_done;
+create policy goals_done_select on public.goals_done for select to authenticated
+  using (public.is_teacher() or (student_id = auth.uid() and public.is_approved()));
+drop policy if exists goals_done_all_teacher on public.goals_done;
+create policy goals_done_all_teacher on public.goals_done for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+drop policy if exists goals_done_update_seen on public.goals_done;
+create policy goals_done_update_seen on public.goals_done for update to authenticated
+  using (student_id = auth.uid() and public.is_approved()) with check (student_id = auth.uid());
+
+create or replace function public.goals_items_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.title = trim(new.title);
+  new.details = nullif(trim(coalesce(new.details, '')), '');
+  if new.student_id is null and new.stage is null then raise exception 'Un objetivo general necesita etapa'; end if;
+  return new;
+end;
+$$;
+create or replace trigger goals_items_guard_trg before insert or update on public.goals_items
+  for each row execute function public.goals_items_guard();
+
+-- Solo se marca un objetivo que corresponde a ese alumno; el alumno solo cambia seen_at
+create or replace function public.goals_done_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and auth.uid() is not null and not public.is_teacher() then
+    if new.id is distinct from old.id or new.goal_id is distinct from old.goal_id
+    or new.student_id is distinct from old.student_id or new.done_at is distinct from old.done_at then
+      raise exception 'Solo tu profesor marca los objetivos';
+    end if;
+  end if;
+  if not exists (select 1 from public.goals_items g where g.id = new.goal_id
+                 and (g.student_id is null or g.student_id = new.student_id)) then
+    raise exception 'Ese objetivo no es de este alumno';
+  end if;
+  return new;
+end;
+$$;
+create or replace trigger goals_done_guard_trg before insert or update on public.goals_done
+  for each row execute function public.goals_done_guard();
+
+-- Aviso al alumno (campanita + móvil): "¡Objetivo conseguido!"
+create or replace function public.goals_done_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.notifications (user_id, kind, actor_id, target_id, extra)
+  select new.student_id, 'goal', auth.uid(), new.goal_id, left(g.title, 160)
+  from public.goals_items g where g.id = new.goal_id;
+  return new;
+end;
+$$;
+create or replace trigger goals_done_notify_trg after insert on public.goals_done
+  for each row execute function public.goals_done_notify();
+revoke execute on function public.goals_items_guard(), public.goals_done_guard(), public.goals_done_notify()
+  from public, anon, authenticated;
+
+-- Tiempo real: el alumno ve el logro (y la celebración) al momento
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'goals_done') then
+    alter publication supabase_realtime add table public.goals_done;
+  end if;
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'goals_items') then
+    alter publication supabase_realtime add table public.goals_items;
+  end if;
+end $$;
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal'));
