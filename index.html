@@ -387,6 +387,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .fpost.by-teacher{border-color:var(--line-strong)}
 .fhead{display:flex;align-items:center;gap:12px}
 .fhead b{color:var(--strong)}
+.edited{font-style:italic;cursor:help}
 .tbadge{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--accent-hi);background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.3);padding:0 8px;border-radius:999px;margin-left:6px;vertical-align:1px;white-space:nowrap}
 .fbody{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
 .fbody a{overflow-wrap:anywhere}
@@ -1304,6 +1305,13 @@ async function rtHandle(t, p) {
       if (S.section !== 'feed') softRender();
       return;
     }
+    if (ev === 'UPDATE') { // alguien ha editado su publicación: se cambia en su sitio
+      const q = S.feedQueue.find(x => x.id === row.id); if (q) Object.assign(q, row);
+      const p = S.fposts.find(x => x.id === row.id); if (!p) return;
+      Object.assign(p, row);
+      const el = $(`[data-fpost="${row.id}"]`); if (el) el.outerHTML = feedCard(p);
+      return;
+    }
     return;
   }
   if (t === 'feed_comments' || t === 'listening_comments') {
@@ -1865,12 +1873,13 @@ function feedCard(p) {
   const mine = p.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
-    <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
+    <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
     <div class="fbody">${richText(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
     <div class="factions">
       <button class="linkbtn" data-action="open-fpost" data-id="${p.id}"><span data-cmcount="${p.id}">${cmCountLabel(p.id)}</span></button>
+      ${mine ? `<button class="linkbtn mute" data-action="feed-edit" data-id="${p.id}">Editar</button>` : ''}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="feed-delete" data-id="${p.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="feed_post" data-id="${p.id}">Denunciar</button>`) : ''}
     </div></article>`;
@@ -1880,13 +1889,32 @@ function feedPostModal(id) {
   const p = S.fposts.find(x => x.id === id);
   if (!p) return;
   openModal(`
-    <div class="modal-head"><div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}</div></div></div>
+    <div class="modal-head"><div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="fbody">${richText(p.body)}</div>
     ${p.link_url ? linkCard(p.link_url) : ''}
     <div style="margin:12px 0">${rxBar('feed_post', p.id)}</div>
     <h2 class="h2">Comentarios</h2>
     ${commentsBlock('feed', p.id)}`);
+}
+
+// "· editado" junto a la fecha; al pasar el ratón dice cuándo (edited_at lo pone la base de datos)
+const editedTag = p => p.edited_at ? ` · <span class="edited" title="Editado el ${esc(fmtDateTime(p.edited_at))}">editado</span>` : '';
+
+// Editar una publicación propia del Inicio (texto, menciones y enlace)
+function feedEditModal(id) {
+  const p = S.fposts.find(x => x.id === id);
+  if (!p || p.author_id !== S.user.id) return;
+  openModal(`
+    <div class="modal-head"><h2>Editar publicación</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="feedEditForm" data-id="${p.id}">
+      <label class="f">Texto<textarea name="body" required maxlength="2000" rows="6">${esc(plainText(p.body))}</textarea></label>
+      <p class="sub" style="margin:0 0 12px">Se verá la etiqueta «editado» junto a la fecha.</p>
+      <div class="actions"><button class="btn" type="submit">Guardar cambios</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+  const ta = $('#feedEditForm textarea[name=body]');
+  mentionSeed(ta, p.body);
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 
 /* ================================ AVISOS ============================== */
@@ -3201,6 +3229,7 @@ const actions = {
     el.outerHTML = '<span class="sub">Denunciado</span>';
     toast('Denuncia enviada. Gracias', 'ok');
   },
+  'feed-edit'(el) { feedEditModal(el.dataset.id); },
   async 'feed-delete'(el) {
     const p = S.fposts.find(x => x.id === el.dataset.id);
     if (!p || !confirm('¿Eliminar esta publicación? Se borrarán también sus comentarios.')) return;
@@ -3345,6 +3374,20 @@ document.addEventListener('submit', async e => {
     if (error) return toast('No se pudo publicar: ' + error.message, 'bad');
     if (!S.fposts.some(x => x.id === data.id)) S.fposts.unshift(data);
     render(); toast('Publicado', 'ok');
+  } else if (f.id === 'feedEditForm') {
+    e.preventDefault();
+    const p = S.fposts.find(x => x.id === f.dataset.id);
+    if (!p) return closeModal();
+    const body = mentionEncode(f.elements['body']);
+    if (!body) return toast('Escribe algo o elimina la publicación', 'bad');
+    if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
+    if (body === p.body) return closeModal(); // sin cambios: no sale "editado"
+    const btn = $('button[type=submit]', f); btn.disabled = true;
+    const { data, error } = await sb.from('feed_posts').update({ body, link_url: firstLink(body) || null }).eq('id', p.id).select();
+    btn.disabled = false;
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    Object.assign(p, data[0]);
+    await closeModal(); render(); toast('Publicación actualizada', 'ok');
   } else if (f.id === 'aboutForm') {
     e.preventDefault();
     const v = k => f.elements[k].value.trim() || null;

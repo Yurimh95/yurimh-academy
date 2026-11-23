@@ -69,7 +69,7 @@
     board_posts: () => isTeacher(),
     board_recipients: () => isTeacher(),
     board_reads: () => false,
-    feed_posts: (op,r) => op==='delete' && (isTeacher() || own(r)),
+    feed_posts: (op,r) => op==='update' ? own(r) : (isTeacher() || own(r)),
     feed_comments: (op,r) => op==='delete' && (isTeacher() || own(r)),
     listening_comments: (op,r) => op==='delete' && (isTeacher() || own(r)),
     reactions: (op,r) => op==='delete' && r.user_id===me,
@@ -202,6 +202,11 @@
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
     if (table==='board_posts') nw.updated_at=new Date().toISOString();
+    if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
+      nw.id=old.id; nw.author_id=old.author_id; nw.created_at=old.created_at;
+      nw.edited_at=(nw.body!==old.body||nw.link_url!==old.link_url)?new Date().toISOString():(old.edited_at||null);
+      if(!checks.feed_posts(nw)) throw new Error('new row for relation "feed_posts" violates check constraint');
+    }
     if (table==='classmates'){
       if (nw.requester_id!==old.requester_id||nw.addressee_id!==old.addressee_id||old.status!=='pending'||nw.status!=='accepted') throw new Error('Solo se puede aceptar una solicitud pendiente');
       nw.accepted_at=new Date().toISOString();
@@ -249,7 +254,8 @@
       }
       if(st.op==='update'){
         const rows=DB[table].filter(canRead[table]).filter(match).filter(r=>canWriteRow[table]('update',r));
-        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status; Object.assign(r,nw); emit(table,'UPDATE',r);
+        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status, oldBody=r.body; Object.assign(r,nw); emit(table,'UPDATE',r);
+          if(table==='feed_posts' && r.body!==oldBody){ const before=mentionIds(oldBody); mentionIds(r.body).filter(u=>!before.includes(u)&&DB.profiles.some(p=>p.id===u&&p.approved)&&!blockedBy(u,r.author_id)).forEach(u=>notify(u,'mention_feed',r.author_id,r.id,mentionPlain(r.body).slice(0,120))); }
           if(table==='classmates' && was==='pending' && r.status==='accepted') notify(r.requester_id,'classmate_accept',r.addressee_id,r.addressee_id,null); }); }catch(e){ return finish([],e.message); }
         return st.sel?finish(rows):{data:null,error:null};
       }

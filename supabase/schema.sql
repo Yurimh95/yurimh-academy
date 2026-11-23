@@ -418,6 +418,8 @@ create table if not exists public.feed_posts (
   created_at timestamptz not null default now()
 );
 create index if not exists feed_posts_created_idx on public.feed_posts (created_at desc);
+-- Editar publicaciones (2026-11-23): fecha de la última edición; la app muestra "editado"
+alter table public.feed_posts add column if not exists edited_at timestamptz;
 
 create table if not exists public.feed_comments (
   id         uuid primary key default gen_random_uuid(),
@@ -548,6 +550,33 @@ drop policy if exists feed_posts_delete on public.feed_posts;
 create policy feed_posts_delete on public.feed_posts
   for delete to authenticated
   using (public.is_teacher() or (author_id = auth.uid() and public.is_approved()));
+
+-- Editar: solo quien la escribió (el profesor modera borrando, no cambia las palabras de nadie)
+drop policy if exists feed_posts_update on public.feed_posts;
+create policy feed_posts_update on public.feed_posts
+  for update to authenticated
+  using (author_id = auth.uid() and public.is_approved())
+  with check (author_id = auth.uid() and public.is_approved());
+
+-- Solo cambian el texto y el enlace; edited_at lo pone la base de datos (no se puede falsear)
+create or replace function public.feed_posts_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.id := old.id;
+  new.author_id := old.author_id;
+  new.created_at := old.created_at;
+  if new.body is distinct from old.body or new.link_url is distinct from old.link_url then
+    new.edited_at := now();
+  else
+    new.edited_at := old.edited_at;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.feed_posts_guard() from public, anon, authenticated;
+drop trigger if exists feed_posts_guard_trg on public.feed_posts;
+create trigger feed_posts_guard_trg before update on public.feed_posts
+  for each row execute function public.feed_posts_guard();
 
 -- ---- feed_comments ----
 drop policy if exists feed_comments_select on public.feed_comments;
@@ -1101,6 +1130,23 @@ drop trigger if exists notify_feed_comments on public.feed_comments;
 create trigger notify_feed_comments after insert on public.feed_comments for each row execute function public.notify_trg();
 drop trigger if exists notify_feed_posts on public.feed_posts;
 create trigger notify_feed_posts after insert on public.feed_posts for each row execute function public.notify_trg();
+-- Al editar una publicación, solo se avisa a quien se menciona por primera vez
+create or replace function public.feed_posts_edit_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare mid uuid;
+begin
+  if new.body is not distinct from old.body then return null; end if;
+  for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
+             where p.approved and u not in (select public.mention_ids(old.body))
+               and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
+    perform public.notify(mid, 'mention_feed', new.author_id, new.id, left(public.mention_plain(new.body), 120));
+  end loop;
+  return null;
+end;
+$$;
+revoke execute on function public.feed_posts_edit_notify() from public, anon, authenticated;
+drop trigger if exists notify_feed_posts_edit on public.feed_posts;
+create trigger notify_feed_posts_edit after update on public.feed_posts for each row execute function public.feed_posts_edit_notify();
 drop trigger if exists notify_listening_comments on public.listening_comments;
 create trigger notify_listening_comments after insert on public.listening_comments for each row execute function public.notify_trg();
 drop trigger if exists notify_reactions on public.reactions;
