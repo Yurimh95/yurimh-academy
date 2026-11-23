@@ -847,8 +847,8 @@ function mentionView(u, l, s) {
 function richText(text) {
   text = String(text ?? ''); let out = '', last = 0;
   text.replace(MENTION_RE, (m, u, l, s, off) => {
-    const v = mentionView(u, l, s);
-    out += linkify(text.slice(last, off)) + (v.go ? `<span class="mention" role="button" tabindex="0" ${v.go}>${esc(v.text)}</span>` : `<span class="mention off">${esc(v.text)}</span>`);
+    const v = mentionView(u, l, s), label = esc(v.text.slice(1)); // publicado sin @ ni # (decisión de Yuri); el resaltado ya indica que es mención
+    out += linkify(text.slice(last, off)) + (v.go ? `<span class="mention" role="button" tabindex="0" ${v.go}>${label}</span>` : `<span class="mention off">${label}</span>`);
     last = off + m.length; return m;
   });
   return listify(out + linkify(text.slice(last)));

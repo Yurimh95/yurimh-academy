@@ -53,7 +53,7 @@ const { chromium } = require('playwright');
   ok(saved && saved.includes('<@s2>') && saved.includes('<@t1>') && saved.includes('<#settings>') && saved.includes('<#l:i1>'), 'Se guarda con códigos (<@id>, <#seccion>, <#l:id>): ' + saved);
   const post = p.locator('.fpost:has-text("Mirad esto")');
   ok(await post.locator('.mention[data-action=open-profile][data-id=s2]').count() === 1, '@Lu se ve como mención pulsable');
-  ok((await post.textContent()).includes('#Ajustes') && (await post.textContent()).includes('#Kind of Blue'), 'Las secciones y escuchas se ven con su nombre');
+  ok((await post.locator('.mention[data-s=settings]').textContent()) === 'Ajustes' && (await post.locator('.mention[data-action=mention-item]').textContent()) === 'Kind of Blue' && (await post.locator('.mention[data-id=s2]').textContent()) === 'Lu', 'Las menciones se ven con su nombre, sin @ ni #');
   await shot(p, 'm3-publicacion.png');
   await post.locator('.mention[data-s=settings]').click(); await p.waitForTimeout(200);
   ok(await p.locator('.nav button.on[data-s=settings]').count() === 1, 'Pulsar #Ajustes lleva a Ajustes');
@@ -71,7 +71,7 @@ const { chromium } = require('playwright');
   await p.evaluate(() => window.__rtExternal('feed_posts', { id: 'fx', author_id: 's2', body: 'Hola <@zz9> <#hack> <img src=x onerror=alert(1)>', link_url: null }));
   await p.waitForTimeout(200);
   if (await p.locator('[data-action=show-new]').count()) { await p.click('[data-action=show-new]'); await p.waitForTimeout(150); }
-  ok(await p.locator('img[src=x]').count() === 0 && (await p.textContent('.fpost:has-text("Hola")')).includes('@usuario'), 'Códigos de personas desconocidas salen como "@usuario" y el HTML se escapa');
+  ok(await p.locator('img[src=x]').count() === 0 && (await p.textContent('.fpost:has-text("Hola")')).includes('usuario'), 'Códigos de personas desconocidas salen como "usuario" y el HTML se escapa');
   // comentario con mención
   await p.click('.fpost:has-text("Bienvenidos") [data-action=open-fpost]'); await p.waitForTimeout(200);
   const cta = '.modal textarea[id^=cmInput]';
@@ -122,8 +122,8 @@ const { chromium } = require('playwright');
   // ================= Marta ve el aviso: #Alumnos (solo profesor) no enlaza =================
   p = await open('s1', undefined, db2);
   await goto(p, 'board');
-  ok((await p.textContent('.card.post:has-text("Concierto") .postbody')).trim() === 'Felicidades @Marta mira #Alumnos', 'El aviso sale en texto legible');
-  ok(await p.locator('.card.post .postbody .mention.off:has-text("#Alumnos")').count() === 1 && await p.locator('.card.post .postbody [data-s=students]').count() === 0, 'A un alumno, #Alumnos le sale como texto normal (no enlaza)');
+  ok((await p.textContent('.card.post:has-text("Concierto") .postbody')).trim() === 'Felicidades Marta mira Alumnos', 'El aviso sale en texto legible, sin @ ni #');
+  ok(await p.locator('.card.post .postbody .mention.off:has-text("Alumnos")').count() === 1 && await p.locator('.card.post .postbody [data-s=students]').count() === 0, 'A un alumno, #Alumnos le sale como texto normal (no enlaza)');
   await shot(p, 'm6-aviso-alumna.png');
   await p.keyboard.press('Escape');
 
