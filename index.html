@@ -4909,7 +4909,11 @@ const goalContext = el => { // desde dónde se pulsó: catálogo general o los o
   const cat = el.closest('[data-gcat]'); if (cat) return { catalog: true, sid: cat.dataset.gcat || null };
   const gs = el.closest('[data-goals]'); return gs ? { sid: gs.dataset.goals } : null;
 };
-function goalsRefresh(ctx) { render(); if (ctx && ctx.catalog) goalsCatalogModal(ctx.sid); else if (ctx && ctx.sid) goalsModal(ctx.sid, true); }
+function goalsRefresh(ctx) {
+  const bd = $('.backdrop'), y = bd ? bd.scrollTop : 0; // lo que hace scroll es el fondo, no la ventana
+  render(); if (ctx && ctx.catalog) goalsCatalogModal(ctx.sid); else if (ctx && ctx.sid) goalsModal(ctx.sid, true);
+  const nb = $('.backdrop'); if (nb) nb.scrollTop = y;
+}
 
 // Celebración del alumno: logros que aún no ha visto
 let goalCelebrating = false;
