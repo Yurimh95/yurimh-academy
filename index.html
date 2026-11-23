@@ -592,6 +592,20 @@ label.f>.emo-wrap{margin-top:6px}
 .qblock .q{font-weight:600;color:var(--strong);margin-bottom:6px;font-size:14.5px}
 .ans{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
 .ans.none{color:var(--faint);font-style:italic}
+.ans-line{display:flex;align-items:flex-start;gap:6px}
+.ans-line .ans{flex:1;min-width:0}
+.ans-rxbtn{flex:none;width:32px;height:32px;margin-top:4px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;opacity:.55;transition:opacity .15s,background .15s}
+.ans-rxbtn svg{width:20px;height:20px}
+.ans-rxbtn:hover,.ans-rxbtn:focus-visible{opacity:1;background:rgba(var(--accent-rgb),.12);color:var(--accent)}
+.ans-rx{display:block}
+.ans-rx .msg-rx{margin-top:-9px;margin-inline:12px}
+.ans-rx .msg-rx.static{cursor:default}
+.qblock+.ans-rx .msg-rx{margin-top:-2px}
+.ans-read{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.ans-read:empty{display:none}
+.ans-read .chip svg,.ans-read .btn svg,.ans-seen svg{width:17px;height:11px;vertical-align:-1px}
+.callout.ans-seen{white-space:normal;border-color:rgba(var(--ok-rgb),.35);background:rgba(var(--ok-rgb),.08);color:var(--text)}
+.callout.ans-seen b{display:inline;font-size:inherit;letter-spacing:0;text-transform:none;color:var(--ok);margin:0}
 .savebar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
 .save-state{font-size:13px;color:var(--faint)}
 .save-state.ok{color:var(--ok)}.save-state.bad{color:var(--bad)}
@@ -904,7 +918,7 @@ const S = {
   items: [], assigns: [], students: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
-  dms: [], dmRx: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
+  dms: [], dmRx: [], ansRx: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
   homework: [], payPlans: [], payRecords: [], payMonth: null,
   goalStages: [], goalItems: [], goalDone: [], goalPending: false,
   lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
@@ -1623,7 +1637,7 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
 /* ===================== TIEMPO REAL (Supabase Realtime) =====================
    La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
-const RT_TABLES = ['dm_reactions', 'feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
+const RT_TABLES = ['dm_reactions', 'listening_answer_reactions', 'feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
   'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks', 'classmates', 'goals_items', 'goals_done'];
 const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework', goals_items: 'goalItems', goals_done: 'goalDone' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
@@ -1737,6 +1751,12 @@ async function rtHandle(t, p) {
     }
     return;
   }
+  if (t === 'listening_answer_reactions') { // reacciones del profe a las respuestas: una por respuesta
+    const k = r => r.assignment_id + '|' + r.question + '|' + r.user_id, src = ev === 'DELETE' ? old : row, key = k(src);
+    S.ansRx = S.ansRx.filter(r => k(r) !== key);
+    if (ev !== 'DELETE') S.ansRx.push(row);
+    return updateAnsRx(src.assignment_id, src.question);
+  }
   if (t === 'dm_reactions') { // una por persona y mensaje
     const k = r => r.message_id + ':' + r.user_id, key = k(ev === 'DELETE' ? old : row);
     S.dmRx = S.dmRx.filter(r => k(r) !== key);
@@ -1806,7 +1826,7 @@ async function rtHandle(t, p) {
       if (ev === 'DELETE') { S.assigns = S.assigns.filter(a => a.id !== old.id); return softRender(); }
       if (row.student_id !== me) return;
       const ex = S.assigns.find(a => a.id === row.id);
-      if (ex) Object.assign(ex, row);
+      if (ex) { Object.assign(ex, row); updateAnsRead(row.id); }
       else {
         const { data } = await sb.from('listening_assignments').select('*, item:listening_items(*)').eq('id', row.id).maybeSingle();
         if (data && data.item) S.assigns.push(data);
@@ -1827,6 +1847,7 @@ async function rtHandle(t, p) {
   }
   const key = RT_LIST[t]; if (!key) return;
   S[key] = rtApply(S[key], t, ev, row, old);
+  if (t === 'listening_assignments' && ev === 'UPDATE') updateAnsRead(row.id);
   softRender();
   if (t === 'goals_done' && ev === 'INSERT' && !teacher) goalsCelebrate(); // ¡logro nuevo!
 }
@@ -2133,6 +2154,8 @@ async function loadData(quiet = false) {
     }
     // La Agenda no debe tumbar la app si su parte de la base de datos aún no existe o falla
     try { await loadLessons(); } catch (e) { console.warn('Agenda:', e.message || e); S.lessons = []; }
+    try { const { data, error } = await sb.from('listening_answer_reactions').select('*'); if (error) throw error; S.ansRx = data || []; }
+    catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
     try { await loadGoals(); } catch (e) { console.warn('Objetivos:', e.message || e); S.goalStages = []; S.goalItems = []; S.goalDone = []; }
     return true;
   } catch (e) {
@@ -2884,10 +2907,11 @@ function studentModal(id) {
     ${it.brief ? `<div class="callout"><b>Consigna</b>${esc(it.brief)}</div>` : ''}
     ${a.note ? `<div class="callout"><b>Nota para ti</b>${esc(a.note)}</div>` : ''}
     <div style="margin:14px 0"><label class="chk"><input type="checkbox" id="chkListened" ${a.listened ? 'checked' : ''}> Ya lo he escuchado</label></div>
-    ${QUESTIONS.map(q => `<label class="f qblock" style="color:inherit;margin:14px 0">
+    <div data-ansread="${a.id}">${ansReadInner(a)}</div>
+    ${QUESTIONS.map(q => `<label class="f qblock" style="color:inherit;margin:14px 0 4px">
         <span class="q" style="display:block">${esc(q.q)}</span>
         <textarea data-q="${q.k}" rows="3" placeholder="Escribe aquí…">${esc((a.answers || {})[q.k] || '')}</textarea>
-      </label>`).join('')}
+      </label><span class="ans-rx" data-ansrx="${a.id}|${q.k}">${ansRxInner(a.id, q.k)}</span>`).join('')}
     <div class="savebar">
       <span class="save-state" id="saveState">Los cambios se guardan solos</span>
       <button class="btn sm" data-action="save-now">Guardar ahora</button>
@@ -2950,6 +2974,7 @@ async function saveNow() {
     return;
   }
   Object.assign(a, data[0]);
+  updateAnsRead(a.id); // si ha cambiado respuestas ya leídas, la marca de "leído" se quita
   setSaveState('Guardado ✓', 'ok');
   if (c.dirty) c.timer = setTimeout(saveNow, 300); // se escribió algo mientras guardaba
 }
@@ -3127,8 +3152,70 @@ const isPending = s => !s.approved && !s.archived_at;
 function answersHtml(a) {
   return QUESTIONS.map((q, i) => {
     const v = ((a.answers || {})[q.k] || '').trim();
-    return `<div class="qblock"><div class="q">${i + 1}. ${esc(q.q)}</div><div class="ans ${v ? '' : 'none'}">${v ? esc(v) : 'Sin respuesta'}</div></div>`;
-  }).join('');
+    return `<div class="qblock"><div class="q">${i + 1}. ${esc(q.q)}</div><div class="ans-line"><div class="ans ${v ? '' : 'none'}">${v ? esc(v) : 'Sin respuesta'}</div>${v
+      ? `<button type="button" class="ans-rxbtn" data-arx-open="${a.id}" data-q="${q.k}" title="Reaccionar a esta respuesta" aria-label="Reaccionar a esta respuesta">${EMOJI_ICON}</button>` : ''}</div>
+      <span class="ans-rx" data-ansrx="${a.id}|${q.k}">${ansRxInner(a.id, q.k)}</span></div>`;
+  }).join('') + `<div class="ans-read" data-ansread="${a.id}">${ansReadInner(a)}</div>`;
+}
+/* ---- Escucha analítica: reacciones del profesor a cada respuesta y marca de "leído" ----
+   S.ansRx = filas de listening_answer_reactions (una por respuesta, cualquier emoji; solo las pone el profesor).
+   listening_assignments.teacher_read_at = el profesor ha leído las respuestas (se quita sola si el alumno las cambia).
+   Solo lo ven ese alumno y el profesor. La burbuja de emojis es la misma de los mensajes privados (#dmRxBox). */
+const ansRxOf = (aid, qk) => S.ansRx.filter(r => r.assignment_id === aid && r.question === qk);
+function ansRxInner(aid, qk) {
+  const rows = ansRxOf(aid, qk); if (!rows.length) return '';
+  const names = rows.map(r => `${r.user_id === S.user.id ? 'Tú' : whoName(r.user_id)} ${r.emoji}`).join(' · ');
+  const emojis = rows.map(r => esc(r.emoji)).join('');
+  return isTeacher()
+    ? `<button type="button" class="msg-rx" data-arx-open="${aid}" data-q="${qk}" title="${esc(names)} — pulsa para cambiarla o quitarla">${emojis}</button>`
+    : `<span class="msg-rx static" title="${esc('Reacción de ' + names)}">${emojis}</span>`;
+}
+function ansReadInner(a) {
+  const n = answeredCount(a);
+  if (isTeacher()) {
+    if (!n) return '';
+    return a.teacher_read_at
+      ? `<span class="chip ok">${SEEN_ICON} Leído ${esc(timeAgo(a.teacher_read_at))}</span><button type="button" class="linkbtn" data-action="ans-read" data-id="${a.id}" data-off="1">Desmarcar</button>`
+      : `<button type="button" class="btn sm primary" data-action="ans-read" data-id="${a.id}">${SEEN_ICON} Marcar como leído</button><span class="sub">El alumno verá que has leído sus respuestas.</span>`;
+  }
+  if (!a.teacher_read_at) return '';
+  const t = Object.values(S.dir).find(d => d.role === 'teacher');
+  return `<div class="callout ok ans-seen">${SEEN_ICON} <b>${esc(t ? t.public_name : 'Tu profesor')} ha leído tus respuestas</b> · ${esc(timeAgo(a.teacher_read_at))}</div>`;
+}
+const ansReadChip = a => !answeredCount(a) ? '' : a.teacher_read_at ? `<span class="chip ok">${SEEN_ICON} Leído</span>` : '<span class="chip acc">Sin leer</span>';
+function updateAnsRx(aid, qk) { $$(`[data-ansrx="${aid}|${qk}"]`).forEach(el => { el.innerHTML = ansRxInner(aid, qk); }); }
+function updateAnsRead(aid) {
+  const a = S.assigns.find(x => x.id === aid); if (!a) return;
+  $$(`[data-ansread="${aid}"]`).forEach(el => { el.innerHTML = ansReadInner(a); });
+  $$(`[data-readchip="${aid}"]`).forEach(el => { el.innerHTML = ansReadChip(a); });
+}
+function arxOpen(aid, qk, anchor) {
+  dmRxClose(true); emojiClose(true);
+  if (!isTeacher()) return;
+  dmRxFor = 'arx|' + aid + '|' + qk;
+  const mine = (ansRxOf(aid, qk).find(r => r.user_id === S.user.id) || {}).emoji;
+  const box = document.createElement('div'); box.id = 'dmRxBox'; box.className = 'dmrx'; box.setAttribute('role', 'menu');
+  box.innerHTML = REACTIONS.map(r => `<button type="button" role="menuitem" data-arx-pick="${esc(r.e)}" class="${mine === r.e ? 'mine' : ''}" aria-label="${esc(r.e)}">${r.e}</button>`).join('')
+    + `<button type="button" class="more" data-arx-more title="Más emojis" aria-label="Más emojis">+</button>`;
+  document.body.appendChild(box);
+  const r = anchor.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+  box.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8)) + 'px';
+  box.style.top = (r.top - h - 8 >= 8 ? r.top - h - 8 : Math.min(r.bottom + 8, innerHeight - h - 8)) + 'px';
+  popPush();
+}
+async function ansReact(aid, qk, emoji) {
+  const mine = ansRxOf(aid, qk).find(r => r.user_id === S.user.id), prev = S.ansRx.slice();
+  emojiRemember(emoji);
+  if (mine && mine.emoji === emoji) { // la misma: se quita
+    S.ansRx = S.ansRx.filter(r => r !== mine); updateAnsRx(aid, qk);
+    const { error } = await sb.from('listening_answer_reactions').delete().eq('assignment_id', aid).eq('question', qk).eq('user_id', S.user.id);
+    if (error) { S.ansRx = prev; updateAnsRx(aid, qk); toast(errEs(error), 'bad'); }
+    return;
+  }
+  const row = { assignment_id: aid, question: qk, user_id: S.user.id, emoji, created_at: new Date().toISOString() };
+  S.ansRx = [...S.ansRx.filter(r => r !== mine), row]; updateAnsRx(aid, qk);
+  const { error } = await sb.from('listening_answer_reactions').upsert({ assignment_id: aid, question: qk, user_id: S.user.id, emoji }, { onConflict: 'assignment_id,question,user_id' });
+  if (error) { S.ansRx = prev; updateAnsRx(aid, qk); toast(errEs(error), 'bad'); }
 }
 
 // Al pegar el enlace: elige el tipo y enseña (en gris) el título que se usará si dejas el campo vacío
@@ -3215,7 +3302,7 @@ function itemModal(id) {
       const d = dueInfo(a), n = answeredCount(a);
       return `<div class="arow" data-aid="${a.id}">
         <div class="arow-head"><div class="arow-who">${avatarHtml(a.student_id, 36)}<strong>${esc(studentName(a.student_id))}</strong></div>
-          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
+          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span data-readchip="${a.id}">${ansReadChip(a)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
         <div class="grid2">
           <label class="f" style="margin:0">Fecha límite<input type="date" data-f="due" value="${esc(a.due_date || '')}"></label>
           <label class="f" style="margin:0">Nota solo para este alumno<input type="text" data-f="note" maxlength="2000" value="${esc(a.note || '')}"></label>
@@ -3284,7 +3371,7 @@ function studentDetailModal(id) {
         <div class="arow-head"><div class="arow-who sdm-item sdm-open" data-action="sdm-item" data-id="${it.id}" data-sid="${s.id}" title="Abrir y editar esta escucha">${coverHtml(it, 56)}
             <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
             ${playBtn(it.url)}</div>
-          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
+          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span data-readchip="${a.id}">${ansReadChip(a)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
         ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
         <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
       </div>`;
@@ -3522,6 +3609,18 @@ async function dmReact(mid, emoji) {
 }
 document.addEventListener('click', e => {
   if (!e.target.closest) return;
+  const ao = e.target.closest('[data-arx-open]'); // reacciones a respuestas de Escucha analítica
+  if (ao) { e.stopPropagation(); e.preventDefault(); return dmRxFor === 'arx|' + ao.dataset.arxOpen + '|' + ao.dataset.q ? dmRxClose() : arxOpen(ao.dataset.arxOpen, ao.dataset.q, ao); }
+  const ap = e.target.closest('[data-arx-pick]');
+  if (ap && String(dmRxFor).startsWith('arx|')) { const [, aid, qk] = dmRxFor.split('|'); dmRxClose(); return ansReact(aid, qk, ap.dataset.arxPick); }
+  const am = e.target.closest('[data-arx-more]');
+  if (am && String(dmRxFor).startsWith('arx|')) {
+    e.stopPropagation();
+    const [, aid, qk] = dmRxFor.split('|'), anchor = $(`[data-arx-open="${aid}"][data-q="${qk}"]`) || am;
+    dmRxClose(true);
+    setTimeout(() => { ex = { btn: anchor, onPick: em => ansReact(aid, qk, em) }; emojiDraw(); }, 0);
+    return;
+  }
   const open = e.target.closest('[data-dmrx-open]');
   if (open) { e.stopPropagation(); return dmRxFor === open.dataset.dmrxOpen ? dmRxClose() : dmRxOpen(open.dataset.dmrxOpen, open.closest('.msg-line').querySelector('.msg')); }
   const mo = e.target.closest('[data-dmmenu-open]');
@@ -3648,6 +3747,7 @@ function notifText(n) {
     case 'signup': return `<b>${esc(n.extra || 'Alguien')}</b> se ha registrado y espera tu aprobación`;
     case 'account_deleted': return `<b>${esc(n.extra || 'Un alumno')}</b> ha borrado su cuenta`;
     case 'goal': return `🏆 ¡Objetivo conseguido! <b>${esc(n.extra || '')}</b>`;
+    case 'listening_feedback': return `${who} ha revisado tus respuestas de <b>${esc(n.extra || 'una escucha')}</b>`;
     case 'report': return 'Hay una denuncia nueva para revisar';
     case 'homework': return `Deberes nuevos: <b>${esc(n.extra || '')}</b>`;
     case 'lesson': return `🎸 Tienes clase <b>${esc(n.extra || '')}</b>`;
@@ -3659,7 +3759,7 @@ function notifText(n) {
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students' }[kind] || 'bell'; }
 function notifsModal() {
   const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -3690,7 +3790,7 @@ async function openNotif(n) {
   await closeModal();
   switch (n.kind) {
     case 'board_post': case 'mention_board': goPost(n.target_id); break;
-    case 'mention_listening': openMentionItem(n.target_id); break;
+    case 'mention_listening': case 'listening_feedback': openMentionItem(n.target_id); break;
     case 'assignment': S.section = 'listening'; render(); break;
     case 'dm': await openDm(n.actor_id); break;
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
@@ -3831,6 +3931,16 @@ const actions = {
     itemModal(a.item_id);
     if (open) { const r = $(`.arow[data-aid="${a.id}"] details`); if (r) r.open = true; }
     toast('Cambios guardados', 'ok');
+  },
+  async 'ans-read'(el) { // el profesor marca (o desmarca) como leídas las respuestas de un alumno
+    const a = S.assigns.find(x => x.id === el.dataset.id); if (!a) return;
+    const value = el.dataset.off ? null : new Date().toISOString();
+    el.disabled = true;
+    const { data, error } = await sb.from('listening_assignments').update({ teacher_read_at: value }).eq('id', a.id).select();
+    el.disabled = false;
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
+    Object.assign(a, data[0]); updateAnsRead(a.id);
+    if (value) toast(`${studentName(a.student_id)} verá que has leído sus respuestas`, 'ok');
   },
   async 'del-assign'(el) {
     const a = S.assigns.find(x => x.id === el.dataset.id);
@@ -4499,7 +4609,7 @@ async function downloadBackup(btn) { // solo profesor: todo lo que él puede lee
   try {
     const tables = {
       profiles: 'id, display_name, nickname, email, role, approved, archived_at, created_at, birth_date, family_dm_ok, bio, instrument, level, favorites, gear, app_installed_at',
-      listening_items: '*', listening_assignments: '*', listening_comments: '*',
+      listening_items: '*', listening_assignments: '*', listening_comments: '*', listening_answer_reactions: '*',
       board_posts: '*', board_recipients: '*', board_reads: '*',
       feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*',
       homework_tasks: '*', payments_plans: '*', payments_records: '*', lessons: '*', lessons_students: '*',
@@ -5169,7 +5279,7 @@ async function openNotifFromUrl(url) {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.dmRx = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.homework = []; S.payPlans = []; S.payRecords = []; S.payMonth = null; S.goalStages = []; S.goalItems = []; S.goalDone = []; S.lessons = []; S.lessonNames = []; S.lessonSync = null; S.agendaWeek = null; S.section = 'feed'; if (S.closingAccount) { S.closingAccount = false; viewDeleted(); } else viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.dmRx = []; S.ansRx = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.homework = []; S.payPlans = []; S.payRecords = []; S.payMonth = null; S.goalStages = []; S.goalItems = []; S.goalDone = []; S.lessons = []; S.lessonNames = []; S.lessonSync = null; S.agendaWeek = null; S.section = 'feed'; if (S.closingAccount) { S.closingAccount = false; viewDeleted(); } else viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });

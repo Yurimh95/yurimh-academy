@@ -2094,3 +2094,111 @@ $$;
 drop trigger if exists cleanup_profiles on public.profiles;
 create trigger cleanup_profiles after delete on public.profiles
   for each row execute function public.cleanup_target_links('profile');
+
+-- =====================================================================
+--  ESCUCHA ANALÍTICA: REACCIONES A LAS RESPUESTAS Y "LEÍDO" (2026-11-23)
+--  El profesor reacciona con cualquier emoji a cada una de las 6 respuestas
+--  de un alumno (una reacción por respuesta) y marca el conjunto como leído
+--  (listening_assignments.teacher_read_at). Solo lo ven ese alumno y el profesor.
+--  Si el alumno cambia sus respuestas después, la marca de leído se quita sola.
+--  Aviso al alumno: 'listening_feedback' (uno por escucha mientras no lo lea).
+-- =====================================================================
+alter table public.listening_assignments add column if not exists teacher_read_at timestamptz;
+
+create or replace function public.listening_assignments_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_teacher() then
+    if new.item_id     is distinct from old.item_id
+    or new.student_id  is distinct from old.student_id
+    or new.note        is distinct from old.note
+    or new.due_date    is distinct from old.due_date
+    or new.assigned_at is distinct from old.assigned_at then
+      raise exception 'Solo el profesor puede modificar esos campos';
+    end if;
+    -- "Leído" solo lo pone el profesor; si el alumno cambia sus respuestas, deja de estar leído
+    new.teacher_read_at := case when new.answers is distinct from old.answers then null else old.teacher_read_at end;
+  end if;
+  -- updated_at solo cambia cuando el ALUMNO toca su progreso (respuestas o check),
+  -- no cuando el profesor edita fecha o nota. Así "respuestas recientes" es fiable.
+  if new.answers is distinct from old.answers or new.listened is distinct from old.listened then
+    new.updated_at = now();
+  end if;
+  return new;
+end;
+$$;
+
+create table if not exists public.listening_answer_reactions (
+  assignment_id uuid not null references public.listening_assignments(id) on delete cascade,
+  question      text not null check (question in ('highlights', 'likes', 'dislikes', 'learned', 'would_use', 'would_never_use')),
+  user_id       uuid not null references public.profiles(id) on delete cascade,
+  emoji         text not null check (char_length(emoji) between 1 and 32),
+  created_at    timestamptz not null default now(),
+  primary key (assignment_id, question, user_id)
+);
+create index if not exists listening_answer_reactions_user_idx on public.listening_answer_reactions (user_id);
+grant select, insert, update, delete on public.listening_answer_reactions to authenticated;
+revoke all on public.listening_answer_reactions from anon;
+alter table public.listening_answer_reactions enable row level security;
+
+drop policy if exists listening_answer_reactions_select on public.listening_answer_reactions;
+create policy listening_answer_reactions_select on public.listening_answer_reactions for select to authenticated
+  using (public.is_teacher()
+         or (public.is_approved() and exists (select 1 from public.listening_assignments a
+                                              where a.id = assignment_id and a.student_id = (select auth.uid()))));
+drop policy if exists listening_answer_reactions_insert_teacher on public.listening_answer_reactions;
+create policy listening_answer_reactions_insert_teacher on public.listening_answer_reactions for insert to authenticated
+  with check (public.is_teacher() and user_id = (select auth.uid()));
+drop policy if exists listening_answer_reactions_update_teacher on public.listening_answer_reactions;
+create policy listening_answer_reactions_update_teacher on public.listening_answer_reactions for update to authenticated
+  using (public.is_teacher() and user_id = (select auth.uid()))
+  with check (public.is_teacher() and user_id = (select auth.uid()));
+drop policy if exists listening_answer_reactions_delete_teacher on public.listening_answer_reactions;
+create policy listening_answer_reactions_delete_teacher on public.listening_answer_reactions for delete to authenticated
+  using (public.is_teacher() and user_id = (select auth.uid()));
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback'));
+
+-- Un solo aviso por escucha: notify() no repite uno igual que siga sin leer (target = la escucha, extra = su título)
+create or replace function public.listening_feedback_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare a record; who uuid := auth.uid();
+begin
+  if tg_table_name = 'listening_answer_reactions' then
+    if tg_op = 'UPDATE' and new.emoji = old.emoji then return null; end if;
+    who := new.user_id;
+    select la.student_id, la.item_id, li.title into a
+      from public.listening_assignments la join public.listening_items li on li.id = la.item_id
+      where la.id = new.assignment_id;
+  else -- listening_assignments: el profesor lo acaba de marcar como leído
+    if new.teacher_read_at is null or old.teacher_read_at is not null then return null; end if;
+    select new.student_id, new.item_id, li.title into a from public.listening_items li where li.id = new.item_id;
+  end if;
+  if a.student_id is not null then
+    perform public.notify(a.student_id, 'listening_feedback', who, a.item_id, a.title);
+  end if;
+  return null;
+end;
+$$;
+revoke execute on function public.listening_feedback_notify() from public, anon, authenticated;
+drop trigger if exists listening_answer_reactions_notify_trg on public.listening_answer_reactions;
+create trigger listening_answer_reactions_notify_trg after insert or update on public.listening_answer_reactions
+  for each row execute function public.listening_feedback_notify();
+drop trigger if exists listening_assignments_read_notify_trg on public.listening_assignments;
+create trigger listening_assignments_read_notify_trg after update of teacher_read_at on public.listening_assignments
+  for each row execute function public.listening_feedback_notify();
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'listening_answer_reactions') then
+    alter publication supabase_realtime add table public.listening_answer_reactions;
+  end if;
+end $$;
