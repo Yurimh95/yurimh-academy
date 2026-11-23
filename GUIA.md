@@ -84,6 +84,7 @@ Que cierre la app del todo y la vuelva a abrir, y pulse otra vez **Ajustes → A
 - **Moderación**: todo se publica al momento. Cualquiera puede **Denunciar**; tú decides si borrar o descartar.
 - **Identidad**: nombre o, si lo ha elegido, apodo. Tú ves los dos, por ejemplo "Lu (Luis)".
 - **Menciones (como en Discord)**: en el Inicio, en los avisos y en los comentarios, escribe **@** y sale la lista de personas; escribe **#** y salen las secciones (#Ajustes, #Avisos…) y las escuchas. Eliges con las flechas + Enter, o tocando. Se ven resaltadas en azul y al pulsarlas llevan al perfil, a la sección o a la escucha. A quien mencionas le llega una notificación (campanita y móvil). Si mencionas una escucha o una sección que alguien no tiene (por ejemplo #Alumnos), a esa persona le sale como texto normal, sin enlace. En un aviso, la mención solo avisa si el aviso va dirigido a esa persona.
+- **Emojis**: todos los cuadros donde se escribe (Inicio, comentarios, avisos, mensajes, respuestas de la escucha, deberes, bio…) llevan a la derecha un botón 🙂. Ábrelo, elige pestaña (recientes, caras, gestos, música, corazones, fiesta, naturaleza) y pulsa los que quieras: entran donde está el cursor y el selector sigue abierto hasta que pulses fuera o Esc. En el móvil se esconde el teclado mientras eliges. Los campos de datos (nombre, apodo, enlaces) no lo llevan.
 
 ---
 
