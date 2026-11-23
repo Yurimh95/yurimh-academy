@@ -62,6 +62,7 @@
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
+    if(type==='profile') return id!==me && canSeeProfile(id) && (prof(id)||{}).role==='student';
     const T={board_post:['board_posts'],feed_post:['feed_posts'],feed_comment:['feed_comments'],listening_comment:['listening_comments'],listening_item:['listening_items']}[type];
     if(!T) return false;
     return DB[T[0]].some(r=>r.id===id && canRead[T[0]](r));
@@ -105,7 +106,7 @@
     feed_comments: r => r.author_id===me && isApproved() && DB.feed_posts.some(p=>p.id===r.post_id),
     listening_comments: r => r.author_id===me && (isTeacher() || (isApproved() && assigned(r.item_id))),
     reactions: r => r.user_id===me && isApproved() && canSee(r.target_type,r.target_id),
-    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message'].includes(r.target_type) && canSee(r.target_type,r.target_id),
+    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message','profile'].includes(r.target_type) && canSee(r.target_type,r.target_id),
     dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id),
     dm_reactions: r => r.user_id===me && isApproved() && (()=>{const m=DB.dm_messages.find(x=>x.id===r.message_id);return !!m&&(m.sender_id===me||m.recipient_id===me);})(),
     user_blocks: r => r.blocker_id===me && isApproved() && r.blocker_id!==r.blocked_id,

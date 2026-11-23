@@ -2038,3 +2038,35 @@ begin
     alter publication supabase_realtime add table public.dm_reactions;
   end if;
 end $$;
+
+-- =====================================================================
+--  DENUNCIAR A UNA PERSONA (2026-11-23)
+--  target_type 'profile': un alumno denuncia a otro alumno (nombre, foto,
+--  acoso repartido…) desde su ficha o al bloquearle. Solo a quien puede ver.
+-- =====================================================================
+alter table public.moderation_reports drop constraint if exists moderation_reports_target_type_check;
+alter table public.moderation_reports add constraint moderation_reports_target_type_check
+  check (target_type in ('feed_post', 'feed_comment', 'listening_comment', 'dm_message', 'profile'));
+
+create or replace function public.can_see_target(t text, i uuid)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select case t
+    when 'board_post'        then exists (select 1 from public.board_posts        where id = i)
+    when 'feed_post'         then exists (select 1 from public.feed_posts         where id = i)
+    when 'feed_comment'      then exists (select 1 from public.feed_comments      where id = i)
+    when 'listening_comment' then exists (select 1 from public.listening_comments where id = i)
+    when 'listening_item'    then exists (select 1 from public.listening_items    where id = i)
+    when 'dm_message'        then exists (select 1 from public.dm_messages        where id = i and recipient_id = auth.uid())
+    when 'profile'           then i <> auth.uid() and public.can_see_profile(i)
+                                  and exists (select 1 from public.profiles where id = i and role = 'student')
+    else false
+  end;
+$$;
+
+drop trigger if exists cleanup_profiles on public.profiles;
+create trigger cleanup_profiles after delete on public.profiles
+  for each row execute function public.cleanup_target_links('profile');

@@ -317,6 +317,8 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .btn.violet{color:var(--violet);background:rgba(var(--violet-rgb),.10);border-color:rgba(var(--violet-rgb),.32)}
 .btn.violet:hover{background:rgba(var(--violet-rgb),.16);border-color:rgba(var(--violet-rgb),.5)}
 .btn.danger{color:var(--bad);background:rgba(var(--bad-rgb),.08);border-color:rgba(var(--bad-rgb),.32);box-shadow:none}
+label.check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;cursor:pointer}
+label.check input{margin-top:3px;width:auto;flex:none;accent-color:var(--accent)}
 .btn.danger:hover{background:rgba(var(--bad-rgb),.14);border-color:rgba(var(--bad-rgb),.55)}
 .btn.ghost{color:var(--muted);background:transparent;border-color:var(--line);box-shadow:none}
 .btn.ghost:hover{color:var(--strong);border-color:var(--line-strong);background:var(--hover)}
@@ -1322,7 +1324,7 @@ const REACTIONS = [
   { k: 'wow', e: '😮' }, { k: 'sad', e: '😢' }, { k: 'angry', e: '😡' }
 ];
 const TARGET_TABLE = { feed_post: 'feed_posts', feed_comment: 'feed_comments', listening_comment: 'listening_comments', dm_message: 'dm_messages' };
-const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha', dm_message: 'Mensaje privado' };
+const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha', dm_message: 'Mensaje privado', profile: 'Persona' };
 const CM = {
   feed: { table: 'feed_comments', key: 'post_id', type: 'feed_comment' },
   listening: { table: 'listening_comments', key: 'item_id', type: 'listening_comment' }
@@ -1541,6 +1543,11 @@ function targetOf(type, id) {
   return x && type === 'dm_message' ? { ...x, author_id: x.sender_id } : x; // en los mensajes, el "autor" es quien lo envía
 }
 function reportRow(r) {
+  if (r.target_type === 'profile') return `<div class="row rep"><div style="min-width:0;flex:1">
+      <div class="sub">Persona · denunciada por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">${avatarHtml(r.target_id, 28)}<strong>${esc(whoName(r.target_id))}</strong></div>
+      ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
+    <div class="actions" style="margin:0"><button class="btn sm" data-action="open-student" data-id="${r.target_id}">Ver ficha</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
   const x = targetOf(r.target_type, r.target_id);
   return `<div class="row rep"><div style="min-width:0;flex:1">
       <div class="sub">${esc(TARGET_LABEL[r.target_type] || 'Contenido')} · denunciado por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
@@ -2496,6 +2503,7 @@ function settingsView() {
       ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
         : `<ul class="plist">
           <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo tu profesor sabe que estás.</li>
+          <li><b>Si alguien te molesta:</b> en un mensaje privado, mantén pulsado el mensaje (en el ordenador, la flechita ⌄) y elige <b>Denunciar</b>. También puedes pulsar <b>Bloquear</b> en la conversación y marcar "Denunciar también", o pulsar su nombre o su foto y elegir <b>Denunciar a esta persona</b>. Solo tu profesor ve las denuncias, y la otra persona no se entera.</li>
           <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
           <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
         <h3 class="h3">Personas bloqueadas</h3>
@@ -3297,7 +3305,10 @@ async function profileModal(id) {
         : p.can_message ? `<button class="btn primary" data-action="dm-open" data-id="${id}">Enviar mensaje</button>`
         : '<span class="sub">No podéis escribiros en privado.</span>'}
     </div>
-    ${!mine && !isTeacher() && p.role === 'student' ? `<div class="mate-box" data-mate-box="${id}">${mateButtons(id)}</div>` : ''}`);
+    ${!mine && !isTeacher() && p.role === 'student' ? `<div class="mate-box" data-mate-box="${id}">${mateButtons(id)}</div>
+      <div class="center" style="margin-top:14px">${S.reports.some(r => r.target_type === 'profile' && r.target_id === id && r.reporter_id === S.user.id)
+        ? '<span class="sub">🚩 Denunciado</span>'
+        : `<button class="linkbtn mute" data-action="report" data-type="profile" data-id="${id}">🚩 Denunciar a esta persona</button>`}</div>` : ''}`);
   $('.modal').classList.add('narrow');
 }
 
@@ -3686,14 +3697,7 @@ const actions = {
     if (error) return toast('No se pudo borrar: ' + errEs(error), 'bad');
     S.dms = S.dms.filter(m => m.id !== el.dataset.id); updateThread(); refreshChrome();
   },
-  async block(el) {
-    if (!confirm(`¿Bloquear a ${whoName(el.dataset.id)}? No podréis escribiros en privado y, si erais compañeros, dejaréis de serlo. Esta persona no recibe ningún aviso, y tu profesor tampoco.`)) return;
-    const { error } = await sb.from('user_blocks').insert({ blocker_id: S.user.id, blocked_id: el.dataset.id });
-    if (error) return toast('No se pudo bloquear: ' + errEs(error), 'bad');
-    S.blocks.push({ blocker_id: S.user.id, blocked_id: el.dataset.id }); S.dmCan[el.dataset.id] = false;
-    const mr = mateRow(el.dataset.id); if (mr) S.mates = S.mates.filter(x => x !== mr); // la base de datos la borra sola
-    render(); toast('Bloqueado', 'ok');
-  },
+  block(el) { blockModal(el.dataset.id); },
   async unblock(el) {
     const { error } = await sb.from('user_blocks').delete().eq('blocker_id', S.user.id).eq('blocked_id', el.dataset.id);
     if (error) return toast('No se pudo desbloquear: ' + errEs(error), 'bad');
@@ -4055,6 +4059,8 @@ document.addEventListener('submit', async e => {
     addUnique(S.dms, data, 'dm_messages');
     ta.value = ''; ta.style.height = '';
     updateThread(); scrollThread(); updateDmList(); ta.focus();
+  } else if (f.id === 'blockForm') {
+    e.preventDefault(); await blockSubmit(f);
   } else if (f.id === 'nameForm') {
     e.preventDefault();
     const name = f.elements['display_name'].value.trim();
@@ -4324,6 +4330,52 @@ async function loadLessons() {
 }
 
 /* ======================= PRIVACIDAD Y COPIA DE SEGURIDAD ======================= */
+/* ---- Bloquear (y, si quieres, denunciar a la vez, como en WhatsApp) ----
+   Con "denunciar" marcado se denuncian sus últimos mensajes recibidos (hasta 5) para que el
+   profesor tenga contexto; si no te ha escrito, se denuncia a la persona. */
+const BLOCK_REPORT_MAX = 5;
+function blockModal(id) {
+  const msgs = S.dms.filter(m => m.sender_id === id && m.recipient_id === S.user.id);
+  openModal(`<div class="modal-head"><h2>¿Bloquear a ${esc(whoName(id))}?</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="blockForm" data-id="${id}">
+      <p style="margin-top:0">No podréis escribiros en privado y, si erais compañeros, dejaréis de serlo. Esta persona no recibe ningún aviso.</p>
+      <label class="check"><input type="checkbox" name="report"> <span><b>Denunciar también a tu profesor</b><br><span class="sub">${msgs.length ? `Le llegarán ${msgs.length > 1 ? `sus últimos ${Math.min(msgs.length, BLOCK_REPORT_MAX)} mensajes` : 'su mensaje'} para que pueda ver qué ha pasado.` : 'Tu profesor sabrá que esta persona te ha molestado.'} Si no lo marcas, nadie se entera del bloqueo.</span></span></label>
+      <label class="f" data-block-reason hidden>Motivo (opcional)<textarea name="reason" rows="2" maxlength="300" placeholder="Cuéntale a tu profesor qué ha pasado"></textarea></label>
+      <div class="actions"><button type="button" class="btn ghost" data-action="close">Cancelar</button><button type="submit" class="btn danger">Bloquear</button></div>
+    </form>`);
+  $('.modal').classList.add('narrow');
+  const f = $('#blockForm');
+  f.elements['report'].addEventListener('change', e => {
+    f.querySelector('[data-block-reason]').hidden = !e.target.checked;
+    f.querySelector('[type=submit]').textContent = e.target.checked ? 'Bloquear y denunciar' : 'Bloquear';
+  });
+}
+async function blockSubmit(f) {
+  const id = f.dataset.id, doReport = f.elements['report'].checked, reason = (f.elements['reason'].value || '').trim().slice(0, 300) || null;
+  const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+  // Primero la denuncia: después de bloquear ya no se podría denunciar a la persona (deja de verse)
+  if (doReport) {
+    const already = new Set(S.reports.filter(r => r.reporter_id === S.user.id).map(r => r.target_type + ':' + r.target_id));
+    const msgs = S.dms.filter(m => m.sender_id === id && m.recipient_id === S.user.id)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, BLOCK_REPORT_MAX);
+    let rows = msgs.map(m => ({ target_type: 'dm_message', target_id: m.id }));
+    if (!rows.length) rows = [{ target_type: 'profile', target_id: id }];
+    rows = rows.filter(r => !already.has(r.target_type + ':' + r.target_id))
+      .map(r => ({ ...r, reporter_id: S.user.id, reason: reason || 'Al bloquear a esta persona' }));
+    if (rows.length) {
+      const { error } = await sb.from('moderation_reports').insert(rows);
+      if (error) { btn.disabled = false; return toast('No se pudo enviar la denuncia: ' + errEs(error), 'bad'); }
+      rows.forEach(r => S.reports.push({ ...r, resolved: false, created_at: new Date().toISOString() }));
+    }
+  }
+  const { error } = await sb.from('user_blocks').insert({ blocker_id: S.user.id, blocked_id: id });
+  if (error) { btn.disabled = false; return toast('No se pudo bloquear: ' + errEs(error), 'bad'); }
+  S.blocks.push({ blocker_id: S.user.id, blocked_id: id }); S.dmCan[id] = false;
+  const mr = mateRow(id); if (mr) S.mates = S.mates.filter(x => x !== mr); // la base de datos la borra sola
+  await closeModal();
+  render(); toast(doReport ? 'Bloqueado y denunciado. Tu profesor lo revisará' : 'Bloqueado', 'ok');
+}
+
 function privacyModal() {
   openModal(`<div class="modal-head"><h2>Tus datos en ${esc(APP_NAME)}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="privtext">
