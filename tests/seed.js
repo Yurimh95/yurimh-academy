@@ -50,6 +50,7 @@ window.__DB_SEED = {
     {id:'r2',reporter_id:'s1',target_type:'feed_comment',target_id:'fc2',reason:null,resolved:false,created_at:T(20)}
   ],
   // Mensajes privados: uno antiguo Luis → Marta (de cuando tenía permiso; el profe NO debe verlo) y Yuri → Marta
+  dm_reactions:[],
   dm_messages:[
     {id:'d1',sender_id:'s2',recipient_id:'s1',body:'Mensaje privado entre alumnos',created_at:T(50),read_at:T(45)},
     {id:'d3',sender_id:'t1',recipient_id:'s1',body:'Marta, repasa el ejercicio de escalas',created_at:T(40),read_at:null}

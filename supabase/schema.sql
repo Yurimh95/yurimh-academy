@@ -1976,3 +1976,65 @@ end;
 $$;
 revoke execute on function public.email_wait_seconds() from public;
 grant execute on function public.email_wait_seconds() to anon, authenticated;
+
+-- =====================================================================
+--  MENSAJES PRIVADOS: REACCIONES (2026-11-23)
+--  Una por persona y mensaje (como WhatsApp); cualquier emoji. Solo las ven
+--  y ponen los dos de la conversación. No cuentan como actividad pública.
+--  Aviso: notificación 'dm' con el emoji en extra (push sí, campanita no).
+-- =====================================================================
+create table if not exists public.dm_reactions (
+  message_id uuid not null references public.dm_messages(id) on delete cascade,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  emoji      text not null check (char_length(emoji) between 1 and 32),
+  created_at timestamptz not null default now(),
+  primary key (message_id, user_id)
+);
+create index if not exists dm_reactions_user_idx on public.dm_reactions (user_id);
+grant select, insert, update, delete on public.dm_reactions to authenticated;
+revoke all on public.dm_reactions from anon;
+alter table public.dm_reactions enable row level security;
+
+drop policy if exists dm_reactions_select on public.dm_reactions;
+create policy dm_reactions_select on public.dm_reactions for select to authenticated
+  using (exists (select 1 from public.dm_messages m where m.id = message_id
+                 and (select auth.uid()) in (m.sender_id, m.recipient_id)));
+drop policy if exists dm_reactions_insert on public.dm_reactions;
+create policy dm_reactions_insert on public.dm_reactions for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_approved()
+              and exists (select 1 from public.dm_messages m where m.id = message_id
+                          and (select auth.uid()) in (m.sender_id, m.recipient_id)
+                          and public.can_dm(m.sender_id, m.recipient_id)));
+drop policy if exists dm_reactions_update on public.dm_reactions;
+create policy dm_reactions_update on public.dm_reactions for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()) and public.is_approved()
+              and exists (select 1 from public.dm_messages m where m.id = message_id
+                          and (select auth.uid()) in (m.sender_id, m.recipient_id)
+                          and public.can_dm(m.sender_id, m.recipient_id)));
+drop policy if exists dm_reactions_delete on public.dm_reactions;
+create policy dm_reactions_delete on public.dm_reactions for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+create or replace function public.dm_reactions_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare owner uuid;
+begin
+  if tg_op = 'UPDATE' and new.emoji = old.emoji then return null; end if;
+  select sender_id into owner from public.dm_messages where id = new.message_id;
+  perform public.notify(owner, 'dm', new.user_id, new.user_id, new.emoji);
+  return null;
+end;
+$$;
+revoke execute on function public.dm_reactions_notify() from public, anon, authenticated;
+drop trigger if exists dm_reactions_notify_trg on public.dm_reactions;
+create trigger dm_reactions_notify_trg after insert or update on public.dm_reactions
+  for each row execute function public.dm_reactions_notify();
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'dm_reactions') then
+    alter publication supabase_realtime add table public.dm_reactions;
+  end if;
+end $$;

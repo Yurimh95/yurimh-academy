@@ -46,6 +46,7 @@
     reactions: r => isApproved() && !isArchived(r.user_id) && canSee(r.target_type, r.target_id),
     moderation_reports: r => isTeacher() || r.reporter_id===me,
     dm_messages: r => r.sender_id===me || r.recipient_id===me || (isTeacher() && dmReported(r.id)),
+    dm_reactions: r => (()=>{const m=DB.dm_messages.find(x=>x.id===r.message_id);return !!m&&(m.sender_id===me||m.recipient_id===me);})(),
     user_blocks: r => r.blocker_id===me,
     notifications: r => r.user_id===me,
     homework_tasks: r => isTeacher() || (r.student_id===me && isApproved()),
@@ -79,6 +80,7 @@
     reactions: (op,r) => op==='delete' && r.user_id===me,
     moderation_reports: () => isTeacher(),
     dm_messages: (op,r) => op==='update' ? r.recipient_id===me : (r.sender_id===me || (isTeacher() && dmReported(r.id))),
+    dm_reactions: (op,r) => r.user_id===me,
     user_blocks: (op,r) => op==='delete' && r.blocker_id===me,
     notifications: (op,r) => r.user_id===me,
     homework_tasks: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
@@ -105,6 +107,7 @@
     reactions: r => r.user_id===me && isApproved() && canSee(r.target_type,r.target_id),
     moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message'].includes(r.target_type) && canSee(r.target_type,r.target_id),
     dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id),
+    dm_reactions: r => r.user_id===me && isApproved() && (()=>{const m=DB.dm_messages.find(x=>x.id===r.message_id);return !!m&&(m.sender_id===me||m.recipient_id===me);})(),
     user_blocks: r => r.blocker_id===me && isApproved() && r.blocker_id!==r.blocked_id,
     notifications: () => false,
     homework_tasks: () => isTeacher(),
@@ -130,7 +133,7 @@
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], dm_reactions:['message_id','user_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){

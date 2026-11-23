@@ -24,7 +24,7 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
   switch (kind) {
     case "board_post": return { title: "📣 Nuevo aviso", body: extra ?? "Tienes un aviso nuevo" };
     case "assignment": return { title: "🎧 Nueva escucha", body: extra ?? "Tienes una escucha nueva" };
-    case "dm": return { title: `💬 ${actor}`, body: "Te ha enviado un mensaje" };
+    case "dm": return { title: `💬 ${actor}`, body: extra ? `Ha reaccionado ${extra} a tu mensaje` : "Te ha enviado un mensaje" }; // extra = emoji de la reacción
     case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra ?? "" };
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
