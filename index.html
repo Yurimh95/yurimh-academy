@@ -337,6 +337,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .radios{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;color:var(--text)}
 .pickbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:-2px 0 14px}
 .pickbox[hidden]{display:none}
+.pickbox.hwcopy-list{grid-template-columns:1fr}
+.hwcopy-due{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:6px 0 14px}
+.hwcopy-due input[type=date]{width:auto;margin-left:6px}
 .checks{display:flex;flex-direction:column;gap:9px;margin:6px 0 4px}
 .chk.off{opacity:.45;cursor:default}
 .chk.off input{cursor:default}
@@ -753,6 +756,7 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"/></symbol>
   <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M8 17h2"/></symbol>
   <symbol id="i-homework" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1"/><path d="m8.5 12 2.2 2.2L15.5 9.5M8.5 17.5h7"/></symbol>
   <symbol id="i-payments" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.6A4 4 0 1 0 15.5 15.4M7 10.6h6M7 13.4h6"/></symbol>
@@ -2951,7 +2955,8 @@ function studentDetailModal(id) {
       const l = S.homework.filter(h => h.student_id === s.id).sort(hwSort), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
       return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">${esc(MODULE_HOMEWORK)}
           ${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : ''}${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}</h2>
-          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div>
+          <div class="chips">${l.length ? `<button class="btn sm" data-action="hw-copy-all" data-id="${s.id}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>` : ''}
+          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div></div>
         <div data-sdm-hw="${s.id}">
           ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
           ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
@@ -3561,6 +3566,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('change', e => {
   if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); }
   if (e.target.id === 'avatarFile') { const f0 = e.target.files[0]; e.target.value = ''; processAvatar(f0); }
+  if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }
   if (e.target.id === 'familyDm') setFamilyDm(e.target.dataset.id, e.target.checked);
 });
@@ -3741,7 +3747,8 @@ function hwRow(h, teacher) {
       <div class="hwmeta">${d ? `<span class="chip ${d.cls}">${esc(d.text)}</span>` : ''}
         ${h.done_at ? `<span class="chip ok">Practicada · ${timeAgo(h.done_at)}</span>` : ''}
         ${teacher ? '' : `<span class="sub">${timeAgo(h.created_at)}</span>`}</div></div>
-    ${teacher ? `<div class="hwtools"><button class="iconbtn sm" data-action="hw-edit" data-id="${h.id}" title="Editar" aria-label="Editar">${ic('edit')}</button>
+    ${teacher ? `<div class="hwtools"><button class="iconbtn sm" data-action="hw-copy" data-id="${h.id}" title="Copiar a otros alumnos" aria-label="Copiar a otros alumnos">${ic('copy')}</button>
+      <button class="iconbtn sm" data-action="hw-edit" data-id="${h.id}" title="Editar" aria-label="Editar">${ic('edit')}</button>
       <button class="iconbtn sm" data-action="hw-delete" data-id="${h.id}" title="Borrar" aria-label="Borrar">×</button></div>` : ''}
   </div>`;
 }
@@ -3765,6 +3772,7 @@ function homeworkTeacher() {
       return `<section class="dcard hwgroup"><div class="dhead"><h2>${whoLink(s.id, avatarHtml(s.id, 30))} ${esc(s.display_name)}</h2>
           <div class="chips">${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : '<span class="chip ok">Al día</span>'}
           ${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}
+          <button class="btn sm" data-action="hw-copy-all" data-id="${s.id}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>
           <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div></div>
         ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
         ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
@@ -3785,6 +3793,29 @@ function hwFormModal(id, forStudent) {
       <label class="f">Detalles (opcional)<textarea name="details" maxlength="1500" rows="4" placeholder="Tempo, compases, cómo practicarlo, enlaces…">${esc(h ? h.details || '' : '')}</textarea></label>
       <label class="f" style="max-width:220px">Fecha límite (opcional)<input type="date" name="due_date" value="${esc(h ? h.due_date || '' : '')}"></label>
       <div class="actions"><button class="btn" type="submit">${h ? 'Guardar cambios' : 'Poner deberes'}</button><button class="btn ghost" type="button" data-action="hw-cancel">Cancelar</button></div>
+    </form>`);
+  $('.modal').classList.add('narrow');
+}
+// Copiar deberes que ya tiene un alumno a otros. Con taskId viene marcada solo esa tarea; sin él, todas las pendientes.
+// Las copias nacen pendientes (sin "practicada") y no se repite una tarea que el destinatario ya tenga pendiente.
+const hwKey = t => (t || '').trim().toLowerCase();
+function hwCopyModal(fromId, taskId) {
+  const tasks = S.homework.filter(h => h.student_id === fromId).sort(hwSort);
+  const others = S.students.filter(s => s.approved && s.id !== fromId);
+  const row = h => `<label class="chk"><input type="checkbox" name="task" value="${h.id}" ${(taskId ? h.id === taskId : !h.done_at) ? 'checked' : ''}> <span>${esc(h.title)}${h.done_at ? ' <span class="sub">· practicada</span>' : ''}${h.due_date ? ` <span class="sub">· ${esc(fmtDate(h.due_date))}</span>` : ''}</span></label>`;
+  openModal(`<div class="modal-head"><h2>Copiar deberes</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="hwCopyForm" data-from="${fromId}">
+      <div class="f">De <b>${esc(studentName(fromId))}</b>: qué tareas copiar
+        <div class="pickbox hwcopy-list">${tasks.length ? tasks.map(row).join('') : '<span class="sub">No tiene deberes.</span>'}</div></div>
+      <div class="f">A quién <button type="button" class="linkbtn" data-action="hw-all" style="margin-left:8px">Marcar todos</button>
+        <div class="pickbox">${others.length ? others.map(s => `<label class="chk"><input type="checkbox" name="pick" value="${s.id}"> ${esc(s.display_name)}</label>`).join('') : '<span class="sub">No hay más alumnos aprobados.</span>'}</div></div>
+      <div class="f">Fecha límite
+        <div class="hwcopy-due">
+          <label class="chk"><input type="radio" name="due" value="same" checked> La misma de cada tarea</label>
+          <label class="chk"><input type="radio" name="due" value="none"> Sin fecha</label>
+          <label class="chk"><input type="radio" name="due" value="new"> Otra: <input type="date" name="due_date" aria-label="Nueva fecha límite"></label>
+        </div></div>
+      <div class="actions"><button class="btn" type="submit">Copiar deberes</button><button class="btn ghost" type="button" data-action="hw-cancel">Cancelar</button></div>
     </form>`);
   $('.modal').classList.add('narrow');
 }
@@ -4041,8 +4072,10 @@ Object.assign(actions, {
   },
   'hw-new'(el) { hwReturn = hwFromCard(el); hwFormModal(null, el.dataset.id); },
   'hw-edit'(el) { hwReturn = hwFromCard(el); hwFormModal(el.dataset.id); },
+  'hw-copy'(el) { const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return; hwReturn = hwFromCard(el); hwCopyModal(h.student_id, h.id); },
+  'hw-copy-all'(el) { hwReturn = hwFromCard(el); hwCopyModal(el.dataset.id); },
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
-  'hw-all'() { const boxes = $$('#hwForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
+  'hw-all'() { const boxes = $$('#hwForm input[name=pick], #hwCopyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
     const val = h.done_at ? null : new Date().toISOString();
@@ -4102,6 +4135,31 @@ document.addEventListener('submit', async e => {
     const back = hwReturn; hwReturn = null;
     if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
     toast(ids.length > 1 ? `Deberes puestos a ${ids.length} alumnos. Les llegará un aviso.` : 'Deberes puestos. Le llegará un aviso.', 'ok');
+  } else if (f.id === 'hwCopyForm') {
+    e.preventDefault();
+    const tasks = $$('#hwCopyForm input[name=task]:checked').map(x => S.homework.find(h => h.id === x.value)).filter(Boolean);
+    const ids = $$('#hwCopyForm input[name=pick]:checked').map(x => x.value);
+    if (!tasks.length) return toast('Elige al menos una tarea', 'bad');
+    if (!ids.length) return toast('Elige al menos un alumno', 'bad');
+    const mode = (f.querySelector('input[name=due]:checked') || {}).value || 'same';
+    if (mode === 'new' && !f.due_date.value) return toast('Elige la nueva fecha', 'bad');
+    const due = h => mode === 'same' ? h.due_date || null : mode === 'new' ? f.due_date.value : null;
+    let skipped = 0; const rows = [];
+    ids.forEach(student_id => {
+      const has = new Set(S.homework.filter(h => h.student_id === student_id && !h.done_at).map(h => hwKey(h.title)));
+      tasks.forEach(h => {
+        if (has.has(hwKey(h.title))) { skipped++; return; }
+        has.add(hwKey(h.title));
+        rows.push({ student_id, title: h.title, details: h.details || null, due_date: due(h), created_by: S.user.id });
+      });
+    });
+    if (!rows.length) return toast('Esos alumnos ya tienen esas tareas pendientes', 'warn');
+    const { data, error } = await sb.from('homework_tasks').insert(rows).select();
+    if (error) return toast('No se pudo copiar: ' + error.message, 'bad');
+    (data || []).forEach(r => addUnique(S.homework, r, 'homework_tasks'));
+    const back = hwReturn; hwReturn = null;
+    if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
+    toast(`${rows.length} tarea${rows.length > 1 ? 's copiadas' : ' copiada'}. Les llegará un aviso.${skipped ? ` ${skipped} no se ha${skipped > 1 ? 'n' : ''} copiado porque ya la tenían pendiente.` : ''}`, 'ok');
   } else if (f.id === 'planForm') {
     e.preventDefault();
     const id = f.dataset.id, mode = (f.querySelector('input[name=mode]:checked') || {}).value || 'monthly';

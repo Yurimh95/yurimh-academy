@@ -31,7 +31,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.hw:not(.done)').count())===2 && !(await p.textContent('#app')).includes('Walking bass'), 'Ve solo sus 2 deberes pendientes (no los de Luis)');
   ok((await p.locator('.hw:has-text("Acordes con cejilla") .chip.bad').count())===1, 'El deber con fecha pasada sale como vencido');
   ok((await p.locator('.hwdone summary').textContent()).includes('Practicadas (1)'), 'Historial de practicadas (1)');
-  ok((await p.locator('[data-action=hw-edit], [data-action=hw-delete], [data-action=hw-new]').count())===0, 'La alumna no puede crear, editar ni borrar deberes');
+  ok((await p.locator('[data-action=hw-edit], [data-action=hw-delete], [data-action=hw-new], [data-action=hw-copy], [data-action=hw-copy-all]').count())===0, 'La alumna no puede crear, editar, copiar ni borrar deberes');
   const sneak = await p.evaluate(async()=>{
     const a = await sb.from('homework_tasks').select('*').eq('student_id','s2');
     const b = await sb.from('homework_tasks').update({title:'Hackeado'}).eq('id','h1');
@@ -94,6 +94,34 @@ const { chromium } = require('playwright');
   await t.click('.modal [data-sdm-hw] .hw:has-text("Pentatónica") [data-action=hw-edit]'); await wait(t);
   await t.click('#hwForm [data-action=hw-cancel]'); await wait(t,250);
   ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Cancelar una edición vuelve a la ficha (no la cierra)');
+  // Copiar deberes de Marta a Luis desde la ficha
+  await t.click('.modal .dhead [data-action=hw-copy-all]'); await wait(t);
+  ok(await t.locator('#hwCopyForm input[name=task]:checked').count()===2 && !(await t.locator('#hwCopyForm input[name=pick][value=s1]').count()), 'Copiar: vienen marcadas sus 2 pendientes y Marta no sale como destino');
+  await t.check('#hwCopyForm input[name=pick][value=s2]');
+  await t.click('#hwCopyForm button[type=submit]'); await wait(t,400);
+  const copiados = await db(t,()=>window.__DB.homework_tasks.filter(h=>h.student_id==='s2'&&!h.done_at).map(h=>h.title));
+  ok(copiados.filter(x=>x.startsWith('Pentatónica')).length===1 && copiados.filter(x=>x.startsWith('Improvisar')).length===1, 'Copia "Pentatónica" a Luis y no duplica "Improvisar", que ya tenía pendiente');
+  ok((await db(t,()=>window.__DB.homework_tasks.find(h=>h.student_id==='s2'&&h.title.startsWith('Pentatónica')).details))==='A 80 bpm con metrónomo, subiendo y bajando.', 'La copia lleva los detalles');
+  ok((await t.locator('.modal [data-sdm-hw="s1"]').count())===1, 'Al copiar vuelve a la ficha de Marta');
+  await t.keyboard.press('Escape'); await wait(t,250);
+  // Copiar una sola tarea, con fecha nueva, desde la sección Deberes
+  await goto(t,'homework');
+  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Pentatónica") [data-action=hw-copy]'); await wait(t);
+  ok(await t.locator('#hwCopyForm input[name=task]:checked').count()===1, 'Copiar una tarea: viene marcada solo esa');
+  await t.check('#hwCopyForm input[name=pick][value=s1]');
+  await t.click('#hwCopyForm button[type=submit]'); await wait(t,300);
+  ok((await db(t,()=>window.__DB.homework_tasks.filter(h=>h.student_id==='s1'&&h.title.startsWith('Pentatónica')).length))===1, 'No se la vuelve a poner a Marta si ya la tiene pendiente');
+  await t.click('#hwCopyForm [data-action=hw-cancel]').catch(()=>{}); await wait(t,250);
+  await t.click('.hwgroup:has-text("Luis") .hwdone summary');
+  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Walking bass") [data-action=hw-copy]'); await wait(t);
+  await t.click('[data-action=hw-all]');
+  await t.fill('#hwCopyForm [name=due_date]','2099-02-01'); await t.locator('#hwCopyForm [name=due_date]').dispatchEvent('change');
+  ok(await t.locator('#hwCopyForm input[name=due][value=new]').isChecked(), 'Elegir una fecha marca "Otra"');
+  await t.screenshot({path:require('path').join(__dirname,'shots','deberes_copiar.png')});
+  await t.click('#hwCopyForm button[type=submit]'); await wait(t,300);
+  const wb = await db(t,()=>window.__DB.homework_tasks.find(h=>h.student_id==='s1'&&h.title.startsWith('Walking bass')));
+  ok(!!wb && wb.due_date==='2099-02-01' && !wb.done_at, 'Copia una tarea ya practicada con fecha nueva; la copia nace pendiente');
+  await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
   await shot(t,'ficha_deberes.png');
   await t.keyboard.press('Escape'); await wait(t,250);
 
