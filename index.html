@@ -2005,6 +2005,7 @@ async function backfillThumbs() {
   // Duraciones que falten (una vez por sesión: si un enlace no la da, no se insiste)
   for (const it of S.items.filter(i => !i.duration_sec && !durTried.has(i.id)).slice(0, 30)) {
     durTried.add(it.id);
+    await new Promise(ok => setTimeout(ok, 600)); // de una en una y sin prisa: Spotify corta si le pides muchas seguidas
     const d = await fetchDuration(it.url);
     if (!d.duration_sec) continue;
     const row = { duration_sec: d.duration_sec, track_count: d.track_count, duration_partial: d.partial };

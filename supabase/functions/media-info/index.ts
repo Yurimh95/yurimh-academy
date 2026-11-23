@@ -21,28 +21,40 @@ const CORS = {
 type Info = { duration_sec: number | null; track_count: number | null; partial: boolean };
 const EMPTY: Info = { duration_sec: null, track_count: null, partial: false };
 
+// Si el servicio dice "demasiadas peticiones" (429) o falla (5xx), espera y reintenta hasta 2 veces.
+// Los fallos se apuntan en los registros de la función (Supabase → Edge Functions → media-info → Logs).
 async function get(url: string): Promise<string | null> {
-  try {
-    const r = await fetch(url, {
-      headers: { "User-Agent": UA, "Accept-Language": "en-US,en;q=0.8" },
-      signal: AbortSignal.timeout(8000),
-    });
-    return r.ok ? await r.text() : null;
-  } catch { return null; }
+  for (let i = 0; i < 3; i++) {
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": UA, "Accept-Language": "en-US,en;q=0.8" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (r.ok) return await r.text();
+      console.log(`media-info: ${r.status} en ${url}`);
+      if (r.status !== 429 && r.status < 500) return null;
+      const wait = Math.min(Number(r.headers.get("retry-after")) || 0, 4) * 1000 || 800 * (i + 1);
+      await new Promise((ok) => setTimeout(ok, wait));
+    } catch (e) {
+      console.log(`media-info: error en ${url}: ${e}`);
+    }
+  }
+  return null;
 }
 
 async function spotify(type: string, id: string): Promise<Info> {
   const html = await get(`https://open.spotify.com/embed/${type}/${id}`);
   const m = html?.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-  if (!m) return EMPTY;
+  if (!m) { if (html) console.log(`media-info: Spotify ${type}/${id} sin datos (${html.length} caracteres)`); return EMPTY; }
   try {
     const e = JSON.parse(m[1])?.props?.pageProps?.state?.data?.entity;
-    if (!e) return EMPTY;
+    if (!e) { console.log(`media-info: Spotify ${type}/${id} sin "entity"`); return EMPTY; }
     if (type === "track" || type === "episode") {
       return { duration_sec: e.duration > 0 ? Math.round(e.duration / 1000) : null, track_count: null, partial: false };
     }
     const list: { duration?: number }[] = Array.isArray(e.trackList) ? e.trackList : [];
     const ms = list.reduce((s, t) => s + (Number(t.duration) || 0), 0);
+    if (!ms) console.log(`media-info: Spotify ${type}/${id} con ${list.length} temas pero sin duraciones`);
     return { duration_sec: ms > 0 ? Math.round(ms / 1000) : null, track_count: list.length || null, partial: list.length >= 100 };
   } catch { return EMPTY; }
 }
@@ -65,6 +77,7 @@ async function youtube(video: string | null, list: string | null): Promise<Info>
   }
   const html = await get(`https://www.youtube.com/watch?v=${video}`);
   const m = html?.match(/"lengthSeconds":"(\d+)"/);
+  if (html && !m) console.log(`media-info: YouTube ${video} sin duración (${html.length} caracteres; ¿página de cookies o de "no eres un robot"?)`);
   return m && Number(m[1]) > 0 ? { duration_sec: Number(m[1]), track_count: null, partial: false } : EMPTY;
 }
 
