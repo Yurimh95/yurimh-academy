@@ -3108,7 +3108,10 @@ async function newDmModal() {
 }
 
 /* =========================== NOTIFICACIONES =========================== */
-const unreadNotifs = () => S.notifs.filter(n => !n.read_at).length;
+// Los mensajes privados no salen en la campanita (tienen su propio contador en Mensajes).
+// Su fila sigue existiendo en la base de datos porque es la que dispara el aviso push al móvil.
+const bellNotifs = () => S.notifs.filter(n => n.kind !== 'dm');
+const unreadNotifs = () => bellNotifs().filter(n => !n.read_at).length;
 const RX_EMOJI = Object.fromEntries(REACTIONS.map(r => [r.k, r.e]));
 function notifText(n) {
   const who = n.actor_id ? `<b>${esc(whoName(n.actor_id))}</b>` : '';
@@ -3132,7 +3135,7 @@ function notifText(n) {
 }
 function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students' }[kind] || 'bell'; }
 function notifsModal() {
-  const list = S.notifs.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
+  const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     ${unreadNotifs() ? '<div style="margin:-4px 0 10px"><button class="linkbtn" data-action="notif-all-read">Marcar todas como leídas</button></div>' : ''}
     ${list.length ? `<div class="nlist">${list.map(n => `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
@@ -3269,7 +3272,7 @@ const actions = {
   // ---- Notificaciones ----
   notifs() { notifsModal(); },
   'notif-open'(el) { const n = S.notifs.find(x => x.id === el.dataset.id); if (n) openNotif(n); },
-  async 'notif-all-read'() { await markNotifsRead(S.notifs.filter(n => !n.read_at).map(n => n.id)); notifsModal(); refreshChrome(); },
+  async 'notif-all-read'() { await markNotifsRead(bellNotifs().filter(n => !n.read_at).map(n => n.id)); notifsModal(); refreshChrome(); },
   // ---- Ficha del alumno (profesor): fecha de nacimiento y permiso familiar ----
   async 'save-birth'(el) {
     const v = $('#birthInput').value || null;

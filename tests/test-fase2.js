@@ -26,7 +26,7 @@ const { chromium } = require('playwright');
   // ================= MARTA (menor, sin permiso) =================
   let p = await open('s1');
   ok((await navText(p)).includes('Mensajes1 sin leer'), 'Menú: "Mensajes 1 sin leer"');
-  ok((await p.textContent('.bell')).includes('1'), 'Campanita con 1 notificación');
+  ok((await p.locator('.bell .dotn').count())===0, 'Un mensaje privado no sube la campanita (solo el contador de Mensajes)');
 
   await goto(p,'messages');
   ok((await p.locator('.dm-conv').count())===2, 'Ve sus 2 conversaciones (Yuri y la antigua con Lu)');
@@ -70,9 +70,11 @@ const { chromium } = require('playwright');
 
   // Notificaciones
   await p.click('.bell'); await wait(p,300);
-  ok((await p.textContent('.modal')).includes('Yuri te ha enviado un mensaje'), 'Notificaciones: "Yuri te ha enviado un mensaje"');
-  await p.click('.modal .nrow'); await wait(p,400);
-  ok((await p.textContent('.nav button.on')).includes('Mensajes') && (await p.textContent('.dm-thread-head')).includes('Yuri') && !!(await db(p,()=>window.__DB.notifications.find(n=>n.id==='n1').read_at)), 'Pulsarla abre la conversación y la marca como leída');
+  ok(!(await p.textContent('.modal')).includes('te ha enviado un mensaje'), 'Notificaciones: los mensajes privados no salen en la lista');
+  ok(!!(await db(p,()=>window.__DB.notifications.find(n=>n.id==='n1').read_at)), 'Al abrir la conversación, su aviso de mensaje queda leído (así el siguiente vuelve a llegar al móvil)');
+  await p.keyboard.press('Escape'); await wait(p);
+  await p.evaluate(()=>openNotifFromUrl('?n=n1')); await wait(p,400);
+  ok((await p.textContent('.nav button.on')).includes('Mensajes') && (await p.textContent('.dm-thread-head')).includes('Yuri'), 'Tocar el aviso del móvil abre la conversación');
   // Llega un mensaje en directo mientras tiene la conversación abierta
   await p.evaluate(()=>window.__rtExternal('dm_messages',{id:'drt',sender_id:'t1',recipient_id:'s1',body:'¿Lo tienes ya?',read_at:null})); await wait(p,400);
   ok((await p.textContent('#dmThread')).includes('¿Lo tienes ya?') && !!(await db(p,()=>window.__DB.dm_messages.find(m=>m.id==='drt').read_at)), 'Mensaje en directo: aparece y queda leído al estar viéndolo');
