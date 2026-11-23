@@ -1098,8 +1098,8 @@ create or replace function public.save_push_subscription(p_endpoint text, p_p256
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if auth.uid() is null or not public.is_approved() then raise exception 'No autorizado'; end if;
-  delete from public.push_subscriptions where endpoint = p_endpoint;
-  insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (auth.uid(), p_endpoint, p_p256dh, p_auth);
+  insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (auth.uid(), p_endpoint, p_p256dh, p_auth)
+  on conflict (endpoint) do update set user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
 end;
 $$;
 revoke execute on function public.save_push_subscription(text, text, text) from public, anon;
