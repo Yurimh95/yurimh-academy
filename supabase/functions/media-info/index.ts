@@ -34,7 +34,7 @@ async function get(url: string, label = url): Promise<string | null> {
         signal: AbortSignal.timeout(8000),
       });
       if (r.ok) return await r.text();
-      console.log(`media-info: ${r.status} en ${label}`);
+      console.log(`media-info: ${r.status} en ${label}: ${(await r.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300)}`);
       if (r.status !== 429 && r.status < 500) return null;
       const wait = Math.min(Number(r.headers.get("retry-after")) || 0, 4) * 1000 || 800 * (i + 1);
       await new Promise((ok) => setTimeout(ok, wait));
@@ -82,7 +82,7 @@ async function ytApi(path: string, params: Record<string, string>): Promise<any 
 async function ytDurations(ids: string[]): Promise<number[]> {
   const out: number[] = [];
   for (let i = 0; i < ids.length; i += 50) {
-    const j = await ytApi("videos", { part: "contentDetails", id: ids.slice(i, i + 50).join(","), maxResults: "50" });
+    const j = await ytApi("videos", { part: "contentDetails", id: ids.slice(i, i + 50).join(",") });
     for (const v of j?.items ?? []) out.push(isoSecs(v?.contentDetails?.duration ?? ""));
   }
   return out;
