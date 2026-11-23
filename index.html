@@ -685,6 +685,8 @@ label.f>.emo-wrap{margin-top:6px}
 .lightbox .x{position:absolute;top:14px;right:14px;color:#fff;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.08)}
 .sdm-head h2{overflow-wrap:anywhere}
 .sdm-item{flex:1 1 260px}
+.sdm-open{cursor:pointer;border-radius:10px}
+.sdm-open:hover b{color:var(--accent)}
 .sdm-item .tmain{flex:1}
 .sdm-item .playbtn{margin-left:4px}
 .grid2{display:grid;grid-template-columns:170px 1fr;gap:10px}
@@ -1706,6 +1708,7 @@ async function closeModal(fromHistory = false) {
   if (modalOnClose) { const f = modalOnClose; modalOnClose = null; await f(); }
   $('#modalRoot').innerHTML = '';
   document.body.classList.remove('noscroll');
+  itemReturn = null; // cerrar del todo olvida el "volver a la ficha"
   // Cerrada con la ✕, Esc o al pulsar fuera: quitamos su entrada del historial
   if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
   if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
@@ -2885,17 +2888,20 @@ function itemFormModal(id) {
         ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select></label>
       <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
-      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" ${it && itemReturn ? `data-action="open-item" data-keep="1" data-id="${it.id}"` : 'data-action="close"'}>Cancelar</button></div>
     </form>`);
 }
 
+let itemReturn = null; // alumno cuya ficha estaba abierta al pulsar una de sus escuchas (para volver a ella)
 function itemModal(id) {
   const it = S.items.find(x => x.id === id);
   if (!it) return;
+  const back = itemReturn && S.students.some(s => s.id === itemReturn);
   const as = S.assigns.filter(a => a.item_id === id).sort((a, b) => studentName(a.student_id).localeCompare(studentName(b.student_id)));
   const taken = new Set(as.map(a => a.student_id));
   const free = S.students.filter(s => s.approved && !taken.has(s.id));
   openModal(`
+    ${back ? `<div style="margin:0 0 8px"><button class="btn sm ghost" data-action="item-back">← Volver a la ficha de ${esc(studentName(itemReturn))}</button></div>` : ''}
     <div class="modal-head">
       <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
@@ -2976,7 +2982,7 @@ function studentDetailModal(id) {
       if (!it) return '';
       const d = dueInfo(a), n = answeredCount(a);
       return `<div class="arow">
-        <div class="arow-head"><div class="arow-who sdm-item">${coverHtml(it, 56)}
+        <div class="arow-head"><div class="arow-who sdm-item sdm-open" data-action="sdm-item" data-id="${it.id}" data-sid="${s.id}" title="Abrir y editar esta escucha">${coverHtml(it, 56)}
             <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
             ${playBtn(it.url)}</div>
           <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
@@ -3364,7 +3370,9 @@ const actions = {
     studentDetailModal(el.dataset.id); toast('Fecha guardada', 'ok');
   },
   'new-item'() { itemFormModal(null); },
-  'open-item'(el) { itemModal(el.dataset.id); },
+  'open-item'(el) { if (!el.dataset.keep) itemReturn = null; itemModal(el.dataset.id); },
+  'sdm-item'(el) { itemReturn = el.dataset.sid; itemModal(el.dataset.id); }, // desde la ficha del alumno
+  'item-back'() { const r = itemReturn; itemReturn = null; if (r) studentDetailModal(r); else closeModal(); },
   'edit-item'(el) { itemFormModal(el.dataset.id); },
   async 'delete-item'(el) {
     const it = S.items.find(x => x.id === el.dataset.id);
@@ -3372,7 +3380,10 @@ const actions = {
     if (!confirm(`¿Eliminar "${it.title}"?${n ? `\n\nSe borrarán también las asignaciones y las respuestas de ${n} alumno${n > 1 ? 's' : ''}. No se puede deshacer.` : ''}`)) return;
     const { error } = await sb.from('listening_items').delete().eq('id', it.id);
     if (error) return toast('Error: ' + error.message, 'bad');
-    await loadData(); await closeModal(); render(); toast('Elemento eliminado', 'ok');
+    const back = itemReturn; itemReturn = null;
+    await loadData();
+    if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
+    toast('Elemento eliminado', 'ok');
   },
   async 'save-assign'(el) {
     const row = el.closest('.arow');
@@ -3707,8 +3718,8 @@ document.addEventListener('submit', async e => {
     const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
     if (error) return toast('Error: ' + error.message, 'bad');
     await loadData();
-    await closeModal();
-    render();
+    if (id && itemReturn) { render(); itemModal(id); } // vino de la ficha del alumno: vuelve a la escucha
+    else { await closeModal(); render(); }
     toast(id ? 'Elemento actualizado' : 'Elemento creado', 'ok');
   }
 });
