@@ -336,6 +336,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tbadge{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--accent-hi);background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.3);padding:0 8px;border-radius:999px;margin-left:6px;vertical-align:1px;white-space:nowrap}
 .fbody{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
 .fbody a{overflow-wrap:anywhere}
+.rt-list{margin:4px 0;padding-left:1.5em;white-space:normal}
+.rt-list li{white-space:pre-wrap;margin:2px 0;padding-left:2px}
+.rt-list li::marker{color:var(--accent)}
+ol.rt-list li::marker{font-weight:600}
 .linkcard{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--text);transition:border-color .15s,background .15s}
 .linkcard:hover{border-color:var(--line-strong);background:var(--hover)}
 .linkcard .lart{width:44px;height:44px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--neon))}
@@ -791,7 +795,33 @@ function richText(text) {
     out += linkify(text.slice(last, off)) + (v.go ? `<span class="mention" role="button" tabindex="0" ${v.go}>${esc(v.text)}</span>` : `<span class="mention off">${esc(v.text)}</span>`);
     last = off + m.length; return m;
   });
-  return out + linkify(text.slice(last));
+  return listify(out + linkify(text.slice(last)));
+}
+/* Listas: las líneas que empiezan por "- ", "* " o "• " se ven como viñetas, y las que empiezan por "1. " o "1) ", numeradas.
+   Trabaja sobre el HTML ya escapado (ninguna etiqueta generada contiene saltos de línea, así que partir por \n es seguro).
+   Los contenedores usan white-space:pre-wrap, por eso no se dejan \n dentro de la lista ni pegados a ella. */
+const LIST_UL = /^\s*[-*•–]\s+(.*)$/, LIST_OL = /^\s*(\d{1,4})[.)]\s+(.*)$/;
+function listify(html) {
+  const lines = html.split('\n'), out = [];
+  let text = [], list = null; // list: { tag, start, items }
+  const flushText = () => { if (text.length) out.push({ html: text.join('\n') }); text = []; };
+  const flushList = () => {
+    if (!list) return;
+    const start = list.tag === 'ol' && list.start !== 1 ? ` start="${list.start}"` : '';
+    out.push({ html: `<${list.tag} class="rt-list"${start}>${list.items.map(i => `<li>${i}</li>`).join('')}</${list.tag}>`, block: true });
+    list = null;
+  };
+  for (const line of lines) {
+    const ul = line.match(LIST_UL), ol = !ul && line.match(LIST_OL);
+    const tag = ul ? 'ul' : ol ? 'ol' : null;
+    if (!tag) { flushList(); text.push(line); continue; }
+    if (list && list.tag !== tag) flushList();
+    if (!list) { flushText(); list = { tag, start: ol ? parseInt(ol[1], 10) : 1, items: [] }; }
+    list.items.push(ul ? ul[1] : ol[2]);
+  }
+  flushList(); flushText();
+  // Entre dos trozos de texto va un \n; junto a una lista no hace falta (ya es un bloque)
+  return out.map((p, i) => (i && !p.block && !out[i - 1].block ? '\n' : '') + p.html).join('');
 }
 // Lo mismo en texto plano (resúmenes, denuncias, el cuadro de texto al editar). Ojo: SIN escapar.
 const plainText = text => String(text ?? '').replace(MENTION_RE, (m, u, l, s) => mentionView(u, l, s).text);
