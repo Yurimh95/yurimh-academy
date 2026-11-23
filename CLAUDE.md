@@ -132,9 +132,9 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 ## Pendiente o futuro (en este orden aproximado)
 
-1. **Instalar la versión actual**: mira "Estado actual".
+1. ~~Instalar la versión actual~~: hecho (2026-11-22).
 2. **Avisos por email: aparcado** (Yuri, 2026-11-23). Le bastan las notificaciones push y no quiere abrir cuentas en otros servicios ni ser invasivo. El check se ha quitado de la interfaz (queda un comentario en `postFormModal`). Si algún día lo pide: Resend + Edge Function.
-3. **Chat general** entre alumnos (`chat_*`, Supabase Realtime). Moderación como en el Feed.
+3. **Chat general: descartado de momento** (Yuri, Fase 2): el Inicio (feed) hace de espacio común y ya hay mensajes privados. Confirmarlo con él antes de retomarlo.
 4. **Pagos**: quién ha pagado cada mes (`payments_*`).
 5. **Deberes semanales** (`homework_*`).
 6. **RGPD y menores**: recordar a Yuri que informe a las familias. Pedir solo los datos necesarios.
