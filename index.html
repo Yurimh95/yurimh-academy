@@ -377,11 +377,14 @@ ol.rt-list li::marker{font-weight:600}
 .rxb{font:inherit;font-size:14px;cursor:pointer;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:999px;padding:3px 11px;display:inline-flex;gap:6px;align-items:center;transition:border-color .15s,background .15s}
 .rxb:hover{border-color:var(--line-strong);background:var(--hover)}
 .rxb.mine{border-color:rgba(var(--accent-rgb),.6);background:rgba(var(--accent-rgb),.13);color:var(--strong)}
-.rxb.add{color:var(--muted);font-size:13px}
-.rx-pick{display:flex;gap:2px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;padding:5px;width:max-content;max-width:100%;box-shadow:var(--shadow)}
+.rxb.main{font-size:15px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.rxb.main:not(.mine) .rxe{filter:grayscale(.35);opacity:.85}
+.rx-pick{position:fixed;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:5px 6px;width:max-content;box-shadow:var(--shadow);animation:rxIn .14s ease-out}
 .rx-pick[hidden]{display:none}
-.rx-pick .rxb{font-size:21px;padding:3px 9px;border-color:transparent}
-.rx-pick .rxb:hover{background:var(--hover);transform:scale(1.12)}
+.rx-pick .rxb{font-size:24px;padding:4px 7px;border-color:transparent;border-radius:50%;transition:transform .12s,background .12s}
+.rx-pick .rxb:hover,.rx-pick .rxb:focus-visible{background:var(--hover);transform:scale(1.25) translateY(-3px)}
+.rx-pick .rxb.mine{background:rgba(var(--accent-rgb),.16)}
+@keyframes rxIn{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}
 .cm{display:flex;flex-direction:column}
 .cmt{display:flex;gap:10px;padding:8px 0}
 .cmt-main{flex:1;min-width:0}
@@ -1002,13 +1005,71 @@ function rxBar(type, id) {
     const who = rows.filter(x => x.emoji === r.k);
     return { ...r, n: who.length, mine: who.some(x => x.user_id === S.user.id), names: who.map(x => whoName(x.user_id)).join(', ') };
   });
-  const any = data.some(x => x.n);
+  // El botón principal es el 👍🏼 (con su contador). Al pasar el ratón o
+  // mantener pulsado en el móvil se abre el selector con los 6 (rxHoverInit).
+  const [like, ...rest] = data;
+  const tip = like.n ? like.names : 'Me gusta · mantén para más reacciones';
   return `<div class="rx" data-rx="${type}:${id}">
-    <div class="rx-list">${data.filter(x => x.n).map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" title="${esc(x.names)}">${x.e}<span>${x.n}</span></button>`).join('')}
-      <button class="rxb add" data-action="rx-open" title="Reaccionar" aria-label="Reaccionar">${any ? '+' : 'Reaccionar'}</button></div>
-    <div class="rx-pick" hidden>${data.map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" aria-label="${x.k}">${x.e}</button>`).join('')}</div>
+    <div class="rx-list"><button class="rxb main ${like.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="like" title="${esc(tip)}" aria-label="Me gusta" aria-haspopup="true"><span class="rxe">${like.e}</span>${like.n ? `<span>${like.n}</span>` : ''}</button>${rest.filter(x => x.n).map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" title="${esc(x.names)}">${x.e}<span>${x.n}</span></button>`).join('')}</div>
+    <div class="rx-pick" role="menu" hidden>${data.map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" role="menuitem" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" aria-label="${x.k}">${x.e}</button>`).join('')}</div>
   </div>`;
 }
+
+/* ---- Selector de reacciones estilo Facebook ----
+   Ordenador: pasar el ratón por el 👍🏼 (o por el selector) lo abre; salir lo cierra.
+   Móvil: mantener pulsado el 👍🏼. Un toque normal da o quita el "me gusta". */
+let rxOpenEl = null, rxShowT = 0, rxHideT = 0, rxPress = null, rxLong = false;
+function rxShow(main) {
+  const bar = main.closest('.rx'), pk = bar && bar.querySelector('.rx-pick');
+  if (!pk) return;
+  if (rxOpenEl && rxOpenEl !== pk) rxOpenEl.hidden = true;
+  pk.hidden = false; rxOpenEl = pk;
+  const r = main.getBoundingClientRect(), w = pk.offsetWidth, h = pk.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - w - 8));
+  const top = r.top - h - 8 >= 8 ? r.top - h - 8 : r.bottom + 8;
+  pk.style.left = left + 'px'; pk.style.top = top + 'px';
+}
+function rxHide() { clearTimeout(rxShowT); clearTimeout(rxHideT); if (rxOpenEl) rxOpenEl.hidden = true; rxOpenEl = null; }
+function rxHoverInit() {
+  const isMouse = e => !e.pointerType || e.pointerType === 'mouse';
+  document.addEventListener('pointerover', e => {
+    if (!isMouse(e) || !e.target.closest) return;
+    const main = e.target.closest('.rxb.main'), pk = e.target.closest('.rx-pick');
+    if (main || (pk && pk === rxOpenEl)) clearTimeout(rxHideT);
+    if (main && !(rxOpenEl && main.closest('.rx').contains(rxOpenEl))) {
+      clearTimeout(rxShowT); rxShowT = setTimeout(() => rxShow(main), 450);
+    }
+  });
+  document.addEventListener('pointerout', e => {
+    if (!isMouse(e) || !e.target.closest) return;
+    if (!e.target.closest('.rxb.main, .rx-pick')) return;
+    const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.rxb.main, .rx-pick');
+    if (to) return;
+    clearTimeout(rxShowT); clearTimeout(rxHideT);
+    rxHideT = setTimeout(rxHide, 350);
+  });
+  // Pulsación larga (táctil)
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') { if (rxOpenEl && !e.target.closest('.rx-pick')) rxHide(); return; }
+    const main = e.target.closest && e.target.closest('.rxb.main');
+    if (rxOpenEl && !e.target.closest('.rx-pick') && !main) rxHide();
+    if (!main) return;
+    rxLong = false;
+    rxPress = { x: e.clientX, y: e.clientY, t: setTimeout(() => { rxLong = true; rxShow(main); if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {} }, 450) };
+  });
+  const cancel = () => { if (rxPress) clearTimeout(rxPress.t); rxPress = null; };
+  document.addEventListener('pointermove', e => { if (rxPress && Math.hypot(e.clientX - rxPress.x, e.clientY - rxPress.y) > 10) cancel(); });
+  document.addEventListener('pointerup', cancel);
+  document.addEventListener('pointercancel', cancel);
+  // Tras una pulsación larga, el clic que la sigue no debe dar "me gusta"
+  document.addEventListener('click', e => {
+    if (rxLong && e.target.closest && e.target.closest('.rxb.main')) { rxLong = false; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.rxb.main')) e.preventDefault(); });
+  addEventListener('scroll', () => { if (rxOpenEl) rxHide(); }, true);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && rxOpenEl) rxHide(); });
+}
+rxHoverInit();
 function updateRx(type, id) { $$(`[data-rx="${type}:${id}"]`).forEach(n => { n.outerHTML = rxBar(type, id); }); }
 
 /* ---- Comentarios: el mismo bloque sirve para el feed y para la escucha ---- */
@@ -2920,8 +2981,8 @@ const actions = {
   // Menciones pulsables: #sección y #escucha (las @personas usan open-profile)
   async 'mention-go'(el) { if ($('#modalRoot').firstChild) await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
   async 'mention-item'(el) { if ($('#modalRoot').firstChild) await closeModal(); openMentionItem(el.dataset.id); },
-  'rx-open'(el) { const pk = el.closest('.rx').querySelector('.rx-pick'); pk.hidden = !pk.hidden; },
   async 'rx-toggle'(el) {
+    rxHide();
     const { t, i, e } = el.dataset, me = S.user.id;
     const has = S.reactions.find(r => r.target_type === t && r.target_id === i && r.user_id === me && r.emoji === e);
     if (has) {

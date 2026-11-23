@@ -17,6 +17,8 @@ const { chromium } = require('playwright');
   // Menú lateral en escritorio, barra inferior en móvil: se pulsa el que esté visible.
   const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
   const dbq = (p,fn,arg)=>p.evaluate(fn,arg);
+  // Abre el selector de reacciones pasando el ratón por el 👍🏼 y elige un emoji
+  const rxPick = async (p,scope,e)=>{ await p.hover(scope+' .rxb.main'); await p.waitForTimeout(600); await p.click(scope+' .rx-pick [data-e='+e+']'); };
 
   // ================= ALUMNA: Marta =================
   let p = await open('s1');
@@ -36,7 +38,26 @@ const { chromium } = require('playwright');
   ok((await p.locator('.fpost').count())===4, 'Aparece en el feed (4)');
   // reacciones
   const card = '.fpost:has-text("Bienvenidos")';
-  await p.click(card+' .rxb.add'); ok(await p.locator(card+' .rx-pick').isVisible(), 'Selector de emojis se abre');
+  ok((await p.textContent(card+' .rxb.main')).includes('👍🏼'), 'El botón de reaccionar es el 👍🏼');
+  await p.click(card+' .rxb.main'); await p.waitForTimeout(200);
+  ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like')), 'Un clic en 👍🏼 da "me gusta"');
+  ok(await p.locator(card+' .rxb.main.mine').count()===1 && (await p.textContent(card+' .rxb.main')).includes('1'), 'El 👍🏼 queda marcado y con contador');
+  await p.click(card+' .rxb.main'); await p.waitForTimeout(200);
+  ok(!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like'))), 'Otro clic lo quita');
+  ok(!(await p.locator(card+' .rx-pick').isVisible()), 'El selector no está abierto de entrada');
+  await p.hover(card+' .rxb.main'); await p.waitForTimeout(650);
+  ok(await p.locator(card+' .rx-pick').isVisible(), 'Pasar el ratón por el 👍🏼 abre el selector');
+  await p.mouse.move(5, 5); await p.waitForTimeout(500);
+  ok(!(await p.locator(card+' .rx-pick').isVisible()), 'Al salir con el ratón se cierra');
+  // Móvil: pulsación larga (simulada con eventos táctiles de puntero)
+  await p.locator(card+' .rxb.main').evaluate(b => { const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: r.left+5, clientY: r.top+5 })); });
+  await p.waitForTimeout(600);
+  await p.locator(card+' .rxb.main').evaluate(b => {
+    b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' })); b.click(); });
+  await p.waitForTimeout(200);
+  ok(await p.locator(card+' .rx-pick').isVisible(), 'Mantener pulsado (móvil) abre el selector');
+  ok(!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like'))), 'Soltar tras mantener no da "me gusta"');
   ok((await p.locator(card+' .rx-pick .rxb').allTextContents()).join('')==='👍🏼❤️😂😮😢😡', 'Los 6 emojis pedidos, en orden');
   await p.click(card+' .rx-pick [data-e=laugh]'); await p.waitForTimeout(200);
   ok((await p.textContent(card+' .rx-list .rxb.mine')).includes('😂'), 'Reacción 😂 marcada como mía');
@@ -51,7 +72,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.modal .cmt').count())===2, 'Comentario nuevo añadido (2)');
   ok((await dbq(p,()=>window.__DB.feed_comments.filter(c=>c.post_id==='f1').length))===2, 'Comentario en BD');
   ok((await p.textContent('.fpost:has-text("Joe Pass") [data-cmcount]')).includes('2 comentarios'), 'Contador de la tarjeta se actualiza en vivo');
-  await p.click('.modal .cmt:has-text("Totalmente") .rxb.add'); await p.click('.modal .cmt:has-text("Totalmente") [data-e=wow]'); await p.waitForTimeout(200);
+  await rxPick(p,'.modal .cmt:has-text("Totalmente")','wow'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_type==='feed_comment'&&r.emoji==='wow'&&r.user_id==='s1')), 'Reacción a un comentario');
   ok((await p.locator('.modal .cmt:has-text("Qué bueno") [data-action=comment-delete]').count())===1 && (await p.locator('.modal .cmt:has-text("Qué bueno") [data-action=report]').count())===0, 'Puede eliminar su comentario y no denunciarse a sí misma');
   await p.keyboard.press('Escape');
@@ -114,13 +135,13 @@ const { chromium } = require('playwright');
   ok(await p.locator('.modal textarea[data-q]').count()===6, 'Las 6 preguntas privadas siguen ahí');
   await p.fill('.modal textarea[id^=cmInput]','Gran disco'); await p.click('.modal [data-action=comment-send]'); await p.waitForTimeout(250);
   ok(await dbq(p,()=>window.__DB.listening_comments.some(c=>c.body==='Gran disco'&&c.author_id==='s1'&&c.item_id==='i1')), 'Comentario de escucha guardado');
-  await p.click('.modal > .rx .rxb.add, .modal [data-rx^=listening_item] .rxb.add'); await p.click('.modal [data-rx^=listening_item] [data-e=love]'); await p.waitForTimeout(200);
+  await rxPick(p,'.modal [data-rx^=listening_item]','love'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_type==='listening_item'&&r.target_id==='i1'&&r.user_id==='s1')), 'Reacción al propio elemento de escucha');
   await p.screenshot({path:require('path').join(__dirname,'shots','escucha_modal.png')});
   await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   // Aviso: reacción
   await goto(p,'board');
-  await p.click('.card.post:has-text("Clase del jueves") [data-rx^=board_post] .rxb.add'); await p.click('.card.post:has-text("Clase del jueves") [data-rx^=board_post] [data-e=like]'); await p.waitForTimeout(200);
+  await p.click('.card.post:has-text("Clase del jueves") [data-rx^=board_post] .rxb.main'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_type==='board_post'&&r.target_id==='p1'&&r.user_id==='s1')), 'Reacción a un aviso');
 
   // Perfil: apodo + foto

@@ -73,7 +73,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 - **Eventos**: delegados. Un clic en `[data-action=X]` llama a `actions[X](el)`, y los `submit` van por id de formulario (`authForm`, `recForm`, `feedForm`, `nameForm`, `passForm`, `postForm`, `itemForm`). **Después de cambiar datos hay que llamar a `render()`**; olvidarlo ya causó un bug.
 - **Carga de datos**: `loadData()` tiene una rama para el profesor y otra para el alumno. `loadDirectory()` llama a la RPC `get_directory`, que da nombre público, avatar y rol de los demás.
 - **Helpers de seguridad**: `esc()` para **todo** el texto de usuario que va a HTML, `linkify()`, `safeAvatar()` (solo acepta `data:image/jpeg;base64` y rechaza `javascript:` y similares) y `cleanUrl()`.
-- **Social**: `rxBar`/`updateRx` (reacciones), `commentsBlock`/`updateComments`, `linkCard` (tarjeta de enlace a Spotify o YouTube), `reportRow` (denuncias).
+- **Social**: `rxBar`/`updateRx` (reacciones; estilo Facebook desde 2026-11-23: el botón es el 👍🏼 con su contador, un clic da o quita el "me gusta", y el selector de 6 `.rx-pick` (posición fija) se abre al pasar el ratón 450 ms o al mantener pulsado en el móvil — `rxHoverInit`/`rxShow`/`rxHide`; los demás emojis salen como chips solo si tienen votos), `commentsBlock`/`updateComments`, `linkCard` (tarjeta de enlace a Spotify o YouTube), `reportRow` (denuncias).
 - **Constantes**:
   - `QUESTIONS`: las 6 preguntas de la escucha analítica. Sus claves son `highlights`, `likes`, `dislikes`, `learned`, `would_use` y `would_never_use`.
   - `KIND`: `album`, `song` y `playlist`.
