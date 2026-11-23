@@ -69,7 +69,7 @@ const { chromium } = require('playwright');
 
   // Escucha asignada en directo (llega sin su elemento: la app lo pide)
   await ext(p,'__rtExternal','listening_assignments',{id:'ra1',item_id:'i2',student_id:'s1',note:null,due_date:null,assigned_at:new Date().toISOString(),listened:false,listened_at:null,answers:{},updated_at:new Date().toISOString()}); await p.waitForTimeout(400);
-  ok((await p.textContent('.rail')).includes('Cliffs of Dover'), 'Nueva escucha asignada: aparece sola en "Tus escuchas"');
+  ok(await p.evaluate(()=>S.assigns.some(a=>a.item&&a.item.title==='Cliffs of Dover')), 'Nueva escucha asignada: llega sola, con su elemento');
   await p.screenshot({path:require('path').join(__dirname,'shots','rt_alumna.png')});
 
   // ================= PROFESOR =================

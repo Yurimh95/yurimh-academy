@@ -41,7 +41,7 @@ const { chromium } = require('playwright');
   ok(!!insT, 'El profesor no se agrega como compañero');
   const insFake = await p.evaluate(async () => (await sb.from('classmates').insert({ requester_id: 's2', addressee_id: 's1' })).error);
   ok(!!insFake, 'No se puede crear una solicitud en nombre de otro');
-  ok(await p.locator('.rail').count() === 0 || !(await p.textContent('.rail')).includes('Tus compañeros'), 'Sin compañeros, la columna derecha no muestra la tarjeta');
+  ok(await p.locator('.rail').count() === 0, 'No hay columna derecha (ni escuchas ni compañeros a un lado)');
 
   // Marta abre el perfil de Luis desde el Inicio y le envía solicitud
   await p.locator('.fpost:has-text("Joe Pass") .wholink').first().click(); await p.waitForTimeout(300);
@@ -62,7 +62,6 @@ const { chromium } = require('playwright');
   // ================= Luis (s2) acepta =================
   p = await open('s2', db);
   ok((await p.textContent('.nav button[data-s=profile]')).includes('1 solicitud'), 'Luis ve "1 solicitud" en Perfil del menú');
-  ok((await p.textContent('.rail')).includes('1 solicitud de compañero'), 'Y en la columna derecha');
   const lnot = await p.evaluate(() => notifText(S.notifs.find(n => n.kind === 'classmate_request')).replace(/<[^>]+>/g, ''));
   ok(lnot === 'Marta te ha enviado una solicitud para ser compañeros', 'Texto de la notificación: ' + lnot);
   await goto(p, 'profile');
@@ -77,9 +76,8 @@ const { chromium } = require('playwright');
   ok((await p.textContent('.panel.mates')).includes('Marta') && !(await p.textContent('.panel.mates')).includes('Solicitudes recibidas'), 'Perfil se repinta: Marta pasa a la lista de compañeros de Luis');
   await p.locator('.panel.mates').scrollIntoViewIfNeeded();
   await shot(p, 'c3-companeros.png');
-  await goto(p, 'board');
-  ok((await p.textContent('.rail')).includes('Tus compañeros') && await p.locator('.rail .faces .wholink[data-id=s1]').count() === 1, 'Y en "Tus compañeros" de la columna derecha');
-  await shot(p, 'c4-columna-companeros.png');
+  await goto(p, 'feed');
+  await shot(p, 'c4-inicio-sin-columna.png');
   const hack = await p.evaluate(async () => (await sb.from('classmates').update({ status: 'pending' }).eq('requester_id', 's1').select('*')).error);
   ok(!!hack, 'Una relación aceptada no se puede volver a tocar (solo borrar)');
   await p.context().close();
@@ -141,7 +139,6 @@ const { chromium } = require('playwright');
   // ================= El profesor ve a todos =================
   p = await open('t1', base);
   ok((await dir(p)).includes('s4'), 'El profesor ve también a Sara');
-  ok((await p.textContent('.rail')).includes('Tu grupo'), 'Columna derecha del profesor: "Tu grupo" con todos');
   await p.context().close();
 
   // ================= Privacidad: el texto explica la regla =================

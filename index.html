@@ -82,7 +82,6 @@ svg.i{width:20px;height:20px;flex:none}
 
 /* ---------- Estructura estilo app ---------- */
 .shell{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;max-width:1280px;margin:0 auto;padding:0 24px}
-.shell.has-rail{grid-template-columns:240px minmax(0,1fr) 290px}
 .main{min-width:0;padding:18px 0 60px}
 .sidebar{position:sticky;top:0;height:100vh;padding:20px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
 .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 20px;color:var(--strong)}
@@ -240,24 +239,11 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 /* Barra inferior (móvil) */
 .tabbar{display:none}
 
-/* Columna derecha */
-.rail{position:sticky;top:0;height:100vh;overflow-y:auto;padding:18px 0 40px;display:flex;flex-direction:column;gap:14px}
-.rail-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px}
-.rail-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:0 0 10px;font-weight:700}
-.rail-row{display:flex;align-items:center;gap:12px;padding:9px 6px;margin:0 -6px;border-radius:10px;cursor:pointer;transition:background .15s}
-.rail-row:hover{background:var(--hover)}
-.rail-row .ic{width:36px;height:36px;border-radius:10px;background:rgba(var(--accent-rgb),.12);color:var(--accent-hi);display:grid;place-items:center;flex:none}
-.rail-row .ic svg{width:18px;height:18px}
-.rail-row b{display:block;font-size:14px;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rail-row .t{min-width:0;flex:1}
-.rail-row .num{margin-left:auto;font-weight:700;font-size:18px;color:var(--strong)}
-.rail-row .num.warn{color:var(--warn)}.rail-row .num.bad{color:var(--bad)}
-.faces{display:flex;flex-wrap:wrap;gap:6px}
-.faces .av{box-shadow:0 0 0 2px var(--panel)}
 
-@media (max-width:1180px){ .shell.has-rail{grid-template-columns:220px minmax(0,1fr)} .rail{display:none} .shell{grid-template-columns:220px minmax(0,1fr);gap:22px} }
+
+@media (max-width:1180px){ .shell{grid-template-columns:220px minmax(0,1fr);gap:22px} }
 @media (max-width:760px){
-  .shell,.shell.has-rail{display:block;padding:0 16px}
+  .shell{display:block;padding:0 16px}
   .sidebar{display:none}
   .main{padding:10px 0 96px}
   .top{margin-bottom:14px}
@@ -1460,7 +1446,6 @@ function refreshChrome() {
   if (!installBtnHtml()) $$('.installbtn').forEach(b => b.remove());
   const nav = $('.sidebar .nav'); if (nav) nav.outerHTML = navHtml(secs);
   const tb = $('.tabbar'); if (tb) tb.outerHTML = tabbar(secs);
-  const rl = $('.rail'); if (rl) rl.innerHTML = railView();
 }
 function softRender() {
   if (!S.profile || !$('.shell')) return;
@@ -1867,11 +1852,10 @@ function render() {
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = ['mod', 'messages', 'profile', 'settings', 'payments', 'agenda'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
-  $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
+  // Sin columna derecha (decisión de Yuri, 2026-11-23): escuchas y compañeros ya tienen su sección; menos distracciones
+  $('#app').innerHTML = `<div class="shell">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
-    ${rail ? `<aside class="rail">${rail}</aside>` : ''}
   </div>
   ${tabbar(secs)}`;
   histSync();
@@ -1948,22 +1932,6 @@ function tabbar(secs) {
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem('ya-theme', t); } catch (e) { }
-}
-
-/* ---------- Columna derecha (pantallas anchas) ---------- */
-function railView() {
-  // Profesor: todo el grupo. Alumno: solo sus compañeros (y sus solicitudes pendientes)
-  const faces = (isTeacher() ? Object.keys(S.dir).filter(id => id !== S.user.id) : myMates().filter(id => S.dir[id])).slice(0, 24);
-  const reqs = isTeacher() ? 0 : mateRequestsIn().length;
-  const facesCard = faces.length || reqs ? `<section class="rail-card"><h3>${isTeacher() ? 'Tu grupo' : 'Tus compañeros'}</h3>
-    ${reqs ? `<div class="rail-row" data-action="section" data-s="profile"><span class="ic">${ic('students')}</span><div class="t"><b>${reqs} solicitud${reqs > 1 ? 'es' : ''} de compañero</b><span class="sub">Ver en tu perfil</span></div></div>` : ''}
-    ${faces.length ? `<div class="faces">${faces.map(id => `<span title="${esc(S.dir[id].public_name)}">${whoLink(id, avatarHtml(id, 34))}</span>`).join('')}</div>` : ''}</section>` : '';
-  // Profesor: lo pendiente (alumnos por aprobar, denuncias, vencidas) está en Moderación, no aquí
-  if (isTeacher()) return facesCard;
-  const pend = S.assigns.filter(a => !a.listened).sort(dueSort).slice(0, 4);
-  return `<section class="rail-card"><h3>Tus escuchas</h3>
-    ${pend.length ? pend.map(a => { const d = dueInfo(a); return `<div class="rail-row" data-action="home-open-assign" data-id="${a.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(a.item.title)}</b><span class="sub" style="${d.cls ? `color:var(--${d.cls})` : ''}">${esc(d.text)}</span></div></div>`; }).join('')
-      : '<div class="sub">No tienes nada pendiente. 🤘</div>'}</section>${facesCard}`;
 }
 
 /* =============================== INICIO =============================== */
