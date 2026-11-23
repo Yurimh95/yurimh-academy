@@ -142,6 +142,19 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 - Escuchas vencidas: solo se marcan como vencidas; no se bloquean.
 - No hay límite anti-spam, porque el grupo es pequeño.
 
+## Textos de contexto de las escuchas (`listening_items.brief`)
+
+Yuri pide a veces "rellena el texto de las escuchas nuevas". Es el campo `brief` (máx. 2.000 caracteres) que ven los alumnos con cada escucha. El 2026-11-23 se rellenaron las 32 que había y a Yuri le encantó el resultado; repite el mismo método.
+
+- **Qué rellenar**: solo `where brief is null or brief = ''`. Nunca sobrescribas un texto existente (el de Rachmaninoff lo escribió Yuri y es el modelo). Editar `listening_items` no dispara avisos a los alumnos. Se hace con `execute_sql` (un `update … from (values …)` con `$b$…$b$` para no pelearse con los apóstrofos y `returning title`); no hace falta pedir permiso, Yuri ya lo autorizó.
+- **Mira el contenido antes de escribir**, no te fíes del título. De Spotify, la página de embed pública da la lista de canciones sin claves: `curl -s -A "Mozilla/5.0" "https://open.spotify.com/embed/playlist/<id>"` (también `album/` o `artist/`) y saca los pares `"title":"…","subtitle":"…"` con grep. De YouTube, el título suele bastar; si hace falta, busca en internet.
+- **Formato** (castellano de España, tuteando al alumno, 3-5 frases, un solo párrafo):
+  1. Contexto: quién es el grupo o compositor, de dónde y de cuándo, el género y sus raíces, o qué tipo de lista es y qué estilos mezcla. Si la lista va en orden cronológico o cubre una etapa concreta, dilo.
+  2. "Fíjate en…": lo que merece la pena escuchar, en términos de músico (técnica de guitarra, forma, armonía, producción, voces, cómo cambia el sonido entre etapas). Para listas variadas, lo que tienen en común.
+- **Rigor**: solo datos de los que estés seguro o que hayas comprobado. Si dudas de una fecha o un detalle, quítalo o dilo de forma general ("finales de 2016"). Yuri: "mejor vacía que llena de basura". Si no entiendes para qué es una playlist, déjala vacía y pregúntale en el chat.
+- **Lo que ya sabemos de sus playlists personales**: **BOM = Beyond Our Means, la banda de Yuri** ("Beyond Our Means" son sus influencias, "Mixing BOM" referencias de mezcla y "BOM Vocals" referencias de voz). "Catchy" = canciones pegadizas (analizar los ganchos). "Uplifting" = energía positiva. "Actualidad Yuri" = su colección de éxitos actuales y comerciales; no es para analizar a fondo, pero se les puede sacar algo (cómo se hace un éxito en la era del streaming). Las "(Yuri's top N)" son sus favoritas de ese grupo.
+- **Automatizarlo**: se le ofreció (tarea diaria en Claude, API de Claude desde Supabase o un botón "Sugerir texto") y prefirió **dejarlo como está**: lo pide cuando añade unas cuantas. No lo vuelvas a proponer salvo que él lo saque.
+
 ## Pendiente o futuro (en este orden aproximado)
 
 1. ~~Instalar la versión actual~~: hecho (2026-11-22).
