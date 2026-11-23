@@ -651,6 +651,7 @@ ol.rt-list li::marker{font-weight:600}
 .arow{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel2)}
 .arow+.arow{margin-top:10px}
 .arow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.arow-who{display:flex;align-items:center;gap:10px;min-width:0}
 .grid2{display:grid;grid-template-columns:170px 1fr;gap:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 details{margin-top:10px}
@@ -2638,7 +2639,7 @@ function itemModal(id) {
     ${as.length ? as.map(a => {
       const d = dueInfo(a), n = answeredCount(a);
       return `<div class="arow" data-aid="${a.id}">
-        <div class="arow-head"><strong>${esc(studentName(a.student_id))}</strong>
+        <div class="arow-head"><div class="arow-who">${avatarHtml(a.student_id, 36)}<strong>${esc(studentName(a.student_id))}</strong></div>
           <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
         <div class="grid2">
           <label class="f" style="margin:0">Fecha límite<input type="date" data-f="due" value="${esc(a.due_date || '')}"></label>
@@ -2651,7 +2652,7 @@ function itemModal(id) {
     <h2 class="h2">Asignar a más alumnos</h2>
     ${free.length ? `<div id="assignBox">
       ${free.map(s => `<div class="frow">
-        <label class="chk"><input type="checkbox" data-f="pick" value="${s.id}"> ${esc(s.display_name)}</label>
+        <label class="chk"><input type="checkbox" data-f="pick" value="${s.id}"> ${avatarHtml(s.id, 26)}${esc(s.display_name)}</label>
         <input type="date" data-f="due" aria-label="Fecha límite de ${esc(s.display_name)}">
         <input type="text" data-f="note" maxlength="2000" placeholder="Nota individual (opcional)" aria-label="Nota para ${esc(s.display_name)}">
       </div>`).join('')}
