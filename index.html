@@ -701,10 +701,21 @@ label.f>.emo-wrap{margin-top:6px}
 .msg-rx{margin-top:-8px;margin-inline:10px;position:relative;z-index:1;display:inline-flex;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 7px;font-size:14px;line-height:20px;cursor:pointer;color:var(--text)}
 .msg-rx span{font-size:11.5px;color:var(--muted);margin-left:2px}
 .msg.held{filter:brightness(.92)}
-.dmrx{position:fixed;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 6px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:pop .14s ease-out}
+.dmrx{position:fixed;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 6px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:rxIn .14s ease-out}
 .dmrx button{border:0;background:transparent;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:grid;place-items:center;transition:transform .12s}
 .dmrx button:hover{transform:scale(1.2);background:rgba(var(--accent-rgb),.12)}
 .dmrx button.mine{background:rgba(var(--accent-rgb),.22)}
+.msg{position:relative}
+.msg-more{position:absolute;top:3px;right:4px;width:26px;height:22px;border:0;border-radius:8px;background:var(--panel2);color:var(--muted);cursor:pointer;display:grid;place-items:center;opacity:0;transition:opacity .15s;box-shadow:-6px 0 8px var(--panel2)}
+.msg-more svg{width:16px;height:16px}
+.msg-row.mine .msg-more{background:var(--accent);color:#fff;box-shadow:-6px 0 8px var(--accent)}
+.msg:hover .msg-more,.msg-more:focus-visible,.msg-more.on{opacity:1}
+@media (hover:none){.msg-more{display:none}}
+.dmmenu{position:fixed;z-index:60;min-width:170px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:5px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:rxIn .14s ease-out}
+.dmmenu button,.dmmenu .off{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer}
+.dmmenu button:hover{background:rgba(var(--accent-rgb),.12)}
+.dmmenu .danger{color:var(--bad)}
+.dmmenu .off{color:var(--muted);cursor:default}
 .dmrx .more{font-size:20px;color:var(--muted);background:var(--panel2)}
 .dm-compose{display:flex;gap:8px;align-items:flex-end;padding:12px;border-top:1px solid var(--line)}
 .dm-compose textarea{min-height:44px;max-height:140px;resize:none}
@@ -1218,9 +1229,10 @@ function emojiOpen(btn) {
   if (matchMedia('(hover:none)').matches) f.blur(); else if (document.activeElement !== f) f.focus();
   emojiDraw();
 }
-function emojiClose() {
+function emojiClose(keepHist = false, fromHistory = false) {
   if (ex && ex.btn) ex.btn.classList.remove('on');
-  ex = null; const b = $('#emojiBox'); if (b) b.remove();
+  const pick = ex && ex.onPick;
+  ex = null; if (pick && !keepHist) popDone(fromHistory); const b = $('#emojiBox'); if (b) b.remove();
 }
 function emojiDraw() {
   let box = $('#emojiBox');
@@ -1788,6 +1800,7 @@ window.addEventListener('popstate', async e => {
     }
     return;
   }
+  if (popHist) { dmRxClose(false, true); emojiClose(false, true); popHist = false; return; } // burbuja de reacciones, menú o selector
   if (lbClose(true)) return; // primero se cierra la foto ampliada
   if ($('#modalRoot').firstChild) { await closeModal(true); return; }
   const st = e.state || {};
@@ -3325,16 +3338,12 @@ function threadInner(id) {
   if (!msgs.length) return '<div class="sub center" style="margin:auto">Aún no os habéis escrito. ¡Saluda! 👋</div>';
   return msgs.map(m => {
     const mine = m.sender_id === S.user.id, url = firstLink(m.body);
-    const reported = S.reports.some(r => r.target_type === 'dm_message' && r.target_id === m.id && r.reporter_id === S.user.id);
     const can = S.dmCan[id] !== false;
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg-wrap"><div class="msg-line"><div class="msg" data-dmid="${m.id}">
         <div class="msg-body">${listify(linkify(m.body))}</div>${url ? linkCard(url) : ''}
         <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
           ${mine && m.read_at ? `<span class="seen" title="Visto" aria-label="Visto">${SEEN_ICON}</span>` : ''}
-          ${mine ? `<button class="linkbtn mute" data-action="dm-delete" data-id="${m.id}">Borrar</button>`
-            : isTeacherId(m.sender_id) || isTeacher() ? '' // los mensajes del profe no se denuncian; el profe no denuncia (borra o bloquea el acceso)
-            : (reported ? '<span>· Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="dm_message" data-id="${m.id}">Denunciar</button>`)}
-        </div></div>${can ? `<button type="button" class="msg-rxbtn" data-dmrx-open="${m.id}" title="Reaccionar" aria-label="Reaccionar">${EMOJI_ICON}</button>` : ''}</div>${dmRxChip(m.id)}</div></div>`;
+        </div>${dmMenuItems(m) ? `<button type="button" class="msg-more" data-dmmenu-open="${m.id}" title="Opciones" aria-label="Opciones del mensaje" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : ''}</div>${can ? `<button type="button" class="msg-rxbtn" data-dmrx-open="${m.id}" title="Reaccionar" aria-label="Reaccionar">${EMOJI_ICON}</button>` : ''}</div>${dmRxChip(m.id)}</div></div>`;
   }).join('');
 }
 /* ---- Reacciones a mensajes privados (como WhatsApp) ----
@@ -3350,10 +3359,45 @@ function dmRxChip(mid) {
   const mine = rows.some(r => r.user_id === S.user.id);
   return `<button type="button" class="msg-rx" data-dmrx-chip="${mid}" title="${esc(names + (mine ? ' — pulsa para quitar la tuya' : ''))}">${uniq.map(esc).join('')}${rows.length > 1 ? `<span>${rows.length}</span>` : ''}</button>`;
 }
-let dmRxFor = null; // id del mensaje con la burbuja abierta
-function dmRxClose() { dmRxFor = null; const b = $('#dmRxBox'); if (b) b.remove(); $$('.msg.held').forEach(x => x.classList.remove('held')); }
-function dmRxOpen(mid, anchor) {
-  dmRxClose(); emojiClose();
+// Opciones de un mensaje (flechita en el PC; en el móvil salen al mantener pulsado, debajo de los emojis)
+function dmMenuItems(m) {
+  if (m.sender_id === S.user.id) return `<button type="button" class="danger" data-action="dm-delete" data-id="${m.id}">🗑️ Borrar mensaje</button>`;
+  if (isTeacherId(m.sender_id) || isTeacher()) return ''; // los mensajes del profe no se denuncian; el profe no denuncia (borra o bloquea el acceso)
+  const reported = S.reports.some(r => r.target_type === 'dm_message' && r.target_id === m.id && r.reporter_id === S.user.id);
+  return reported ? '<div class="off">🚩 Denunciado</div>' : `<button type="button" data-action="report" data-type="dm_message" data-id="${m.id}">🚩 Denunciar</button>`;
+}
+function dmMenuShow(m, anchor, below) {
+  const html = dmMenuItems(m); if (!html) return;
+  const box = document.createElement('div'); box.id = 'dmMenu'; box.className = 'dmmenu'; box.setAttribute('role', 'menu');
+  box.innerHTML = html; document.body.appendChild(box);
+  const r = anchor.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, mine = m.sender_id === S.user.id;
+  box.style.left = Math.max(8, Math.min(mine ? r.right - w : r.left, innerWidth - w - 8)) + 'px';
+  box.style.top = (r.bottom + 6 + h <= innerHeight - 8 || !below ? Math.min(r.bottom + 6, innerHeight - h - 8) : Math.max(8, r.top - h - 6)) + 'px';
+}
+function dmMenuOpen(mid, btn) {
+  const m = S.dms.find(x => x.id === mid); if (!m) return;
+  dmRxClose(true); emojiClose(true);
+  dmRxFor = mid; btn.classList.add('on');
+  dmMenuShow(m, btn, true);
+  popPush();
+}
+// "Atrás" cierra la burbuja, el menú o el selector de emojis en vez de salir de la conversación
+let popHist = false;
+function popPush() { if (!popHist) { popHist = true; history.pushState({ ...(history.state || {}), modal: 1, pop: 1 }, ''); } }
+function popDone(fromHistory) {
+  if (!popHist) return; popHist = false;
+  if (!fromHistory && history.state && history.state.pop) { histSkip++; history.back(); }
+}
+let dmRxFor = null; // id del mensaje con la burbuja o el menú abiertos
+function dmRxClose(keepHist = false, fromHistory = false) {
+  const was = !!dmRxFor;
+  dmRxFor = null;
+  ['#dmRxBox', '#dmMenu'].forEach(sel => { const b = $(sel); if (b) b.remove(); });
+  $$('.msg.held').forEach(x => x.classList.remove('held')); $$('.msg-more.on').forEach(x => x.classList.remove('on'));
+  if (was && !keepHist) popDone(fromHistory);
+}
+function dmRxOpen(mid, anchor, withMenu = false) {
+  dmRxClose(true); emojiClose(true);
   const m = S.dms.find(x => x.id === mid); if (!m || S.dmCan[dmPartner(m)] === false) return;
   dmRxFor = mid;
   const mine = (S.dmRx.find(r => r.message_id === mid && r.user_id === S.user.id) || {}).emoji;
@@ -3364,6 +3408,8 @@ function dmRxOpen(mid, anchor) {
   const r = anchor.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
   box.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8)) + 'px';
   box.style.top = (r.top - h - 8 >= 8 ? r.top - h - 8 : Math.min(r.bottom + 8, innerHeight - h - 8)) + 'px';
+  if (withMenu) dmMenuShow(m, anchor, false);
+  popPush();
 }
 async function dmReact(mid, emoji) {
   const mine = S.dmRx.find(r => r.message_id === mid && r.user_id === S.user.id);
@@ -3384,13 +3430,16 @@ document.addEventListener('click', e => {
   if (!e.target.closest) return;
   const open = e.target.closest('[data-dmrx-open]');
   if (open) { e.stopPropagation(); return dmRxFor === open.dataset.dmrxOpen ? dmRxClose() : dmRxOpen(open.dataset.dmrxOpen, open.closest('.msg-line').querySelector('.msg')); }
+  const mo = e.target.closest('[data-dmmenu-open]');
+  if (mo) { e.stopPropagation(); return dmRxFor === mo.dataset.dmmenuOpen && $('#dmMenu') ? dmRxClose() : dmMenuOpen(mo.dataset.dmmenuOpen, mo); }
+  if (e.target.closest('#dmMenu')) { setTimeout(() => dmRxClose(), 0); return; } // la acción (borrar/denunciar) va por data-action
   const pick = e.target.closest('[data-dmrx-pick]');
   if (pick && dmRxFor) { const id = dmRxFor; dmRxClose(); return dmReact(id, pick.dataset.dmrxPick); }
   const more = e.target.closest('[data-dmrx-more]');
   if (more && dmRxFor) { // selector completo: el mismo de los cuadros de texto, pero eligiendo reacción
     e.stopPropagation();
     const id = dmRxFor, anchor = $(`.msg[data-dmid="${id}"]`) || more;
-    dmRxClose();
+    dmRxClose(true); // la entrada del historial sigue: ahora es del selector
     setTimeout(() => { ex = { btn: anchor, onPick: em => dmReact(id, em) }; emojiDraw(); }, 0);
     return;
   }
@@ -3400,13 +3449,13 @@ document.addEventListener('click', e => {
     if (mine) return dmReact(mid, mine.emoji); // quitar la mía
     const m = $(`.msg[data-dmid="${mid}"]`); if (m) return dmRxOpen(mid, m);
   }
-  if (dmRxFor && !e.target.closest('#dmRxBox')) dmRxClose();
+  if (dmRxFor && !e.target.closest('#dmRxBox, #dmMenu')) dmRxClose();
 }, true);
 // Móvil: mantener pulsado el mensaje
 let dmPress = null, dmLongEnd = 0;
 document.addEventListener('touchstart', e => {
   const t = e.target.closest ? e.target : e.target.parentElement;
-  if (dmRxFor && !(t && t.closest('#dmRxBox'))) dmRxClose();
+  if (dmRxFor && !(t && t.closest('#dmRxBox, #dmMenu'))) dmRxClose();
   const msg = t && t.closest('.msg[data-dmid]');
   if (!msg || e.touches.length > 1 || t.closest('a, button')) return;
   const p = e.touches[0];
@@ -3414,7 +3463,7 @@ document.addEventListener('touchstart', e => {
     dmPress = null; dmLongEnd = Date.now();
     msg.classList.add('held');
     if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {}
-    dmRxOpen(msg.dataset.dmid, msg);
+    dmRxOpen(msg.dataset.dmid, msg, true);
     if (dmRxFor) msg.classList.add('held');
   }, 450) };
 }, { passive: true });
