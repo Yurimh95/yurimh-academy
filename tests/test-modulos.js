@@ -82,6 +82,21 @@ const { chromium } = require('playwright');
   ok((await p2.locator('.hwlist .hw').count())===before+1 && (await p2.textContent('#app')).includes('capítulo 3'), 'Tiempo real: el deber nuevo aparece solo, sin recargar');
   ok((await p2.textContent('.bell')).match(/\d/), 'Y suena la campanita');
 
+  // ================= PROFESOR: deberes desde la ficha del alumno =================
+  await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
+  ok((await t.locator('.modal [data-sdm-hw] .hw:not(.done)').count())===2, 'Ficha de Marta: ve sus deberes pendientes ahí mismo');
+  await t.click('.modal .dhead [data-action=hw-new]'); await wait(t);
+  ok(await t.locator('#hwForm input[name=pick][value=s1]').isChecked() && !(await t.locator('#hwForm input[name=pick][value=s2]').isChecked()), '"+ Añadir" desde la ficha ya trae a Marta elegida');
+  await t.fill('#hwForm [name=title]','Transcribir 4 compases de un solo'); await t.click('#hwForm button[type=submit]'); await wait(t,400);
+  ok((await t.locator('.modal [data-sdm-hw]').count())===1 && (await t.textContent('.modal [data-sdm-hw]')).includes('Transcribir 4 compases'), 'Al guardar vuelve a la ficha de Marta con el deber nuevo');
+  await t.click('.modal [data-sdm-hw] .hw:has-text("Transcribir") [data-action=hw-toggle]'); await wait(t,300);
+  ok((await t.locator('.modal [data-sdm-hw] .hwdone summary').textContent()).includes('Practicadas') && !!(await db(t,()=>window.__DB.homework_tasks.find(h=>h.title==='Transcribir 4 compases de un solo').done_at)), 'Lo marca como practicado sin salir de la ficha');
+  await t.click('.modal [data-sdm-hw] .hw:has-text("Pentatónica") [data-action=hw-edit]'); await wait(t);
+  await t.click('#hwForm [data-action=hw-cancel]'); await wait(t,250);
+  ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Cancelar una edición vuelve a la ficha (no la cierra)');
+  await shot(t,'ficha_deberes.png');
+  await t.keyboard.press('Escape'); await wait(t,250);
+
   // ================= PROFESOR: pagos =================
   await goto(t,'payments');
   ok((await t.textContent('.monthnav h2')).match(/\d{4}/) && (await t.locator('.payrow').count())===2, 'Pagos: mes actual y una fila por alumno');

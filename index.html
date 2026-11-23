@@ -556,6 +556,7 @@ ol.rt-list li::marker{font-weight:600}
 .msg{max-width:min(78%,520px);background:var(--panel2);border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 12px}
 .msg-row.mine .msg{background:var(--accent);border-color:transparent;color:#fff;border-radius:16px 16px 4px 16px;box-shadow:var(--glow-sm)}
 .msg-row.mine .msg a{color:#fff;text-decoration:underline}
+.msg-row.mine .rt-list li::marker{color:inherit}
 .msg-body{white-space:pre-wrap;overflow-wrap:anywhere}
 .msg .linkcard{margin-top:8px;background:rgba(0,0,0,.12)}
 .msg-row.mine .linkcard .lk,.msg-row.mine .linkcard .lu,.msg-row.mine .linkcard .go{color:#fff}
@@ -2469,10 +2470,18 @@ function studentDetailModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
     <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
-    ${(() => { const pend = S.homework.filter(h => h.student_id === s.id && !h.done_at).length, pl = planOf(s.id);
+    ${(() => { const pl = planOf(s.id);
       return `<div class="chips" style="margin:8px 0 4px">
-        <button class="chip acc" style="cursor:pointer" data-action="goto" data-s="homework">📝 ${pend} deber${pend === 1 ? '' : 'es'} pendiente${pend === 1 ? '' : 's'}</button>
         <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button></div>`; })()}
+    ${(() => { // Deberes de este alumno: se gestionan aquí mismo (la sección Deberes es la vista de todos)
+      const l = S.homework.filter(h => h.student_id === s.id).sort(hwSort), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
+      return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">${esc(MODULE_HOMEWORK)}
+          ${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : ''}${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}</h2>
+          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div>
+        <div data-sdm-hw="${s.id}">
+          ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
+          ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
+        </div>`; })()}
     <h2 class="h2">Edad y mensajes privados</h2>
     <div class="agebox">
       <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
@@ -2573,7 +2582,7 @@ function threadInner(id) {
     const mine = m.sender_id === S.user.id, url = (m.body.match(/https?:\/\/[^\s<]+/) || [])[0];
     const reported = S.reports.some(r => r.target_type === 'dm_message' && r.target_id === m.id && r.reporter_id === S.user.id);
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg">
-        <div class="msg-body">${linkify(m.body)}</div>${url ? linkCard(url.replace(/[.,;:!?)]+$/, '')) : ''}
+        <div class="msg-body">${listify(linkify(m.body))}</div>${url ? linkCard(url.replace(/[.,;:!?)]+$/, '')) : ''}
         <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
           ${mine && m === lastMine && m.read_at ? '<span class="seen">· Visto</span>' : ''}
           ${mine ? `<button class="linkbtn mute" data-action="dm-delete" data-id="${m.id}">Borrar</button>`
@@ -3139,6 +3148,9 @@ const hwSort = (a, b) => {
   return (a.created_at || '').localeCompare(b.created_at || '');
 };
 const hwOverdue = h => !h.done_at && h.due_date && daysDiff(h.due_date) < 0;
+let hwReturn = null; // id del alumno cuya ficha estaba abierta al pulsar "+ Añadir" o "Editar" (para volver a ella)
+const hwFromCard = el => { const m = el.closest('.modal'); return m && m.querySelector('[data-sdm-hw]') ? m.querySelector('[data-sdm-hw]').dataset.sdmHw : null; };
+function hwAfterChange(studentId) { render(); if (studentId && $('[data-sdm-hw]')) studentDetailModal(studentId); }
 function hwRow(h, teacher) {
   const d = hwDue(h);
   return `<div class="hw ${h.done_at ? 'done' : ''}" data-hw="${h.id}">
@@ -3190,7 +3202,7 @@ function hwFormModal(id, forStudent) {
       <label class="f">Qué tiene que practicar<input type="text" name="title" required maxlength="200" value="${esc(h ? h.title : '')}" placeholder="Ej.: Escala pentatónica de La en las 5 posiciones"></label>
       <label class="f">Detalles (opcional)<textarea name="details" maxlength="1500" rows="4" placeholder="Tempo, compases, cómo practicarlo, enlaces…">${esc(h ? h.details || '' : '')}</textarea></label>
       <label class="f" style="max-width:220px">Fecha límite (opcional)<input type="date" name="due_date" value="${esc(h ? h.due_date || '' : '')}"></label>
-      <div class="actions"><button class="btn" type="submit">${h ? 'Guardar cambios' : 'Poner deberes'}</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+      <div class="actions"><button class="btn" type="submit">${h ? 'Guardar cambios' : 'Poner deberes'}</button><button class="btn ghost" type="button" data-action="hw-cancel">Cancelar</button></div>
     </form>`);
   $('.modal').classList.add('narrow');
 }
@@ -3264,8 +3276,9 @@ async function payInsert(studentId, kind) {
 
 Object.assign(actions, {
   async goto(el) { await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
-  'hw-new'(el) { hwFormModal(null, el.dataset.id); },
-  'hw-edit'(el) { hwFormModal(el.dataset.id); },
+  'hw-new'(el) { hwReturn = hwFromCard(el); hwFormModal(null, el.dataset.id); },
+  'hw-edit'(el) { hwReturn = hwFromCard(el); hwFormModal(el.dataset.id); },
+  'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
   'hw-all'() { const boxes = $$('#hwForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
@@ -3274,14 +3287,15 @@ Object.assign(actions, {
     if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
     h.done_at = data[0].done_at;
     if (val && !isTeacher()) toast('¡Bien! Marcada como practicada', 'ok');
-    render();
+    hwAfterChange(hwFromCard(el));
   },
   async 'hw-delete'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
     if (!confirm(`¿Borrar "${h.title}" de los deberes de ${studentName(h.student_id)}?`)) return;
     const { error } = await sb.from('homework_tasks').delete().eq('id', h.id);
     if (error) return toast('No se pudo borrar: ' + error.message, 'bad');
-    S.homework = S.homework.filter(x => x.id !== h.id); render();
+    const from = hwFromCard(el);
+    S.homework = S.homework.filter(x => x.id !== h.id); hwAfterChange(from);
   },
   'pay-month'(el) { const n = Number(el.dataset.n); S.payMonth = n === 0 ? monthStart() : shiftMonth(S.payMonth || monthStart(), n); render(); },
   'pay-plan'(el) { planModal(el.dataset.id); },
@@ -3313,14 +3327,17 @@ document.addEventListener('submit', async e => {
       const { data, error } = await sb.from('homework_tasks').update({ title, details, due_date }).eq('id', f.dataset.id).select();
       if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
       Object.assign(S.homework.find(x => x.id === f.dataset.id), data[0]);
-      await closeModal(); render(); return toast('Deberes actualizados', 'ok');
+      const back = hwReturn; hwReturn = null;
+      if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
+      return toast('Deberes actualizados', 'ok');
     }
     const ids = $$('#hwForm input[name=pick]:checked').map(x => x.value);
     if (!ids.length) return toast('Elige al menos un alumno', 'bad');
     const { data, error } = await sb.from('homework_tasks').insert(ids.map(student_id => ({ student_id, title, details, due_date, created_by: S.user.id }))).select();
     if (error) return toast('No se pudo guardar: ' + error.message, 'bad');
     (data || []).forEach(r => addUnique(S.homework, r, 'homework_tasks'));
-    await closeModal(); render();
+    const back = hwReturn; hwReturn = null;
+    if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
     toast(ids.length > 1 ? `Deberes puestos a ${ids.length} alumnos. Les llegará un aviso.` : 'Deberes puestos. Le llegará un aviso.', 'ok');
   } else if (f.id === 'planForm') {
     e.preventDefault();
