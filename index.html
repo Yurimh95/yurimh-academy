@@ -172,6 +172,33 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .lrow .who{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .lrow .who strong{display:block;color:var(--strong)}.lrow .who .sub{display:block;font-size:12.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lrow .ic.warn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(var(--warn-rgb),.15);color:var(--warn);font-weight:700}
+.cal{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--shadow)}
+.cal-in{min-width:760px}
+.cal-head,.cal-body{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr))}
+.cal-head{border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.cal-tz{font-size:10.5px;color:var(--faint);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
+.cal-dh{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 8px;color:var(--muted)}
+.cal-dh span{font-size:11px;font-weight:650;letter-spacing:.04em}
+.cal-dh b{font-size:22px;font-weight:500;color:var(--strong);width:40px;height:40px;display:grid;place-items:center;border-radius:50%}
+.cal-dh.today span{color:var(--accent-hi)}
+.cal-dh.today b{background:var(--accent);color:var(--on-accent);box-shadow:var(--glow-sm)}
+.cal-body{position:relative}
+.cal-hours{position:relative}
+.cal-hr{position:relative;border-top:1px solid transparent}
+.cal-hr span{position:absolute;top:-8px;right:8px;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+.cal-hr:first-child span{top:2px}
+.cal-col{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px var(--hh))}
+.cal-col.today{background-color:rgba(var(--accent-rgb),.04)}
+.cev{position:absolute;overflow:hidden;border-radius:8px;padding:4px 7px;font-size:12px;line-height:1.3;color:var(--strong);background:rgba(var(--accent-rgb),.22);border-left:3px solid var(--accent);cursor:pointer;transition:filter .15s}
+.cev:hover{filter:brightness(1.12)}
+.cev b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:650;overflow-wrap:anywhere}
+.cev span{display:block;color:var(--muted);font-size:11.5px}
+.cev em{display:block;font-style:normal;font-size:11px;color:var(--accent-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cev.unk{background:rgba(var(--warn-rgb),.16);border-left-color:var(--warn);cursor:default}
+.cev.unk em{color:var(--warn)}
+.cev.past{opacity:.55}
+.cal-now{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:1}
+.cal-now::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--bad)}
 /* ---- Pagos ---- */
 .monthnav{display:flex;align-items:center;gap:10px;margin:0 0 16px}
 .monthnav h2{margin:0;font-size:20px;min-width:170px;text-align:center;text-transform:capitalize}
@@ -3347,19 +3374,6 @@ function agendaView() {
   const st = S.lessonSync;
   const list = S.lessons.filter(l => { const d = new Date(l.starts_at); return d >= ws && d < we; }).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   const days = []; for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(ws.getDate() + i); days.push(d); }
-  const per = monthStart();
-  const row = l => {
-    const s = l.student_id && S.students.find(x => x.id === l.student_id);
-    const pend = s ? S.homework.filter(h => h.student_id === s.id && !h.done_at).length : 0;
-    const pl = s ? planOf(s.id) : null, paid = s && S.payRecords.some(r => r.student_id === s.id && r.period === per && r.kind === 'monthly');
-    const past = new Date(l.ends_at || l.starts_at) < new Date();
-    return `<div class="lrow ${past ? 'past' : ''} ${s ? 'click' : ''}" ${s ? `data-action="open-student" data-id="${s.id}"` : ''}>
-      <div class="ltime"><b>${hhmm(l.starts_at)}</b>${l.ends_at ? `<span>${hhmm(l.ends_at)}</span>` : ''}</div>
-      ${s ? `<div class="who">${avatarHtml(s.id, 32)}<div><strong>${esc(s.display_name)}</strong><span class="sub">${esc(l.title)}</span></div></div>`
-        : `<div class="who"><span class="ic warn">?</span><div><strong>${esc(l.title)}</strong><span class="sub">No sé de qué alumno es</span></div></div>`}
-      ${s ? `<div class="chips">${pend ? `<span class="chip acc">📝 ${pend}</span>` : ''}${pl && pl.mode === 'monthly' ? (paid ? '<span class="chip ok">Pagado</span>' : '<span class="chip">Mes sin cobrar</span>') : ''}</div>` : ''}
-    </div>`;
-  };
   const head = `<div class="sec-head"><div class="sub">${!st || !st.last_run_at ? 'Aún no se ha sincronizado con Google Calendar.'
       : st.last_error ? `<span style="color:var(--bad)">⚠ ${esc(st.last_error)}</span>`
       : `Sincronizado con Google Calendar ${timeAgo(st.last_ok_at)} · se actualiza solo cada 15 min`}</div>
@@ -3377,8 +3391,55 @@ function agendaView() {
       <button class="iconbtn" data-action="agenda-week" data-n="1" aria-label="Semana siguiente">›</button>
       ${thisWeek ? '' : '<button class="btn sm ghost" data-action="agenda-week" data-n="0">Esta semana</button>'}</div>
     ${unk ? `<div class="callout">Hay ${unk} clase${unk > 1 ? 's' : ''} que no sé de qué alumno ${unk > 1 ? 'son' : 'es'}. El título del evento debe llevar su nombre, o pon en su ficha cómo lo llamas en el calendario.</div>` : ''}
-    ${list.length ? days.map(d => { const ls = list.filter(l => new Date(l.starts_at).toDateString() === d.toDateString()); return ls.length ? `<div class="lday"><h3>${esc(relDay(d.toISOString()))}${relDay(d.toISOString()).startsWith('hoy') || relDay(d.toISOString()).startsWith('mañana') ? ` · ${WEEKDAYS[d.getDay()]} ${d.getDate()}` : ''}</h3>${ls.map(row).join('')}</div>` : ''; }).join('')
-      : '<div class="empty">No hay clases esta semana.</div>'}`;
+    ${agendaGrid(days, list)}
+    ${list.length ? '' : '<p class="sub" style="margin-top:10px">No hay clases esta semana.</p>'}`;
+}
+// Semana en rejilla, como Google Calendar: días en columnas, horas en filas, cada clase un bloque de su duración
+const WD3 = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+function agendaGrid(days, list) {
+  const H = 48; // píxeles por hora
+  let h0 = 9, h1 = 23;
+  list.forEach(l => { const s = new Date(l.starts_at), e = new Date(l.ends_at || s.getTime() + 3600000); h0 = Math.min(h0, s.getHours()); h1 = Math.max(h1, e.getHours() + (e.getMinutes() ? 1 : 0) + (e.toDateString() !== s.toDateString() ? 24 : 0)); });
+  h1 = Math.min(h1, 24);
+  const hours = []; for (let h = h0; h < h1; h++) hours.push(h);
+  const now = new Date(), today = now.toDateString(), per = monthStart();
+  const block = (l, col, cols) => {
+    const s = new Date(l.starts_at), e = new Date(l.ends_at || s.getTime() + 3600000);
+    const top = ((s.getHours() - h0) * 60 + s.getMinutes()) / 60 * H;
+    const height = Math.max(24, (Math.min(e, new Date(s.getFullYear(), s.getMonth(), s.getDate(), h1)) - s) / 3600000 * H - 3);
+    const st = l.student_id && S.students.find(x => x.id === l.student_id);
+    const pend = st ? S.homework.filter(h => h.student_id === st.id && !h.done_at).length : 0;
+    const pl = st ? planOf(st.id) : null, paid = st && S.payRecords.some(r => r.student_id === st.id && r.period === per && r.kind === 'monthly');
+    const extra = st ? [pend ? `📝 ${pend}` : '', pl && pl.mode === 'monthly' ? (paid ? 'Pagado' : 'Mes sin cobrar') : ''].filter(Boolean).join(' · ') : 'Sin alumno en la app';
+    const w = 100 / cols;
+    return `<div class="cev ${st ? '' : 'unk'} ${e < now ? 'past' : ''}" style="top:${top}px;height:${height}px;left:calc(${col * w}% + 2px);width:calc(${w}% - 4px)"
+      ${st ? `data-action="open-student" data-id="${st.id}"` : ''} title="${esc(l.title)} · ${hhmm(l.starts_at)}–${hhmm(e.toISOString())}">
+      <b>${esc(st ? st.display_name : l.title)}</b><span>${hhmm(l.starts_at)} – ${hhmm(e.toISOString())}</span>${extra ? `<em>${esc(extra)}</em>` : ''}</div>`;
+  };
+  const dayCol = d => {
+    const ls = list.filter(l => new Date(l.starts_at).toDateString() === d.toDateString()).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    // Clases que se solapan: se reparten el ancho
+    const placed = []; let group = [], groupEnd = 0;
+    const flush = () => { const cols = Math.max(...group.map(g => g.col)) + 1; group.forEach(g => placed.push(block(g.l, g.col, cols))); group = []; };
+    ls.forEach(l => {
+      const s = +new Date(l.starts_at), e = +new Date(l.ends_at || s + 3600000);
+      if (group.length && s >= groupEnd) flush();
+      const used = group.filter(g => g.end > s).map(g => g.col); let col = 0; while (used.includes(col)) col++;
+      group.push({ l, col, end: e }); groupEnd = Math.max(groupEnd, e);
+    });
+    if (group.length) flush();
+    const isToday = d.toDateString() === today;
+    const nowTop = ((now.getHours() - h0) * 60 + now.getMinutes()) / 60 * H;
+    return `<div class="cal-col ${isToday ? 'today' : ''}">${placed.join('')}${isToday && now.getHours() >= h0 && now.getHours() < h1 ? `<i class="cal-now" style="top:${nowTop}px"></i>` : ''}</div>`;
+  };
+  setTimeout(() => { const cal = $('.cal'), t = $('.cal .cal-dh.today'); if (cal && t && cal.scrollWidth > cal.clientWidth) cal.scrollLeft = t.offsetLeft - 56; }, 0);
+  return `<div class="cal" style="--hh:${H}px"><div class="cal-in">
+    <div class="cal-head"><div class="cal-tz">${esc(Intl.DateTimeFormat().resolvedOptions().timeZone === 'Europe/Madrid' ? 'Madrid' : '')}</div>
+      ${days.map(d => `<div class="cal-dh ${d.toDateString() === today ? 'today' : ''}"><span>${WD3[d.getDay()]}</span><b>${d.getDate()}</b></div>`).join('')}</div>
+    <div class="cal-body" style="height:${hours.length * H}px">
+      <div class="cal-hours">${hours.map(h => `<div class="cal-hr" style="height:${H}px"><span>${pad(h)}:00</span></div>`).join('')}</div>
+      ${days.map(dayCol).join('')}
+    </div></div></div>`;
 }
 async function loadLessons() {
   const from = new Date(); from.setDate(1); from.setDate(from.getDate() - 7);

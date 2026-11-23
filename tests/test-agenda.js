@@ -25,12 +25,12 @@ const { chromium } = require('playwright');
   // ================= PROFESOR: Agenda =================
   const t = await open('t1');
   await goto(t,'agenda');
-  ok((await t.locator('.lrow').count())>=3, 'Agenda: muestra las clases de la semana');
+  ok((await t.locator('.cal .cev').count())>=3 && (await t.locator('.cal .cal-dh').count())===7, 'Agenda: semana en rejilla (7 días) con las clases como bloques');
   ok((await t.textContent('#app')).includes('Sincronizado con Google Calendar'), 'Dice cuándo se sincronizó');
-  ok((await t.locator('.lrow:has-text("Clase Pedro") :text("No sé de qué alumno es")').count())===1 && (await t.locator('.callout').count())===1, 'Avisa del evento que no corresponde a ningún alumno');
-  ok((await t.locator('.lrow:has-text("Marta") .chip:has-text("📝 2")').count())===1, 'En cada clase ve los deberes pendientes del alumno');
-  ok((await t.locator('.lrow:has-text("Marta") .chip:has-text("Mes sin cobrar")').count())===1, 'Y si ese mes ya ha cobrado o no');
-  await t.click('.lrow:has-text("Luis")'); await wait(t,300);
+  ok((await t.locator('.cev.unk:has-text("Clase Pedro")').count())===1 && (await t.textContent('.cev.unk')).includes('Sin alumno en la app') && (await t.locator('.callout').count())===1, 'Avisa del evento que no corresponde a ningún alumno');
+  ok((await t.textContent('.cev:has-text("Marta")')).includes('📝 2'), 'En cada clase ve los deberes pendientes del alumno');
+  ok((await t.textContent('.cev:has-text("Marta")')).includes('Mes sin cobrar'), 'Y si ese mes ya ha cobrado o no');
+  await t.click('.cev:has-text("Luis")'); await wait(t,300);
   ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Pulsar una clase abre la ficha del alumno');
   ok((await t.textContent('.modal')).includes('Próxima clase: mañana'), 'La ficha dice cuándo es su próxima clase');
   await t.fill('#calNameInput','Lucho'); await t.click('[data-action=cal-name]'); await wait(t,300);
@@ -82,7 +82,7 @@ const { chromium } = require('playwright');
   // Móvil del profesor: Agenda desde Alumnos
   const m = await open('t1',{width:390,height:844});
   await goto(m,'students'); await m.click('.dhead [data-action=section][data-s=agenda]'); await wait(m,250);
-  ok((await m.locator('.lrow').count())>=3 && await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: Agenda desde Alumnos, sin scroll horizontal');
+  ok((await m.locator('.cev').count())>=3 && await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: Agenda desde Alumnos; la rejilla se desliza dentro de su caja, la página no');
   await shot(m,'m_agenda.png');
 
   console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
