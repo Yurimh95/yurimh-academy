@@ -1,5 +1,5 @@
 /* =====================================================================
-   Yurimh Academy · Configuración de Supabase
+   Yurimh Music Academy · Configuración de Supabase
    Este archivo va en el repositorio de GitHub JUNTO a index.html.
    Rellena las dos líneas (Supabase > Project Settings):
      SUPABASE_URL  -> Project URL, con esta forma: https://xxxxxxxx.supabase.co

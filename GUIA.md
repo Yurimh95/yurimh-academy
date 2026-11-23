@@ -1,4 +1,4 @@
-# Yurimh Academy · Guía
+# Yurimh Music Academy · Guía
 
 ## Archivos
 
@@ -15,10 +15,10 @@
 
 | Qué | Nombre |
 |---|---|
-| App | **Yurimh Academy** (cambiable en `APP_NAME`, dentro de `index.html`) |
-| Organización / proyecto en Supabase | Yurimh Academy / `yurimh-academy` |
-| Repositorio de GitHub | `yurimh-academy` |
-| Web | `https://yurimh95.github.io/yurimh-academy/` |
+| App | **Yurimh Music Academy** (cambiable en `APP_NAME`, dentro de `index.html`) |
+| Organización / proyecto en Supabase | Yurimh Academy / `yurimh-academy` (nombres internos, no se ven) |
+| Repositorio de GitHub | `yurimh-music-academy` |
+| Web | `https://yurimh95.github.io/yurimh-music-academy/` |
 
 Tablas: lo común va sin prefijo (`profiles`, `reactions`, `moderation_reports`) y cada módulo lleva el suyo: `listening_*` (Escucha analítica), `board_*` (Avisos), `feed_*` (Feed). Más adelante vendrán `chat_*`, `payments_*`, `homework_*`… Todo en inglés y `snake_case`.
 
@@ -74,9 +74,9 @@ Cuando acabes, bórralas en *Authentication → Users*.
 1. **Supabase**: crea la organización y el proyecto (`yurimh-academy`, región Europa). En *Data access* deja marcado *Enable Data API* y marca *Enable RLS on new tables automatically*.
 2. **SQL**: ejecuta `supabase/schema.sql` completo en el SQL Editor.
 3. **Claves**: crea `config.js` con tu Project URL y tu Publishable key.
-4. **GitHub Pages**: repositorio público `yurimh-academy` con `index.html` y `config.js`. Después, *Settings → Pages → Deploy from a branch → `main` / `(root)`*.
+4. **GitHub Pages**: repositorio público `yurimh-music-academy` con `index.html` y `config.js`. Después, *Settings → Pages → Deploy from a branch → `main` / `(root)`*.
 5. **Authentication** (en Supabase):
-   - *URL Configuration*: **Site URL** = `https://yurimh95.github.io/yurimh-academy/`, y la misma dirección en *Redirect URLs*.
+   - *URL Configuration*: **Site URL** = `https://yurimh95.github.io/yurimh-music-academy/`, y la misma dirección en *Redirect URLs*.
    - *Sign In / Providers → Email*: decide si activas *Confirm email*. Con pocos alumnos es más cómodo desactivarla, porque igualmente apruebas tú cada cuenta.
 6. **Hazte profesor**: regístrate en la web con tu email. Luego busca tu `id` con `select id, email from public.profiles;` y ejecuta:
 

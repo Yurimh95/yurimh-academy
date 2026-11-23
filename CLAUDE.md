@@ -1,4 +1,4 @@
-# Yurimh Academy · contexto para Claude
+# Yurimh Music Academy · contexto para Claude
 
 Web app para organizar las clases de guitarra de Yuri. Este archivo resume lo que se habló y decidió en la conversación anterior en claude.ai, donde se construyó todo hasta ahora. Léelo entero antes de tocar nada.
 
@@ -10,7 +10,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 1. Comprueba si están `git` y `gh` (GitHub CLI). Si faltan, instálalos tú (`winget install --id Git.Git -e` y `winget install --id GitHub.cli -e`). Avisa a Yuri de que Windows puede pedirle permiso.
 2. Inicia sesión en GitHub con `gh auth login --web --git-protocol https`. Explícale que se abrirá el navegador, que tiene que pegar un código de 8 letras que le enseñarás y pulsar "Authorize". Después ejecuta `gh auth setup-git`.
-3. Conecta esta carpeta con su repositorio `Yurimh95/yurimh-academy` **sin perder estos archivos**. Por ejemplo, clona el repo a una carpeta temporal y saca `SUPABASE_URL` y `SUPABASE_KEY` del `index.html` antiguo de esa copia: están pegados ahí. Luego mueve aquí la carpeta `.git` de la copia (o haz `git init`, añade `origin` y `git fetch` + `git reset --soft origin/main`). Comprueba con `git status` que los únicos cambios son los esperados.
+3. Conecta esta carpeta con su repositorio `Yurimh95/yurimh-music-academy` **sin perder estos archivos**. Por ejemplo, clona el repo a una carpeta temporal y saca `SUPABASE_URL` y `SUPABASE_KEY` del `index.html` antiguo de esa copia: están pegados ahí. Luego mueve aquí la carpeta `.git` de la copia (o haz `git init`, añade `origin` y `git fetch` + `git reset --soft origin/main`). Comprueba con `git status` que los únicos cambios son los esperados.
 4. Instala el plugin oficial de Supabase (`supabase@claude-plugins-official`, del marketplace `anthropics/claude-plugins-official`) y autentícalo. Si en la app de escritorio no puedes hacerlo tú, dile a Yuri exactamente dónde pulsar. Limítalo a su proyecto (`project_ref`).
 5. Sigue con "Primera tarea de esta sesión", en el apartado "Estado actual".
 
@@ -27,7 +27,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 ## Qué es la app
 
-- **Web**: https://yurimh95.github.io/yurimh-academy/ (GitHub Pages, repo público `yurimh-academy`, rama `main`, raíz).
+- **Web**: https://yurimh95.github.io/yurimh-music-academy/ (GitHub Pages, repo público `yurimh-music-academy`, rama `main`, raíz).
 - **Backend**: Supabase. Proyecto `yurimh-academy` en la organización "Yurimh Academy", región Europa, plan gratuito. Usa Auth con email y contraseña, Postgres con Row Level Security y supabase-js v2 cargado desde jsDelivr.
 - **Usuarios**: alumnos de guitarra, **mezcla de adultos y menores**. La privacidad entre alumnos es un requisito fuerte. Hay un único profesor: Yuri.
 - **Registro**: libre. Toda cuenta nueva nace como `student` y sin aprobar, y el profesor la aprueba. El rol `teacher` solo se asigna por SQL.
@@ -60,7 +60,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 ## Convenciones de nombres
 
-- La app se llama **Yurimh Academy** (constante `APP_NAME`). Cada módulo tiene su constante de nombre visible, por ejemplo `MODULE_LISTENING = 'Escucha analítica'`.
+- La app se llama **Yurimh Music Academy** (constante `APP_NAME`). Cada módulo tiene su constante de nombre visible, por ejemplo `MODULE_LISTENING = 'Escucha analítica'`.
 - **Tablas**: lo común va sin prefijo (`profiles`, `reactions`, `moderation_reports`). Cada módulo lleva su prefijo: `listening_*` (Escucha analítica), `board_*` (Avisos), `feed_*` (Feed). Los módulos futuros serán `chat_*`, `payments_*` y `homework_*`. Todo en inglés y `snake_case`.
 - **Políticas**: `<tabla>_<acción>[_<rol>]`. **Triggers**: `<tabla>_<algo>_trg`.
 - **Interfaz**: un menú superior con una pestaña por módulo (Inicio, Avisos, Feed, Escucha analítica, Alumnos solo para el profesor, Perfil).

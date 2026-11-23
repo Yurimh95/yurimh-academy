@@ -1,5 +1,5 @@
 {
-  "name": "yurimh-academy-tests",
+  "name": "yurimh-music-academy-tests",
   "private": true,
   "scripts": {
     "build": "node build-test.js",

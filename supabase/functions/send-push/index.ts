@@ -1,4 +1,4 @@
-// Yurimh Academy · Edge Function "send-push"
+// Yurimh Music Academy · Edge Function "send-push"
 // La llama la base de datos (trigger notifications_push_trg) con { notification_id } cada vez que se crea
 // una notificación para alguien que tiene un dispositivo suscrito. Envía el aviso a sus móviles/ordenadores.
 //
@@ -11,7 +11,7 @@ import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const VAPID_PUBLIC_KEY = "BEGkt5LzuehpdU19-afE_fSxxdST6mtXx-eCa9cjNTUsJFvrW6W-WAaAvgX-S3vQTQLYmLH-e4grFZYB7Nv6-rw";
-const APP_URL = "https://yurimh95.github.io/yurimh-academy/";
+const APP_URL = "https://yurimh95.github.io/yurimh-music-academy/";
 
 const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
@@ -26,10 +26,10 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
     case "assignment": return { title: "🎧 Nueva escucha", body: extra ?? "Tienes una escucha nueva" };
     case "dm": return { title: `💬 ${actor}`, body: "Te ha enviado un mensaje" };
     case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra ?? "" };
-    case "reaction": return { title: "Yurimh Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
+    case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
     case "report": return { title: "Denuncia nueva", body: "Hay contenido denunciado para revisar" };
-    default: return { title: "Yurimh Academy", body: "Tienes una novedad" };
+    default: return { title: "Yurimh Music Academy", body: "Tienes una novedad" };
   }
 }
 

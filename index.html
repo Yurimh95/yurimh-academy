@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>Yurimh Academy</title>
+<title>Yurimh Music Academy</title>
 <link rel="icon" type="image/png" href="icon-round.png">
 <!-- Instalable como app en el móvil (PWA) -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -85,9 +85,9 @@ svg.i{width:20px;height:20px;flex:none}
 .shell.has-rail{grid-template-columns:240px minmax(0,1fr) 290px}
 .main{min-width:0;padding:18px 0 60px}
 .sidebar{position:sticky;top:0;height:100vh;padding:20px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
-.brand{display:flex;align-items:center;gap:12px;padding:4px 10px 20px;color:var(--strong)}
-.brand img{width:42px;height:42px;border-radius:12px;object-fit:cover;box-shadow:var(--glow)}
-.brand b{display:block;font-size:16.5px;letter-spacing:-.01em}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 20px;color:var(--strong)}
+.brand img{width:38px;height:38px;flex:none;border-radius:12px;object-fit:cover;box-shadow:var(--glow)}
+.brand b{display:block;font-size:15px;letter-spacing:-.02em;white-space:nowrap}
 .brand small{display:block;color:var(--faint);font-size:12px;font-weight:500}
 .nav{display:flex;flex-direction:column;gap:2px}
 .nav button{
@@ -625,7 +625,8 @@ const SUPABASE_URL = cleanUrl(CFG.SUPABASE_URL);
 const SUPABASE_KEY = String(CFG.SUPABASE_KEY || '').trim();
 
 /* Nombre visible de la app (cabecera, pantallas de acceso, imagen PNG exportada). */
-const APP_NAME = 'Yurimh Academy';
+const APP_NAME = 'Yurimh Music Academy';
+const APP_SHORT = 'Yurimh'; // donde no cabe el nombre completo: barra superior del móvil e icono instalado
 /* Nombre del módulo actual (aparece en el menú superior). */
 const MODULE_LISTENING = 'Escucha analítica';
 
@@ -1327,7 +1328,7 @@ function sidebar(secs) {
 function topbar(cur) {
   const th = document.documentElement.dataset.theme;
   return `<header class="top">
-    <div class="mbrand"><img src="logo.png" alt="">${esc(APP_NAME)}</div>
+    <div class="mbrand"><img src="logo.png" alt="">${esc(APP_SHORT)}</div>
     ${S.section !== 'feed' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
     <div class="top-r">
       ${installBtnHtml()}
@@ -2702,7 +2703,7 @@ document.addEventListener('submit', async e => {
       // si todo va bien, onAuthStateChange(SIGNED_IN) hace el resto
     } else {
       const name = f.name.value.trim();
-      // emailRedirectTo: sin él, Supabase vuelve al dominio sin la ruta /yurimh-academy/ (404 de GitHub)
+      // emailRedirectTo: sin él, Supabase vuelve al dominio sin la ruta /yurimh-music-academy/ (404 de GitHub)
       const birth = f.birth.value; // AAAA-MM-DD; la base de datos la valida al crear el perfil
       const { data, error } = await sb.auth.signUp({ email, password, options: { data: { display_name: name, birth_date: birth }, emailRedirectTo: location.href.split('#')[0] } });
       if (error) viewAuth('register', { type: 'bad', text: error.message });
