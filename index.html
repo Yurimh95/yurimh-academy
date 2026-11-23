@@ -408,6 +408,7 @@ ol.rt-list li::marker{font-weight:600}
 .rxb.main:not(.mine) .rxe{filter:grayscale(.35);opacity:.85}
 .rx-pick{position:fixed;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:5px 6px;width:max-content;box-shadow:var(--shadow);animation:rxIn .14s ease-out}
 .rx-pick[hidden]{display:none}
+.fpost,.rx,.rxb{-webkit-tap-highlight-color:transparent}
 .rx-pick .rxb{font-size:24px;padding:4px 7px;border-color:transparent;border-radius:50%;transition:transform .12s,background .12s}
 .rx-pick .rxb:hover,.rx-pick .rxb:focus-visible{background:var(--hover);transform:scale(1.25) translateY(-3px)}
 .rx-pick .rxb.mine{background:rgba(var(--accent-rgb),.16)}
@@ -456,9 +457,11 @@ ol.rt-list li::marker{font-weight:600}
 .card{
   background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
   padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:10px;
-  transition:border-color .15s,transform .12s;
+  transition:border-color .15s;-webkit-tap-highlight-color:transparent;
 }
-.card:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+/* Solo con ratón: en el móvil la tarjeta no se ilumina al tocarla. Sin
+   transform, porque haría que el selector de reacciones se descoloque. */
+@media (hover:hover){ .card:hover{border-color:var(--line-strong)} }
 .card.done{opacity:.8}
 .card h3{font-size:16.5px}
 .card .brief{margin:0;color:var(--muted);font-size:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -1045,16 +1048,21 @@ function rxBar(type, id) {
 /* ---- Selector de reacciones estilo Facebook ----
    Ordenador: pasar el ratón por el 👍🏼 (o por el selector) lo abre; salir lo cierra.
    Móvil: mantener pulsado el 👍🏼. Un toque normal da o quita el "me gusta". */
-let rxOpenEl = null, rxShowT = 0, rxHideT = 0, rxPress = null, rxLong = false;
+let rxOpenEl = null, rxShowT = 0, rxHideT = 0, rxPress = null, rxLong = false, rxScrollY = 0;
 function rxShow(main) {
   const bar = main.closest('.rx'), pk = bar && bar.querySelector('.rx-pick');
   if (!pk) return;
   if (rxOpenEl && rxOpenEl !== pk) rxOpenEl.hidden = true;
-  pk.hidden = false; rxOpenEl = pk;
+  pk.hidden = false; rxOpenEl = pk; rxScrollY = scrollY;
+  // Si algún contenedor tiene transform/filter, "fixed" se mide desde él y no
+  // desde la ventana: se coloca en 0,0, se mira dónde cae y se compensa.
+  pk.style.animation = 'none'; pk.style.left = '0px'; pk.style.top = '0px';
+  const o = pk.getBoundingClientRect();
+  pk.style.animation = '';
   const r = main.getBoundingClientRect(), w = pk.offsetWidth, h = pk.offsetHeight;
   const left = Math.max(8, Math.min(r.left, innerWidth - w - 8));
-  const top = r.top - h - 8 >= 8 ? r.top - h - 8 : r.bottom + 8;
-  pk.style.left = left + 'px'; pk.style.top = top + 'px';
+  const top = r.top - h - 6 >= 8 ? r.top - h - 6 : r.bottom + 6;
+  pk.style.left = (left - o.left) + 'px'; pk.style.top = (top - o.top) + 'px';
 }
 function rxHide() { clearTimeout(rxShowT); clearTimeout(rxHideT); if (rxOpenEl) rxOpenEl.hidden = true; rxOpenEl = null; }
 function rxHoverInit() {
@@ -1075,25 +1083,43 @@ function rxHoverInit() {
     clearTimeout(rxShowT); clearTimeout(rxHideT);
     rxHideT = setTimeout(rxHide, 350);
   });
-  // Pulsación larga (táctil)
+  // Clic fuera con ratón: cierra
   document.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') { if (rxOpenEl && !e.target.closest('.rx-pick')) rxHide(); return; }
-    const main = e.target.closest && e.target.closest('.rxb.main');
-    if (rxOpenEl && !e.target.closest('.rx-pick') && !main) rxHide();
-    if (!main) return;
-    rxLong = false;
-    rxPress = { x: e.clientX, y: e.clientY, t: setTimeout(() => { rxLong = true; rxShow(main); if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {} }, 450) };
+    if (e.pointerType === 'mouse' && rxOpenEl && !e.target.closest('.rx-pick')) rxHide();
   });
+  // Pulsación larga (táctil). Va con eventos touch y no pointer: el navegador
+  // corta los pointer (pointercancel) en cuanto cree que vas a desplazar o a
+  // seleccionar, y eso era lo que impedía abrir el selector en el móvil.
+  document.addEventListener('touchstart', e => {
+    const t = e.target.closest ? e.target : e.target.parentElement;
+    const main = t && t.closest('.rxb.main');
+    if (rxOpenEl && !t.closest('.rx-pick') && !main) rxHide();
+    if (!main || e.touches.length > 1) return;
+    rxLong = false;
+    const p = e.touches[0];
+    rxPress = { x: p.clientX, y: p.clientY, t: setTimeout(() => {
+      rxLong = true; rxShow(main);
+      if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {}
+    }, 400) };
+  }, { passive: true });
   const cancel = () => { if (rxPress) clearTimeout(rxPress.t); rxPress = null; };
-  document.addEventListener('pointermove', e => { if (rxPress && Math.hypot(e.clientX - rxPress.x, e.clientY - rxPress.y) > 10) cancel(); });
-  document.addEventListener('pointerup', cancel);
-  document.addEventListener('pointercancel', cancel);
-  // Tras una pulsación larga, el clic que la sigue no debe dar "me gusta"
+  document.addEventListener('touchmove', e => {
+    const p = e.touches[0];
+    if (rxPress && p && Math.hypot(p.clientX - rxPress.x, p.clientY - rxPress.y) > 12) cancel();
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    cancel();
+    // Al soltar tras mantener: ni clic ("me gusta") ni selección de texto
+    if (rxLong && e.cancelable && e.target.closest && e.target.closest('.rxb.main')) e.preventDefault();
+  });
+  document.addEventListener('touchcancel', cancel);
+  // Por si aun así llega el clic tras una pulsación larga
   document.addEventListener('click', e => {
     if (rxLong && e.target.closest && e.target.closest('.rxb.main')) { rxLong = false; e.stopPropagation(); e.preventDefault(); }
   }, true);
-  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.rxb.main')) e.preventDefault(); });
-  addEventListener('scroll', () => { if (rxOpenEl) rxHide(); }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.rxb.main, .rx-pick')) e.preventDefault(); });
+  // Desplazar la página cierra el selector (con margen, por si el dedo tiembla)
+  addEventListener('scroll', () => { if (!rxOpenEl) rxScrollY = scrollY; else if (Math.abs(scrollY - rxScrollY) > 30) rxHide(); }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && rxOpenEl) rxHide(); });
 }
 rxHoverInit();

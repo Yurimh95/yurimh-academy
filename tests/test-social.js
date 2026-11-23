@@ -49,12 +49,14 @@ const { chromium } = require('playwright');
   ok(await p.locator(card+' .rx-pick').isVisible(), 'Pasar el ratón por el 👍🏼 abre el selector');
   await p.mouse.move(5, 5); await p.waitForTimeout(500);
   ok(!(await p.locator(card+' .rx-pick').isVisible()), 'Al salir con el ratón se cierra');
-  // Móvil: pulsación larga (simulada con eventos táctiles de puntero)
+  // Móvil: pulsación larga (simulada con eventos táctiles)
   await p.locator(card+' .rxb.main').evaluate(b => { const r = b.getBoundingClientRect();
-    b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: r.left+5, clientY: r.top+5 })); });
-  await p.waitForTimeout(600);
-  await p.locator(card+' .rxb.main').evaluate(b => {
-    b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' })); b.click(); });
+    const t = new Touch({ identifier: 1, target: b, clientX: r.left+5, clientY: r.top+5 });
+    b.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [t], targetTouches: [t], changedTouches: [t] })); });
+  await p.waitForTimeout(550);
+  await p.locator(card+' .rxb.main').evaluate(b => { const r = b.getBoundingClientRect();
+    const t = new Touch({ identifier: 1, target: b, clientX: r.left+5, clientY: r.top+5 });
+    b.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [t] })); b.click(); });
   await p.waitForTimeout(200);
   ok(await p.locator(card+' .rx-pick').isVisible(), 'Mantener pulsado (móvil) abre el selector');
   ok(!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like'))), 'Soltar tras mantener no da "me gusta"');
