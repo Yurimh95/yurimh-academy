@@ -671,6 +671,8 @@ label.f>.emo-wrap{margin-top:6px}
 .arow+.arow{margin-top:10px}
 .arow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .arow-who{display:flex;align-items:center;gap:10px;min-width:0}
+.sdm-head{display:flex;align-items:center;gap:16px;min-width:0}
+.sdm-head h2{overflow-wrap:anywhere}
 .grid2{display:grid;grid-template-columns:170px 1fr;gap:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 details{margin-top:10px}
@@ -2753,12 +2755,12 @@ function teacherStudents() {
   };
   return `
     ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
-      <div class="row"><div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
+      <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div></div>
       <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div>`).join('')}</div>` : ''}
     <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
     ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
       <div class="row click" data-action="open-student" data-id="${s.id}">
-        <div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
+        <div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div></div>
         <div class="chips">
           <span class="chip">${st.n} asignado${st.n === 1 ? '' : 's'}</span>
           <span class="chip ${st.li ? 'ok' : ''}">${st.li} escuchado${st.li === 1 ? '' : 's'}</span>
@@ -2859,7 +2861,8 @@ function studentDetailModal(id) {
   if (!s) return;
   const as = S.assigns.filter(a => a.student_id === id).sort(dueSort);
   openModal(`
-    <div class="modal-head"><div><h2>${esc(s.display_name)}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div></div>
+    <div class="modal-head"><div class="sdm-head">${avatarHtml(s.id, 96)}<div><h2>${esc(whoName(s.id))}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div>
+        <button class="btn sm" style="margin-top:8px" data-action="student-profile" data-id="${s.id}">Ver perfil</button></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
     <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
@@ -2969,7 +2972,9 @@ function matesPanel() {
     </div>`;
 }
 
+let profReturn = null; // alumno cuya ficha (profesor) estaba abierta al pulsar "Ver perfil"
 async function profileModal(id) {
+  const back = profReturn === id; profReturn = null;
   const { data, error } = await sb.rpc('get_profile', { p_id: id });
   const p = data && data[0];
   if (error || !p) return toast('No se pudo abrir el perfil', 'bad');
@@ -2977,7 +2982,7 @@ async function profileModal(id) {
   const chips = [p.instrument && INSTRUMENTS[p.instrument], p.level && LEVELS[p.level]].filter(Boolean);
   const mine = id === S.user.id;
   openModal(`
-    <div class="modal-head"><span></span><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="modal-head">${back ? `<button class="btn sm ghost" data-action="open-student" data-id="${id}">← Volver a la ficha</button>` : '<span></span>'}<button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="pf-head">${avatarHtml(id, 96)}
       <h2>${esc(isTeacher() ? whoName(id) : p.public_name)}${p.role === 'teacher' ? '<span class="tbadge">Profesor</span>' : ''}</h2>
       ${chips.length ? `<div class="chips" style="justify-content:center">${chips.map(c => `<span class="chip acc">${esc(c)}</span>`).join('')}</div>` : ''}
@@ -3328,6 +3333,7 @@ const actions = {
     await setApproved(s.id, false);
   },
   'open-student'(el) { studentDetailModal(el.dataset.id); },
+  'student-profile'(el) { profReturn = el.dataset.id; profileModal(el.dataset.id); }, // desde la ficha: el perfil ofrece volver a ella
   async 'rename-student'(el) {
     const name = $('#renameInput').value.trim();
     if (!name) return toast('Escribe un nombre', 'bad');
