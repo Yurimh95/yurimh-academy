@@ -464,11 +464,13 @@ label.f>.emo-wrap{margin-top:6px}
 .ebox-tabs button{flex:1;padding:6px 0;border:0;border-radius:8px;background:none;font-size:18px;line-height:1.2;cursor:pointer;opacity:.55;filter:grayscale(.6);transition:opacity .15s}
 .ebox-tabs button:hover{opacity:.9}
 .ebox-tabs button.on{opacity:1;filter:none;background:rgba(var(--accent-rgb),.14)}
-.ebox-h{font-size:12px;font-weight:600;color:var(--muted);padding:8px 12px 2px}
-.ebox-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:4px 6px 8px;height:216px;overflow-y:auto;align-content:start}
-.ebox-grid button{aspect-ratio:1;padding:0;border:0;border-radius:8px;background:none;font-size:22px;line-height:1;cursor:pointer;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.ebox-scroll{position:relative;height:250px;overflow-y:auto;overscroll-behavior:contain}
+.ebox-sec:last-child{min-height:100%} /* así la última categoría también puede subir arriba del todo */
+.ebox-h{position:sticky;top:0;z-index:1;background:var(--panel);font-size:12px;font-weight:600;color:var(--muted);padding:8px 12px 4px}
+.ebox-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;padding:0 6px 6px}
+.ebox-grid button{aspect-ratio:1;min-width:0;overflow:hidden;padding:0;border:0;border-radius:8px;background:none;font-size:22px;line-height:1;cursor:pointer;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 .ebox-grid button:hover{background:rgba(var(--accent-rgb),.14)}
-.ebox-empty{grid-column:1/-1;color:var(--muted);font-size:13px;padding:12px 6px}
+.ebox-empty{grid-column:1/-1;color:var(--muted);font-size:13px;padding:4px 6px 8px}
 .cmt-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px;padding-left:4px}
 .cm-new{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
 .cm-new textarea{min-height:44px}
@@ -1039,9 +1041,9 @@ addEventListener('resize', mentionPlace);
 const EMOJI_FIELDS = 'textarea, input[type=text]:not([name=url]):not([name=duration]):not([name=name]):not([name=display_name]):not([name=nickname]):not(#renameInput):not(#calNameInput):not([data-no-emoji])';
 const EMOJI_SETS = [
   { id: 'faces', tab: '😀', label: 'Caras', list: '😀 😃 😄 😁 😆 😅 🤣 😂 🙂 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 😝 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😌 😔 😪 😴 😷 🤒 🤯 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😠 😡 🤬 😈 💀 🤡 👻 👽 🤖 💩' },
-  { id: 'hands', tab: '👍', label: 'Gestos y personas', list: '👍 👎 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💪 🦾 🧠 👀 👂 💅 🤳 🙋 🙆 🙅 🤷 🤦 🙇 💃 🕺 🧑‍🎤 👨‍🎤 👩‍🎤 🧑‍🏫 🧑‍💻 🧑‍🎓' },
-  { id: 'music', tab: '🎸', label: 'Música', list: '🎸 🎵 🎶 🎼 🎤 🎧 🎹 🥁 🎷 🎺 🎻 🪕 🪘 🎙️ 📻 🔊 🔉 🔈 🔇 📢 📣 🎚️ 🎛️ 💿 📀 🎬 🎞️ 📹 🎮 🕹️ 🎨 🎭 🎪 🎟️ 🏆 🥇 🥈 🥉 🏅 🎯 ⏱️ ⏰ ⏳ 🎓' },
-  { id: 'symbols', tab: '❤️', label: 'Corazones y símbolos', list: '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 ⭐ 🌟 ✨ ⚡ 🔥 💥 💯 ✅ ☑️ ✔️ ❌ ⚠️ ❗ ❓ 💡 💬 💭 🔔 📌 📍 🔗 ➕ ➖ ➡️ ⬅️ ⬆️ ⬇️ 🔁 🆕 🆗 🔝 🎵' },
+  { id: 'hands', tab: '👍', label: 'Gestos y personas', list: '👍 👎 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💪 🦾 🧠 👀 👂 💅 🤳 🙋 🙆 🙅 🤷 🤦 🙇 💃 🕺 👨‍🎤 👩‍🎤 👨‍🏫 👩‍🏫 👨‍🎓 👩‍🎓 👨‍💻 👩‍💻' },
+  { id: 'music', tab: '🎸', label: 'Música', list: '🎸 🎵 🎶 🎼 🎤 🎧 🎹 🥁 🎷 🎺 🎻 🪕 🎙️ 📻 🔊 🔉 🔈 🔇 📢 📣 🎚️ 🎛️ 💿 📀 🎬 🎞️ 📹 🎮 🕹️ 🎨 🎭 🎪 🎟️ 🏆 🥇 🥈 🥉 🏅 🎯 ⏱️ ⏰ ⏳ 🎓' },
+  { id: 'symbols', tab: '❤️', label: 'Corazones y símbolos', list: '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 ⭐ 🌟 ✨ ⚡ 🔥 💥 💯 ✅ ☑️ ✔️ ❌ ⚠️ ❗ ❓ 💡 💬 💭 🔔 📌 📍 🔗 ➕ ➖ ➡️ ⬅️ ⬆️ ⬇️ 🔁 🆕 🆗 🔝' },
   { id: 'things', tab: '🎉', label: 'Fiesta y cosas', list: '🎉 🎊 🎈 🎁 🎂 🍰 🍕 🍔 🍟 🍿 ☕ 🍺 🍻 🥂 🍷 🍩 🍪 🍫 🍎 🍉 📚 📖 📝 ✏️ 📅 📆 🗓️ 📷 📱 💻 🖥️ ⌨️ 🎒 🏠 🚗 🚀 ✈️ 🌍 💰 💸 🛠️ 🔧' },
   { id: 'nature', tab: '🌸', label: 'Naturaleza y animales', list: '☀️ 🌤️ ⛅ 🌧️ ⛈️ ❄️ 🌈 🌙 🌊 🌋 🌸 🌹 🌻 🌷 🌱 🌳 🍀 🍁 🍂 🐶 🐱 🐭 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🦈' },
 ];
@@ -1068,12 +1070,12 @@ new MutationObserver(emojiDecorate).observe(document.body, { childList: true, su
 emojiDecorate();
 document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches(EMOJI_FIELDS)) e.target._emoTouched = true; });
 
-let ex = null; // selector abierto: { f: campo, btn, tab }
+let ex = null; // selector abierto: { f: campo, btn }
 function emojiOpen(btn) {
   const f = btn.parentElement.querySelector('textarea, input');
   if (!f) return;
   mentionClose();
-  ex = { f, btn, tab: emojiRecent().length ? 'recent' : EMOJI_SETS[0].id };
+  ex = { f, btn };
   btn.classList.add('on');
   // En el móvil se esconde el teclado para que se vea el selector (como en WhatsApp); en el PC el cursor sigue en el campo
   if (matchMedia('(hover:none)').matches) f.blur(); else if (document.activeElement !== f) f.focus();
@@ -1086,13 +1088,25 @@ function emojiClose() {
 function emojiDraw() {
   let box = $('#emojiBox');
   if (!box) { box = document.createElement('div'); box.id = 'emojiBox'; box.className = 'ebox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Emojis'); document.body.appendChild(box); }
-  const recent = emojiRecent();
-  const set = ex.tab === 'recent' ? { label: 'Recientes', list: recent } : EMOJI_SETS.find(s => s.id === ex.tab);
-  const tabs = [{ id: 'recent', tab: '🕘', label: 'Recientes' }, ...EMOJI_SETS];
-  box.innerHTML = `<div class="ebox-tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" data-etab="${t.id}" class="${t.id === ex.tab ? 'on' : ''}" aria-selected="${t.id === ex.tab}" title="${esc(t.label)}">${t.tab}</button>`).join('')}</div>
-    <div class="ebox-h">${esc(set.label)}</div>
-    <div class="ebox-grid">${set.list.length ? set.list.map(e => `<button type="button" data-emoji="${esc(e)}" aria-label="${esc(e)}">${e}</button>`).join('') : '<div class="ebox-empty">Aquí saldrán los que uses.</div>'}</div>`;
+  // Todos en una sola lista, como en WhatsApp: las pestañas solo llevan a su zona
+  const secs = [{ id: 'recent', tab: '🕘', label: 'Recientes', list: emojiRecent() }, ...EMOJI_SETS];
+  const btn = e => `<button type="button" data-emoji="${esc(e)}" aria-label="${esc(e)}">${e}</button>`;
+  box.innerHTML = `<div class="ebox-tabs" role="tablist">${secs.map(t => `<button type="button" role="tab" data-etab="${t.id}" title="${esc(t.label)}">${t.tab}</button>`).join('')}</div>
+    <div class="ebox-scroll">${secs.map(t => `<section class="ebox-sec" data-esec="${t.id}"><div class="ebox-h">${esc(t.label)}</div>
+      <div class="ebox-grid">${t.list.length ? t.list.map(btn).join('') : '<div class="ebox-empty">Aquí saldrán los que uses.</div>'}</div></section>`).join('')}</div>`;
+  box.querySelector('.ebox-scroll').addEventListener('scroll', emojiSpy, { passive: true });
+  emojiSpy();
   emojiPlace();
+}
+function emojiSpy() { // marca la pestaña de la categoría que se está viendo
+  const sc = $('#emojiBox .ebox-scroll'); if (!sc) return;
+  let cur = 'recent';
+  sc.querySelectorAll('[data-esec]').forEach(x => { if (x.offsetTop <= sc.scrollTop + 4) cur = x.dataset.esec; });
+  document.querySelectorAll('#emojiBox [data-etab]').forEach(b => { const on = b.dataset.etab === cur; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+}
+function emojiJump(id) { // la pestaña desliza la lista hasta su categoría
+  const sc = $('#emojiBox .ebox-scroll'), x = sc && sc.querySelector(`[data-esec="${id}"]`);
+  if (x) sc.scrollTo({ top: x.offsetTop, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 function emojiPlace() { // pegado al botón: debajo, o encima si abajo no cabe
   const box = $('#emojiBox'); if (!box || !ex) return;
@@ -1125,7 +1139,7 @@ document.addEventListener('click', e => {
   const em = e.target.closest('#emojiBox [data-emoji]');
   if (em && ex) return emojiInsert(em.dataset.emoji);
   const tab = e.target.closest('#emojiBox [data-etab]');
-  if (tab && ex) { ex.tab = tab.dataset.etab; return emojiDraw(); }
+  if (tab && ex) return emojiJump(tab.dataset.etab);
   if (ex && !e.target.closest('#emojiBox') && e.target !== ex.f) emojiClose();
 });
 document.addEventListener('keydown', e => { // en fase de captura: Esc cierra el selector y no la ventana
