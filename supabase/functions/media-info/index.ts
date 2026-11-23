@@ -67,7 +67,8 @@ const hms = (t: string) => t.split(":").reduce((s, p) => s * 60 + Number(p), 0);
 // ---- YouTube con la API oficial (YouTube Data API v3) ----
 // Clave en el secret YOUTUBE_API_KEY (Supabase → Edge Functions → Secrets). Cupo gratis: 10.000 unidades al día;
 // cada consulta gasta 1 (un vídeo = 1; una playlist = 1 por cada 50 vídeos, ×2).
-const YT_KEY = Deno.env.get("YOUTUBE_API_KEY") ?? "";
+// Sin espacios ni comillas que se cuelen al pegarla en el panel
+const YT_KEY = (Deno.env.get("YOUTUBE_API_KEY") ?? "").trim().replace(/^["']|["']$/g, "");
 const YT_API = "https://www.googleapis.com/youtube/v3/";
 // "PT1H2M3S" / "P1DT2H" → segundos
 const isoSecs = (d: string) => {
