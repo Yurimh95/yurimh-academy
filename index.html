@@ -136,7 +136,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .qr svg{width:100%;height:100%}
 .two.prof-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
 @media (max-width:760px){.two.prof-grid{grid-template-columns:1fr}}
-.about{grid-column:1/-1}
+.about,.panel.mates{grid-column:1/-1}
 /* "Sobre ti" a lo ancho en el ordenador: bio arriba, 3 campos cortos en fila y 2 largos debajo */
 .about-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 14px}
 .about-grid .a-bio{grid-column:1/-1}.about-grid .a-3{grid-column:span 2}.about-grid .a-2{grid-column:span 3}
@@ -223,6 +223,13 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .blist{display:grid;gap:8px}
 .brow{display:flex;align-items:center;gap:10px}
 .brow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.mrow{display:flex;align-items:center;gap:10px}
+.mrow .wholink{flex:1;min-width:0;justify-content:flex-start}
+.mrow .wholink b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--strong)}
+.mate-btns{display:flex;gap:6px;flex:none}
+.mates-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:14px 0 8px}
+.panel.mates h2+.mates-h{margin-top:4px}
+.mate-box{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .install-how{padding:14px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
 @media (max-width:420px){.installbtn{padding:0 10px;font-size:13px}.installbtn .l-long{display:none}}
 @media (min-width:421px){.installbtn .l-short{display:none}}
@@ -763,7 +770,7 @@ const S = {
   items: [], assigns: [], students: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
-  dms: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [],
+  dms: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
   homework: [], payPlans: [], payRecords: [], payMonth: null,
   lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
   section: 'feed', filter: 'pend',
@@ -1208,7 +1215,7 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
    La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
 const RT_TABLES = ['feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
-  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks'];
+  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks', 'classmates'];
 const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
   : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id : r.id;
@@ -1271,6 +1278,16 @@ async function rtHandle(t, p) {
   const ev = p.eventType, row = p.new || {}, old = p.old || {}, me = S.user.id, teacher = isTeacher();
   // Alguien que aún no está en el directorio (alumno recién aprobado…): lo recargamos para su nombre y foto
   if (ev !== 'DELETE' && row.author_id && !S.dir[row.author_id]) await loadDirectory();
+  // Lo mismo con quien reacciona (su primera reacción le hace visible)
+  if (ev !== 'DELETE' && t === 'reactions' && row.user_id && !S.dir[row.user_id]) await loadDirectory();
+
+  if (t === 'classmates') { // solicitudes y compañeros: cambian también a quién puedo ver
+    const had = S.mates.some(m => m.id === (row.id || old.id));
+    if (ev === 'DELETE' && !had) return;
+    S.mates = rtApply(S.mates, t, ev, row, old);
+    await loadDirectory();
+    return softRender();
+  }
 
   if (t === 'feed_posts') {
     if (ev === 'INSERT') {
@@ -1564,11 +1581,12 @@ async function loadData(quiet = false) {
       sb.from('dm_messages').select('*').order('created_at', { ascending: true }).limit(1000),
       sb.from('user_blocks').select('*'),
       sb.rpc('get_dm_contacts'),
-      sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(60)
+      sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(60),
+      sb.from('classmates').select('*')
     ]);
     const exErr = extra.map(x => x.error).find(Boolean);
     if (exErr) throw exErr;
-    S.dms = extra[0].data || []; S.blocks = extra[1].data || []; S.notifs = extra[3].data || [];
+    S.dms = extra[0].data || []; S.blocks = extra[1].data || []; S.notifs = extra[3].data || []; S.mates = extra[4].data || [];
     S.dmContacts = (extra[2].data || []).map(x => typeof x === 'string' ? x : x.get_dm_contacts || x.id);
     S.dmCan = {}; S.dmContacts.forEach(id => { S.dmCan[id] = true; });
     if (S.profile.role === 'teacher') {
@@ -1615,7 +1633,7 @@ async function loadData(quiet = false) {
   } catch (e) {
     const m = String(e.message || e);
     if (quiet) { console.warn('Resincronización fallida:', m); return false; }
-    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|homework_|payments_|lessons|relation|schema cache|function/i.test(m)
+    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|classmates|homework_|payments_|lessons|relation|schema cache|function/i.test(m)
       ? 'Falta ejecutar la última versión de supabase.sql en el SQL Editor de Supabase. (' + m + ')'
       : 'Error cargando los datos: ' + m);
     return false;
@@ -1681,7 +1699,8 @@ function sections() {
   // Agenda: clases leídas de Google Calendar. En el móvil, desde el botón de Alumnos.
   if (t) list.push({ id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', mob: false });
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
-  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t });
+  const mreq = t ? 0 : mateRequestsIn().length; // solicitudes de compañero sin responder
+  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t, n: mreq, badge: mreq ? `${mreq} solicitud${mreq > 1 ? 'es' : ''}` : '' });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
   // En el móvil, a Ajustes se llega desde el botón ⚙ de Perfil (como en Instagram)
   list.push({ id: 'settings', label: 'Ajustes', short: 'Ajustes', icon: 'gear', mob: false });
@@ -1730,9 +1749,12 @@ function setTheme(t) {
 
 /* ---------- Columna derecha (pantallas anchas) ---------- */
 function railView() {
-  const faces = Object.values(S.dir).filter(d => d.id !== S.user.id).slice(0, 24);
-  const facesCard = faces.length ? `<section class="rail-card"><h3>${isTeacher() ? 'Tu grupo' : 'Compañeros'}</h3>
-    <div class="faces">${faces.map(d => `<span title="${esc(d.public_name)}">${whoLink(d.id, avatarHtml(d.id, 34))}</span>`).join('')}</div></section>` : '';
+  // Profesor: todo el grupo. Alumno: solo sus compañeros (y sus solicitudes pendientes)
+  const faces = (isTeacher() ? Object.keys(S.dir).filter(id => id !== S.user.id) : myMates().filter(id => S.dir[id])).slice(0, 24);
+  const reqs = isTeacher() ? 0 : mateRequestsIn().length;
+  const facesCard = faces.length || reqs ? `<section class="rail-card"><h3>${isTeacher() ? 'Tu grupo' : 'Tus compañeros'}</h3>
+    ${reqs ? `<div class="rail-row" data-action="section" data-s="profile"><span class="ic">${ic('students')}</span><div class="t"><b>${reqs} solicitud${reqs > 1 ? 'es' : ''} de compañero</b><span class="sub">Ver en tu perfil</span></div></div>` : ''}
+    ${faces.length ? `<div class="faces">${faces.map(id => `<span title="${esc(S.dir[id].public_name)}">${whoLink(id, avatarHtml(id, 34))}</span>`).join('')}</div>` : ''}</section>` : '';
   // Profesor: lo pendiente (alumnos por aprobar, denuncias, vencidas) está en Moderación, no aquí
   if (isTeacher()) return facesCard;
   const pend = S.assigns.filter(a => !a.listened).sort(dueSort).slice(0, 4);
@@ -1977,6 +1999,7 @@ function profileView() {
   return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
     <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></div>
   <div class="two prof-grid">
+    ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
       <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
@@ -1993,7 +2016,7 @@ function profileView() {
           ${safeAvatar(p.avatar) && p.avatar_src ? '<button class="btn sm" data-action="avatar-edit">Editar encuadre</button>' : ''}
           ${safeAvatar(p.avatar) ? '<button class="btn ghost sm" data-action="avatar-remove">Quitar foto</button>' : ''}
         </div></div>
-      <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verá todo el grupo, así que elige una que quieras compartir.</p>
+      <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verán tus compañeros cuando participes, así que elige una que quieras compartir.</p>
     </div>
     <form id="aboutForm" class="panel about">
       <h2 class="h2" style="margin-top:0">Sobre ti</h2>
@@ -2007,6 +2030,7 @@ function profileView() {
       </div>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
     </form>
+    ${isTeacher() || mateRequestsIn().length ? '' : matesPanel()}
   </div>`;
 }
 
@@ -2024,7 +2048,7 @@ function settingsView() {
       <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
       ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
         : `<ul class="plist">
-          <li><b>Lo ve todo el grupo:</b> tu nombre o apodo, tu foto, lo que pones en "Sobre ti" y lo que publicas en Inicio.</li>
+          <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. Si no participas, solo tu profesor sabe que estás.</li>
           <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
           <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
         <h3 class="h3">Personas bloqueadas</h3>
@@ -2698,6 +2722,62 @@ const isMinorProfile = p => { const a = ageOf(p.birth_date); return a === null |
 // Nombre y foto pulsables: abren la ficha pública de esa persona
 const whoLink = (id, inner) => `<span class="wholink" data-action="open-profile" data-id="${id}" role="button" tabindex="0">${inner}</span>`;
 
+/* ============================ COMPAÑEROS ============================
+   S.mates: mis filas de classmates (solicitudes enviadas, recibidas y compañeros).
+   Un alumno solo es visible para los demás si ha participado (publicación, comentario o
+   reacción), si sois compañeros, si hay una solicitud entre vosotros o si os habéis escrito
+   (lo decide get_directory en la base de datos). */
+const mateRow = id => S.mates.find(m => (m.requester_id === S.user.id && m.addressee_id === id) || (m.addressee_id === S.user.id && m.requester_id === id));
+function mateState(id) {
+  const m = mateRow(id);
+  if (!m) return 'none';
+  if (m.status === 'accepted') return 'mates';
+  return m.requester_id === S.user.id ? 'sent' : 'received';
+}
+const myMates = () => S.mates.filter(m => m.status === 'accepted').map(m => m.requester_id === S.user.id ? m.addressee_id : m.requester_id);
+const mateRequestsIn = () => S.mates.filter(m => m.status === 'pending' && m.addressee_id === S.user.id);
+const mateRequestsOut = () => S.mates.filter(m => m.status === 'pending' && m.requester_id === S.user.id);
+function mateButtons(id) {
+  switch (mateState(id)) {
+    case 'mates': return `<span class="chip acc">Compañeros</span><button class="btn sm ghost" data-action="mate-remove" data-id="${id}">Quitar</button>`;
+    case 'sent': return `<span class="sub">Solicitud enviada</span><button class="btn sm ghost" data-action="mate-cancel" data-id="${id}">Cancelar</button>`;
+    case 'received': return `<button class="btn sm primary" data-action="mate-accept" data-id="${id}">Aceptar como compañero</button><button class="btn sm ghost" data-action="mate-reject" data-id="${id}">Rechazar</button>`;
+    default: return `<button class="btn sm" data-action="mate-add" data-id="${id}">+ Agregar como compañero</button>`;
+  }
+}
+// Tras cualquier cambio: botones de la ficha abierta, directorio (puede cambiar a quién veo) y repintado
+async function mateChanged(id) {
+  await markNotifsRead(S.notifs.filter(n => n.kind === 'classmate_request' && n.actor_id === id && !n.read_at).map(n => n.id));
+  await loadDirectory();
+  const box = $(`[data-mate-box="${id}"]`); if (box) box.innerHTML = mateButtons(id);
+  // En Perfil hay textos rellenos (bio…) que softRender toma por "escribiendo": repintamos igual si no hay ventana abierta
+  if (!$('#modalRoot').firstChild && S.section === 'profile') { const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else softRender();
+}
+// Rechazar, cancelar o quitar: las tres borran la fila (la otra persona no recibe ningún aviso)
+async function mateDelete(id, ask) {
+  const m = mateRow(id); if (!m) return;
+  if (ask && !confirm(ask)) return;
+  const { error } = await sb.from('classmates').delete().eq('id', m.id);
+  if (error) return toast('No se pudo hacer: ' + error.message, 'bad');
+  S.mates = S.mates.filter(x => x.id !== m.id);
+  await mateChanged(id);
+}
+function matesPanel() {
+  const inc = mateRequestsIn(), out = mateRequestsOut();
+  const mates = myMates().sort((a, b) => whoName(a).localeCompare(whoName(b)));
+  const row = (id, btns) => `<div class="mrow">${whoLink(id, `${avatarHtml(id, 34)}<b>${esc(whoName(id))}</b>`)}${btns}</div>`;
+  return `<div class="panel mates">
+      <h2 class="h2" style="margin-top:0">Compañeros</h2>
+      ${inc.length ? `<div class="mates-h">Solicitudes recibidas</div><div class="blist">${inc.map(m => row(m.requester_id,
+        `<div class="mate-btns"><button class="btn sm primary" data-action="mate-accept" data-id="${m.requester_id}">Aceptar</button><button class="btn sm ghost" data-action="mate-reject" data-id="${m.requester_id}">Rechazar</button></div>`)).join('')}</div>` : ''}
+      ${mates.length ? `${inc.length || out.length ? '<div class="mates-h">Tus compañeros</div>' : ''}<div class="blist">${mates.map(id => row(id, '')).join('')}</div>`
+        : inc.length ? '' : '<p class="sub" style="margin:0">Aún no tienes compañeros. Cuando alguien publique, comente o reaccione, pulsa en su nombre o en su foto y agrégalo. Así no lo perderás de vista aunque el grupo crezca.</p>'}
+      ${out.length ? `<div class="mates-h">Solicitudes enviadas</div><div class="blist">${out.map(m => row(m.addressee_id,
+        `<div class="mate-btns"><button class="btn sm ghost" data-action="mate-cancel" data-id="${m.addressee_id}">Cancelar</button></div>`)).join('')}</div>` : ''}
+    </div>`;
+}
+
 async function profileModal(id) {
   const { data, error } = await sb.rpc('get_profile', { p_id: id });
   const p = data && data[0];
@@ -2719,7 +2799,8 @@ async function profileModal(id) {
       ${mine ? '<button class="btn" data-action="section" data-s="profile">Editar mi perfil</button>'
         : p.can_message ? `<button class="btn primary" data-action="dm-open" data-id="${id}">Enviar mensaje</button>`
         : '<span class="sub">No podéis escribiros en privado.</span>'}
-    </div>`);
+    </div>
+    ${!mine && !isTeacher() && p.role === 'student' ? `<div class="mate-box" data-mate-box="${id}">${mateButtons(id)}</div>` : ''}`);
   $('.modal').classList.add('narrow');
 }
 
@@ -2843,10 +2924,12 @@ function notifText(n) {
     case 'mention_feed': return `${who} te ha mencionado${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
     case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'classmate_request': return `${who} te ha enviado una solicitud para ser compañeros`;
+    case 'classmate_accept': return `${who} ha aceptado tu solicitud. Ya sois compañeros`;
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', lesson: 'calendar' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students' }[kind] || 'bell'; }
 function notifsModal() {
   const list = S.notifs.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -2884,6 +2967,7 @@ async function openNotif(n) {
     case 'signup': S.section = 'students'; render(); break;
     case 'report': S.section = 'mod'; render(); break;
     case 'homework': case 'lesson': S.section = 'homework'; render(); break;
+    case 'classmate_request': case 'classmate_accept': render(); await profileModal(n.actor_id); break;
     default: render();
   }
 }
@@ -2939,6 +3023,22 @@ const actions = {
   async 'push-welcome'() { await pushEnable(); if (S.push === 'on' && $('.app-welcome')) closeModal(); },
   // ---- Perfiles ----
   'open-profile'(el) { profileModal(el.dataset.id); },
+  // ---- Compañeros ----
+  async 'mate-add'(el) {
+    const id = el.dataset.id;
+    const { data, error } = await sb.from('classmates').insert({ requester_id: S.user.id, addressee_id: id }).select('*');
+    if (error || !data || !data.length) return toast('No se pudo enviar la solicitud' + (error ? ': ' + error.message : ''), 'bad');
+    addUnique(S.mates, data[0], 'classmates'); await mateChanged(id); toast('Solicitud enviada', 'ok');
+  },
+  async 'mate-accept'(el) {
+    const id = el.dataset.id, m = mateRow(id); if (!m) return;
+    const { data, error } = await sb.from('classmates').update({ status: 'accepted' }).eq('id', m.id).select('*');
+    if (error || !data || !data.length) return toast('No se pudo aceptar' + (error ? ': ' + error.message : ''), 'bad');
+    Object.assign(m, data[0]); await mateChanged(id); toast(`${whoName(id)} y tú ya sois compañeros`, 'ok');
+  },
+  async 'mate-reject'(el) { await mateDelete(el.dataset.id, ''); },
+  async 'mate-cancel'(el) { await mateDelete(el.dataset.id, ''); },
+  async 'mate-remove'(el) { await mateDelete(el.dataset.id, `¿Quitar a ${whoName(el.dataset.id)} de tus compañeros? No recibe ningún aviso.`); },
   // ---- Mensajes privados ----
   'dm-new'() { newDmModal(); },
   'dm-open'(el) { openDm(el.dataset.id); },
@@ -2950,10 +3050,11 @@ const actions = {
     S.dms = S.dms.filter(m => m.id !== el.dataset.id); updateThread(); refreshChrome();
   },
   async block(el) {
-    if (!confirm(`¿Bloquear a ${whoName(el.dataset.id)}? No podréis escribiros en privado. Esta persona no recibe ningún aviso, y tu profesor tampoco.`)) return;
+    if (!confirm(`¿Bloquear a ${whoName(el.dataset.id)}? No podréis escribiros en privado y, si erais compañeros, dejaréis de serlo. Esta persona no recibe ningún aviso, y tu profesor tampoco.`)) return;
     const { error } = await sb.from('user_blocks').insert({ blocker_id: S.user.id, blocked_id: el.dataset.id });
     if (error) return toast('No se pudo bloquear: ' + error.message, 'bad');
     S.blocks.push({ blocker_id: S.user.id, blocked_id: el.dataset.id }); S.dmCan[el.dataset.id] = false;
+    const mr = mateRow(el.dataset.id); if (mr) S.mates = S.mates.filter(x => x !== mr); // la base de datos la borra sola
     render(); toast('Bloqueado', 'ok');
   },
   async unblock(el) {
@@ -3508,7 +3609,7 @@ function privacyModal() {
       <p><b>Quién es el responsable.</b> Yuri, el profesor de las clases, es quien gestiona esta app y tus datos. Para cualquier duda o petición sobre ellos, escríbele por Mensajes.</p>
       <p><b>Qué datos se guardan.</b> Los que tú das al registrarte y al usar la app: nombre (y apodo, si pones uno), email, fecha de nacimiento, foto de perfil, lo que escribes en "Sobre ti", tus publicaciones, comentarios, reacciones y mensajes, tus respuestas de las escuchas y tus deberes. El profesor apunta además las fechas de tus clases y, solo para él, los pagos.</p>
       <p><b>Para qué.</b> Únicamente para organizar las clases: avisos, escuchas, deberes, comunicación entre el grupo y el seguimiento de las clases. No se usan para publicidad, no se venden y no se comparten con nadie.</p>
-      <p><b>Quién ve qué.</b> El grupo ve tu nombre o apodo, tu foto, tu "Sobre ti" y lo que publicas en Inicio. Solo el profesor ve tu email, tu fecha de nacimiento, tus respuestas, tus deberes y tus pagos. Los mensajes privados solo los leéis quienes participáis; el profesor solo ve un mensaje si alguien lo denuncia.</p>
+      <p><b>Quién ve qué.</b> Los demás alumnos solo te ven cuando participas (publicas, comentas o reaccionas), si os habéis agregado como compañeros o si os habéis escrito. Entonces ven tu nombre o apodo, tu foto, tu "Sobre ti" y lo que publicas. Si no participas, solo el profesor sabe que estás. Solo el profesor ve tu email, tu fecha de nacimiento, tus respuestas, tus deberes y tus pagos. Los mensajes privados solo los leéis quienes participáis; el profesor solo ve un mensaje si alguien lo denuncia.</p>
       <p><b>Dónde se guardan.</b> En Supabase, con servidores en la Unión Europea, protegidos con contraseña y con reglas que impiden que nadie lea lo que no le corresponde. La web se sirve desde GitHub Pages. La app no usa cookies de publicidad ni rastreadores; tu navegador solo guarda tu sesión y si prefieres el tema claro u oscuro.</p>
       <p><b>Cuánto tiempo.</b> Mientras tengas cuenta. Si dejas las clases o lo pides, se borra tu cuenta y, con ella, tus datos.</p>
       <p><b>Tus derechos.</b> Puedes pedir en cualquier momento ver, corregir o borrar tus datos, o retirar tu permiso. Pídelo al profesor por Mensajes. Si crees que algo no se ha hecho bien, puedes reclamar a la Agencia Española de Protección de Datos (aepd.es).</p>

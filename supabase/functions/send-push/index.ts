@@ -34,6 +34,8 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
     case "mention_listening": return { title: `🎧 ${actor} te ha mencionado en una escucha`, body: extra ?? "" };
     case "lesson": return { title: "🎸 Recordatorio de clase", body: `Tienes clase ${extra ?? "hoy"}` };
     case "homework": return { title: "📝 Deberes nuevos", body: extra ?? "Tienes deberes nuevos para practicar" };
+    case "classmate_request": return { title: "Solicitud de compañero", body: `${actor} te ha enviado una solicitud para ser compañeros` };
+    case "classmate_accept": return { title: "Nuevo compañero", body: `${actor} ha aceptado tu solicitud. Ya sois compañeros` };
     default: return { title: "Yurimh Music Academy", body: "Tienes una novedad" };
   }
 }

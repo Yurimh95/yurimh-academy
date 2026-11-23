@@ -17,6 +17,19 @@
     if(pa.role==='teacher'||pb.role==='teacher') return true;
     return dmOk(a) && dmOk(b) && !DB.user_blocks.some(x=>(x.blocker_id===a&&x.blocked_id===b)||(x.blocker_id===b&&x.blocked_id===a)); };
   const dmReported = id => DB.moderation_reports.some(x=>x.target_type==='dm_message'&&x.target_id===id);
+  // ---- Compañeros y quién ve a quién: misma lógica que has_public_activity / can_see_profile / can_request_classmate ----
+  DB.classmates = DB.classmates || [];
+  const hasActivity = u => DB.feed_posts.some(r=>r.author_id===u) || DB.feed_comments.some(r=>r.author_id===u)
+    || DB.listening_comments.some(r=>r.author_id===u) || DB.reactions.some(r=>r.user_id===u);
+  const mateBetween = (a,b) => DB.classmates.some(c=>(c.requester_id===a&&c.addressee_id===b)||(c.requester_id===b&&c.addressee_id===a));
+  const dmBetween = (a,b) => DB.dm_messages.some(m=>(m.sender_id===a&&m.recipient_id===b)||(m.sender_id===b&&m.recipient_id===a));
+  const blockedEither = (a,b) => DB.user_blocks.some(x=>(x.blocker_id===a&&x.blocked_id===b)||(x.blocker_id===b&&x.blocked_id===a));
+  const canSeeProfile = u => { const p=prof(u); if(!p||!p.approved||!isApproved()) return false;
+    return u===me || isTeacher() || p.role==='teacher' || hasActivity(u) || mateBetween(me,u) || dmBetween(me,u); };
+  const canRequestMate = u => { const pm=P(), pu=prof(u);
+    return u!==me && !!pm && pm.approved && pm.role==='student' && !!pu && pu.approved && pu.role==='student'
+      && !blockedEither(me,u) && (hasActivity(u) || dmBetween(me,u)); };
+  window.__canSeeProfile = canSeeProfile; // para las pruebas
   const postVisibleToMe = post => isTeacher() || (isApproved() && (post.audience==='all' || DB.board_recipients.some(r=>r.post_id===post.id && r.student_id===me)));
 
   const canRead = {
@@ -39,7 +52,8 @@
     payments_records: () => isTeacher(),
     lessons: r => isTeacher() || (r.student_id===me && isApproved()),
     lessons_students: () => isTeacher(),
-    lessons_sync: () => isTeacher()
+    lessons_sync: () => isTeacher(),
+    classmates: r => r.requester_id===me || r.addressee_id===me || isTeacher()
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -68,7 +82,8 @@
     payments_records: () => isTeacher(),
     lessons: () => false,
     lessons_students: () => isTeacher(),
-    lessons_sync: () => false
+    lessons_sync: () => false,
+    classmates: (op,r) => op==='update' ? r.addressee_id===me : (r.requester_id===me || r.addressee_id===me)
   };
   const canInsert = {
     profiles: () => false,
@@ -90,7 +105,8 @@
     payments_records: () => isTeacher(),
     lessons: () => false,
     lessons_students: () => isTeacher(),
-    lessons_sync: () => false
+    lessons_sync: () => false,
+    classmates: r => r.requester_id===me && r.status==='pending' && !r.accepted_at && canRequestMate(r.addressee_id)
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
@@ -131,6 +147,9 @@
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));
     if(table==='homework_tasks') notify(row.student_id,'homework',row.created_by,row.id,row.title);
+    if(table==='classmates') notify(row.addressee_id,'classmate_request',row.requester_id,row.requester_id,null);
+    // Al bloquear, la relación de compañeros se borra (trigger user_blocks_classmates_trg)
+    if(table==='user_blocks') removeRows('classmates',c=>(c.requester_id===row.blocker_id&&c.addressee_id===row.blocked_id)||(c.requester_id===row.blocked_id&&c.addressee_id===row.blocker_id));
   }
 
   // ---- Tiempo real simulado: como Supabase Realtime, INSERT/UPDATE solo llegan si RLS deja leer la fila;
@@ -183,6 +202,10 @@
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
     if (table==='board_posts') nw.updated_at=new Date().toISOString();
+    if (table==='classmates'){
+      if (nw.requester_id!==old.requester_id||nw.addressee_id!==old.addressee_id||old.status!=='pending'||nw.status!=='accepted') throw new Error('Solo se puede aceptar una solicitud pendiente');
+      nw.accepted_at=new Date().toISOString();
+    }
     if (table==='homework_tasks' && !isTeacher() && (nw.title!==old.title||nw.details!==old.details||nw.due_date!==old.due_date||nw.student_id!==old.student_id)) throw new Error('Solo puedes marcar tus deberes como practicados');
   }
   function q(table){
@@ -226,7 +249,8 @@
       }
       if(st.op==='update'){
         const rows=DB[table].filter(canRead[table]).filter(match).filter(r=>canWriteRow[table]('update',r));
-        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ Object.assign(r,nw); emit(table,'UPDATE',r); }); }catch(e){ return finish([],e.message); }
+        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status; Object.assign(r,nw); emit(table,'UPDATE',r);
+          if(table==='classmates' && was==='pending' && r.status==='accepted') notify(r.requester_id,'classmate_accept',r.addressee_id,r.addressee_id,null); }); }catch(e){ return finish([],e.message); }
         return st.sel?finish(rows):{data:null,error:null};
       }
       if(st.op==='insert'||st.op==='upsert'){
@@ -236,6 +260,8 @@
           if(table==='board_reads') row.read_at=new Date().toISOString();
           if(table==='board_posts'){ row.pinned=!!row.pinned; row.updated_at=row.created_at; }
           if(table==='moderation_reports') row.resolved=false;
+          if(table==='classmates'){ row.status=row.status||'pending'; row.accepted_at=row.accepted_at||null;
+            if(mateBetween(row.requester_id,row.addressee_id)) return finish([],'duplicate key value violates unique constraint "classmates_pair_uq"'); }
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; }
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(pk[table]) delete row.id;
@@ -260,13 +286,13 @@
   }
   const rpc = (name,args) => Promise.resolve().then(()=>{
     if(!me) return {data:null,error:{message:'No autenticado'}};
-    if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id)).map(p=>p.id), error:null};
+    if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id) && canSeeProfile(p.id)).map(p=>p.id), error:null};
     if(name==='can_dm') return {data: (args.a===me||args.b===me) && canDm(args.a,args.b), error:null}; // solo responde a los implicados
     if(name==='dm_ok') return {data:null, error:{message:'permission denied for function dm_ok'}};
-    if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()) return {data:[],error:null};
+    if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()||!canSeeProfile(p.id)) return {data:[],error:null};
       return {data:[{id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role,bio:p.bio||null,instrument:p.instrument||null,level:p.level||null,favorites:p.favorites||null,learning:p.learning||null,gear:p.gear||null,can_message:canDm(me,p.id)}],error:null}; }
     if(name!=='get_directory') return {data:null,error:{message:'function public.'+name+' does not exist'}};
-    const rows = isApproved()? DB.profiles.filter(p=>p.approved).map(p=>({id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role})) : [];
+    const rows = isApproved()? DB.profiles.filter(p=>p.approved && canSeeProfile(p.id)).map(p=>({id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role})) : [];
     return {data:rows,error:null};
   });
   window.supabase={createClient(){ return {

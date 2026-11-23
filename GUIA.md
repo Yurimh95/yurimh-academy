@@ -74,7 +74,9 @@ Que cierre la app del todo y la vuelva a abrir, y pulse otra vez **Ajustes → A
 
 **Alumno**
 - **Inicio** (con "Para ti": próxima clase, deberes, avisos y escuchas pendientes), **Mensajes**, **Avisos**, **Escucha analítica**, **Deberes**, **Perfil** y **Ajustes**.
-- Recibe en el móvil: avisos, mensajes, deberes nuevos, menciones y el **recordatorio de clase 8 horas antes**.
+- Recibe en el móvil: avisos, mensajes, deberes nuevos, menciones, solicitudes de compañero y el **recordatorio de clase 8 horas antes**.
+- **Quién le ve**: los demás alumnos solo le ven (nombre, foto y perfil) cuando participa (publica, comenta o reacciona), si son compañeros o si se han escrito. Si no participa, solo le ves tú. Tú ves siempre a todos.
+- **Compañeros**: al pulsar el nombre o la foto de otro alumno, *+ Agregar como compañero*. El otro lo acepta o lo rechaza (en su Perfil o desde la notificación). Sus compañeros salen en su Perfil y en la columna derecha, para no perderlos de vista aunque el grupo crezca. Bloquear a alguien también le quita de compañeros.
 
 **Social**
 - **Reacciones**: 👍🏼 ❤️ 😂 😮 😢 😡. Una por emoji y persona; se quita pulsando otra vez.

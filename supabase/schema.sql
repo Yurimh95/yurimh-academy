@@ -1393,6 +1393,201 @@ select cron.schedule('calendar-sync', '*/15 * * * *',
     body := '{}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb)$cron$);
 
 -- =====================================================================
+--  COMPAÑEROS (tabla classmates) Y QUIÉN VE A QUIÉN  (2026-11-23)
+--   · Un alumno solo aparece para los demás alumnos (directorio, perfil,
+--     menciones, "Nuevo mensaje") si ha participado: una publicación, un
+--     comentario o una reacción. También si sois compañeros, si hay una
+--     solicitud entre vosotros o si ya os habéis escrito.
+--   · El profesor ve a todos, y todos ven al profesor.
+--   · Compañeros: uno envía la solicitud y el otro la acepta. Solo entre
+--     alumnos. Al bloquear a alguien, la relación se borra.
+--   · Clave "id" aleatoria: los borrados en tiempo real llegan a todos con
+--     la clave primaria, y así no revelan quién era compañero de quién.
+-- =====================================================================
+create table if not exists public.classmates (
+  id           uuid primary key default gen_random_uuid(),
+  requester_id uuid not null references public.profiles(id) on delete cascade,
+  addressee_id uuid not null references public.profiles(id) on delete cascade,
+  status       text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at   timestamptz not null default now(),
+  accepted_at  timestamptz,
+  check (requester_id <> addressee_id)
+);
+-- Una sola relación por pareja, la pida quien la pida
+create unique index if not exists classmates_pair_uq
+  on public.classmates (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
+create index if not exists classmates_addressee_idx on public.classmates (addressee_id);
+
+-- ¿Ha participado en algo que ven otros? (publicación, comentario o reacción)
+create or replace function public.has_public_activity(u uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.feed_posts where author_id = u)
+      or exists (select 1 from public.feed_comments where author_id = u)
+      or exists (select 1 from public.listening_comments where author_id = u)
+      or exists (select 1 from public.reactions where user_id = u);
+$$;
+
+-- ¿Puedo ver a esta persona? Responde siempre desde el punto de vista de quien pregunta.
+create or replace function public.can_see_profile(u uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select auth.uid() is not null and public.is_approved()
+    and exists (select 1 from public.profiles p where p.id = u and p.approved)
+    and (
+      u = auth.uid()
+      or public.is_teacher()
+      or exists (select 1 from public.profiles p where p.id = u and p.role = 'teacher')
+      or public.has_public_activity(u)
+      or exists (select 1 from public.classmates c
+                 where (c.requester_id = u and c.addressee_id = auth.uid())
+                    or (c.requester_id = auth.uid() and c.addressee_id = u))
+      or exists (select 1 from public.dm_messages m
+                 where (m.sender_id = u and m.recipient_id = auth.uid())
+                    or (m.sender_id = auth.uid() and m.recipient_id = u))
+    );
+$$;
+
+-- ¿Puedo enviarle una solicitud? Los dos alumnos aprobados, sin bloqueos, y que yo pueda
+-- verle por su actividad o porque nos hemos escrito (no por la propia solicitud).
+create or replace function public.can_request_classmate(u uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select auth.uid() is not null and u <> auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.approved and p.role = 'student')
+    and exists (select 1 from public.profiles p where p.id = u and p.approved and p.role = 'student')
+    and not exists (select 1 from public.user_blocks b
+                    where (b.blocker_id = auth.uid() and b.blocked_id = u)
+                       or (b.blocker_id = u and b.blocked_id = auth.uid()))
+    and (public.has_public_activity(u)
+         or exists (select 1 from public.dm_messages m
+                    where (m.sender_id = u and m.recipient_id = auth.uid())
+                       or (m.sender_id = auth.uid() and m.recipient_id = u)));
+$$;
+
+-- El directorio, la ficha y "Nuevo mensaje" solo muestran a quien puedo ver
+create or replace function public.get_directory()
+returns table (id uuid, public_name text, avatar text, role text)
+language sql stable security definer set search_path = public
+as $$
+  select p.id, coalesce(nullif(trim(p.nickname), ''), p.display_name), p.avatar, p.role
+  from public.profiles p
+  where p.approved and public.is_approved() and public.can_see_profile(p.id);
+$$;
+
+create or replace function public.get_profile(p_id uuid)
+returns table (id uuid, public_name text, avatar text, role text, bio text, instrument text,
+               level text, favorites text, learning text, gear text, can_message boolean)
+language sql stable security definer set search_path = public
+as $$
+  select p.id, coalesce(nullif(trim(p.nickname), ''), p.display_name), p.avatar, p.role,
+         p.bio, p.instrument, p.level, p.favorites, p.learning, p.gear,
+         public.can_dm(auth.uid(), p.id)
+  from public.profiles p
+  where p.id = p_id and p.approved and public.is_approved() and public.can_see_profile(p.id);
+$$;
+
+create or replace function public.get_dm_contacts()
+returns setof uuid
+language sql stable security definer set search_path = public
+as $$
+  select p.id from public.profiles p
+  where p.approved and public.can_dm(auth.uid(), p.id) and public.can_see_profile(p.id);
+$$;
+
+-- Solo se puede aceptar una solicitud pendiente; nada más se puede cambiar
+create or replace function public.classmates_guard()
+returns trigger
+language plpgsql set search_path = public
+as $$
+begin
+  if new.id is distinct from old.id or new.requester_id is distinct from old.requester_id
+     or new.addressee_id is distinct from old.addressee_id or new.created_at is distinct from old.created_at
+     or old.status <> 'pending' or new.status <> 'accepted' then
+    raise exception 'Solo se puede aceptar una solicitud pendiente';
+  end if;
+  new.accepted_at := now();
+  return new;
+end;
+$$;
+create or replace trigger classmates_guard_trg before update on public.classmates
+  for each row execute function public.classmates_guard();
+
+-- Al bloquear a alguien, deja de ser tu compañero (y se anula cualquier solicitud)
+create or replace function public.user_blocks_classmates()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  delete from public.classmates
+   where (requester_id = new.blocker_id and addressee_id = new.blocked_id)
+      or (requester_id = new.blocked_id and addressee_id = new.blocker_id);
+  return null;
+end;
+$$;
+create or replace trigger user_blocks_classmates_trg after insert on public.user_blocks
+  for each row execute function public.user_blocks_classmates();
+
+grant select, insert, update, delete on public.classmates to authenticated;
+revoke all on public.classmates from anon;
+alter table public.classmates enable row level security;
+
+drop policy if exists classmates_select on public.classmates;
+create policy classmates_select on public.classmates for select to authenticated
+  using (auth.uid() in (requester_id, addressee_id) or public.is_teacher());
+drop policy if exists classmates_insert_own on public.classmates;
+create policy classmates_insert_own on public.classmates for insert to authenticated
+  with check (requester_id = auth.uid() and status = 'pending' and accepted_at is null
+              and public.can_request_classmate(addressee_id));
+drop policy if exists classmates_update_own on public.classmates;
+create policy classmates_update_own on public.classmates for update to authenticated
+  using (addressee_id = auth.uid()) with check (addressee_id = auth.uid());
+drop policy if exists classmates_delete_own on public.classmates;
+create policy classmates_delete_own on public.classmates for delete to authenticated
+  using (auth.uid() in (requester_id, addressee_id));
+
+-- Notificaciones de solicitud y de aceptación
+create or replace function public.classmates_notify()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    perform public.notify(new.addressee_id, 'classmate_request', new.requester_id, new.requester_id, null);
+  elsif old.status = 'pending' and new.status = 'accepted' then
+    perform public.notify(new.requester_id, 'classmate_accept', new.addressee_id, new.addressee_id, null);
+  end if;
+  return null;
+end;
+$$;
+create or replace trigger classmates_notify_trg after insert or update on public.classmates
+  for each row execute function public.classmates_notify();
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept'));
+
+-- Permisos de las funciones: las de uso interno no se pueden llamar desde fuera
+revoke execute on function public.has_public_activity(uuid), public.classmates_guard(),
+  public.user_blocks_classmates(), public.classmates_notify() from public, anon, authenticated;
+revoke execute on function public.can_see_profile(uuid), public.can_request_classmate(uuid) from public, anon;
+grant execute on function public.can_see_profile(uuid), public.can_request_classmate(uuid) to authenticated;
+
+-- Tiempo real
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'classmates') then
+    alter publication supabase_realtime add table public.classmates;
+  end if;
+end $$;
+
+-- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto
 --    (cambia el email por el tuyo) para convertirte en profesor:
