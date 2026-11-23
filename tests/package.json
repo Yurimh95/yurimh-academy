@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node build-test.js",
-    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js && node test-modulos.js && node test-menciones.js && node test-editar.js &&node test-companeros.js && node test-duracion.js && node test-agenda.js && node test-emojis.js && node test-ics.mjs"
+    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js && node test-modulos.js && node test-menciones.js && node test-editar.js &&node test-companeros.js && node test-duracion.js && node test-agenda.js && node test-emojis.js && node test-previews.js && node test-ics.mjs"
   },
   "devDependencies": { "playwright": "^1.48.0" }
 }

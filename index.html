@@ -405,6 +405,12 @@ ol.rt-list li::marker{font-weight:600}
 .linkcard .lk{display:block;font-weight:700;font-size:14px;color:var(--strong)}
 .linkcard .lu{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--faint);font-size:12.5px}
 .linkcard .go{color:var(--faint)}
+.linkcard.media{padding:8px 12px 8px 8px;margin:8px 0;max-width:520px}
+.linkcard.media .lk{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px}
+.linkcard.media .tsub{font-size:12.5px}
+.linkcard .lsvc{font-weight:700;font-size:12px}
+.linkcard .lsvc.sp{color:#1db954}.linkcard .lsvc.yt{color:#ff4e45}
+.cmt-main .linkcard.media{margin:6px 0 2px}
 .factions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line)}
 .linkbtn.mute{color:var(--faint);font-size:13px}
 .rx{display:flex;flex-direction:column;gap:6px}
@@ -642,7 +648,11 @@ label.f>.emo-wrap{margin-top:6px}
 .msg-row.mine .rt-list li::marker{color:inherit}
 .msg-body{white-space:pre-wrap;overflow-wrap:anywhere}
 .msg .linkcard{margin-top:8px;background:rgba(0,0,0,.12)}
-.msg-row.mine .linkcard .lk,.msg-row.mine .linkcard .lu,.msg-row.mine .linkcard .go{color:#fff}
+.msg-row.mine .linkcard .lk,.msg-row.mine .linkcard .lu,.msg-row.mine .linkcard .go,.msg-row.mine .linkcard .tsub,.msg-row.mine .linkcard .tdur{color:#fff}
+.msg .linkcard.media{margin:8px 0 0}
+.msg .linkcard,.msg .linkcard *,.msg-row.mine .msg a.linkcard{text-decoration:none}
+.msg-row.mine .linkcard .lsvc,.msg-row.mine .linkcard .kicon{color:#fff}
+.msg-row.mine .linkcard .kicon{background:rgba(255,255,255,.18)}
 .msg-foot{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:3px;font-size:11.5px;opacity:.75}
 .msg-row.mine .msg-foot .linkbtn{color:#fff}
 .msg-foot .linkbtn{font-size:11.5px}
@@ -1294,7 +1304,7 @@ function commentRow(kind, x) {
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
   return `<div class="cmt">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
-    <div class="cmt-body">${richText(x.body)}</div></div>
+    <div class="cmt-body">${richText(x.body)}</div></div>${mediaLinkCard(x.body)}
     <div class="cmt-foot">${rxBar(c.type, x.id)}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="${c.type}" data-id="${x.id}">Denunciar</button>`) : ''}
@@ -1319,9 +1329,41 @@ function updateComments(kind, pid) {
 function cmCountLabel(pid) { const n = S.fcomments.filter(c => c.post_id === pid).length; return n ? `${n} comentario${n === 1 ? '' : 's'}` : 'Comentar'; }
 
 /* ---- Enlaces ---- */
+// Spotify y YouTube salen como en Escucha analítica: portada, título, tipo y duración.
+// La tarjeta se pinta al momento con lo que haya en caché y linkPreviewFill() la completa en segundo plano.
+const linkPreviewDone = new Set(), linkPreviewBusy = new Set();
+function mediaCard(url, sv) {
+  const meta = metaCache[url] || {}, dur = durCache[url] || {};
+  const kind = guessKind(url) || 'song';
+  const it = { kind, thumb_url: meta.thumb || (ytId(url) ? `https://i.ytimg.com/vi/${ytId(url)}/mqdefault.jpg` : null),
+    duration_sec: dur.duration_sec, track_count: dur.track_count, duration_partial: dur.partial };
+  const svc = sv === 'sp' ? 'Spotify' : 'YouTube';
+  return `<a class="linkcard media ${sv}" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer"${linkPreviewDone.has(url) ? '' : ` data-lp="${esc(url)}"`}>
+    ${coverHtml(it, 64)}
+    <span class="lt"><span class="lk">${esc(meta.title || (sv === 'sp' ? 'Escuchar en Spotify' : 'Ver en YouTube'))}</span>
+      <span class="tsub">${kindIcon(kind)}${durHtml(it)}<span class="lsvc ${sv}">${svc}</span></span></span>${ic('ext', 'i go')}</a>`;
+}
+async function linkPreviewFill() {
+  for (const el of $$('.linkcard[data-lp]')) {
+    const url = el.getAttribute('data-lp');
+    if (linkPreviewBusy.has(url) || linkPreviewDone.has(url)) continue;
+    linkPreviewBusy.add(url);
+    (async () => {
+      await Promise.all([fetchMeta(url), fetchDuration(url)]); // las dos se guardan en caché por enlace
+      linkPreviewBusy.delete(url); linkPreviewDone.add(url);
+      $$('.linkcard[data-lp]').filter(n => n.getAttribute('data-lp') === url).forEach(n => { n.outerHTML = linkCard(url); });
+    })();
+  }
+}
+let linkPreviewQueued = false;
+new MutationObserver(() => { if (!linkPreviewQueued) { linkPreviewQueued = true; requestAnimationFrame(() => { linkPreviewQueued = false; linkPreviewFill(); }); } })
+  .observe(document.body, { childList: true, subtree: true });
+// Tarjeta solo para enlaces de Spotify/YouTube (avisos y comentarios: otros enlaces se quedan en el texto)
+const mediaLinkCard = text => { const u = firstLink(text); return u && linkService(u) ? linkCard(u) : ''; };
 function linkCard(url) {
   let host = url; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { }
   const sp = /spotify\.com$/.test(host), yt = /(^|\.)youtu(\.be|be\.com)$/.test(host);
+  if (sp || yt) return mediaCard(url, sp ? 'sp' : 'yt');
   const label = sp ? 'Escuchar en Spotify' : yt ? 'Ver en YouTube' : host;
   return `<a class="linkcard" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer">
     <span class="lart ${sp ? 'sp' : yt ? 'yt' : ''}">${ic(sp ? 'note' : yt ? 'play' : 'link')}</span>
@@ -2074,7 +2116,7 @@ function postCard(p, isNew) {
   return `<article class="card post ${isNew ? 'isnew' : ''}" data-post="${p.id}">
     <div class="card-top"><div class="chips">${p.pinned ? '<span class="chip acc">Fijado</span>' : ''}${isNew ? '<span class="chip new">Nuevo</span>' : ''}</div><span class="sub">${fmtDateTime(p.created_at)}</span></div>
     <h3>${esc(p.title)}</h3>
-    <div class="postbody">${richText(p.body)}</div>
+    <div class="postbody">${richText(p.body)}</div>${mediaLinkCard(p.body)}
     <div class="post-foot">${rxBar('board_post', p.id)}</div>
     ${reads}${tools}
   </article>`;
@@ -3008,10 +3050,10 @@ function threadInner(id) {
   const lastMine = [...msgs].reverse().find(m => m.sender_id === S.user.id);
   if (!msgs.length) return '<div class="sub center" style="margin:auto">Aún no os habéis escrito. ¡Saluda! 👋</div>';
   return msgs.map(m => {
-    const mine = m.sender_id === S.user.id, url = (m.body.match(/https?:\/\/[^\s<]+/) || [])[0];
+    const mine = m.sender_id === S.user.id, url = firstLink(m.body);
     const reported = S.reports.some(r => r.target_type === 'dm_message' && r.target_id === m.id && r.reporter_id === S.user.id);
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg">
-        <div class="msg-body">${listify(linkify(m.body))}</div>${url ? linkCard(url.replace(/[.,;:!?)]+$/, '')) : ''}
+        <div class="msg-body">${listify(linkify(m.body))}</div>${url ? linkCard(url) : ''}
         <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
           ${mine && m === lastMine && m.read_at ? '<span class="seen">· Visto</span>' : ''}
           ${mine ? `<button class="linkbtn mute" data-action="dm-delete" data-id="${m.id}">Borrar</button>`
