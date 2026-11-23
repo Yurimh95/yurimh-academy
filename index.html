@@ -1710,17 +1710,34 @@ function ytId(url) {
   return m ? m[1] : null;
 }
 const linkService = url => /spotify\.com/i.test(url) ? 'sp' : /youtu\.?be/i.test(url) ? 'yt' : '';
-async function fetchThumb(url) { // devuelve la URL de la portada o null
-  if (CFG.NO_EXTERNAL) return null; // pruebas: sin llamadas a internet
-  const id = ytId(url);
-  if (id) return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
-  if (!/open\.spotify\.com\//i.test(url)) return null;
+// Título y portada de un enlace de Spotify o YouTube (oEmbed público, sin claves). { title, thumb } o nulos.
+const metaCache = {};
+async function fetchMeta(url) {
+  if (typeof window.__META_STUB === 'function') return window.__META_STUB(url); // pruebas: respuesta simulada
+  if (CFG.NO_EXTERNAL) return { title: null, thumb: null }; // pruebas: sin llamadas a internet
+  if (metaCache[url]) return metaCache[url];
+  const yt = /youtu\.?be/i.test(url), sp = /open\.spotify\.com\//i.test(url);
+  if (!yt && !sp) return { title: null, thumb: null };
+  const api = sp ? 'https://open.spotify.com/oembed?url=' + encodeURIComponent(url.split('?')[0])
+    : 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(url);
+  let title = null, thumb = null;
   try {
     const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 5000);
-    const r = await fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(url.split('?')[0]), { signal: ctl.signal });
+    const r = await fetch(api, { signal: ctl.signal });
     clearTimeout(tm);
-    return r.ok ? safeThumb((await r.json()).thumbnail_url) : null;
-  } catch { return null; }
+    if (r.ok) { const j = await r.json(); title = (j.title || '').trim().slice(0, 200) || null; thumb = safeThumb(j.thumbnail_url); }
+  } catch { /* sin conexión o enlace privado */ }
+  if (!thumb && ytId(url)) thumb = `https://i.ytimg.com/vi/${ytId(url)}/mqdefault.jpg`;
+  return (metaCache[url] = { title, thumb });
+}
+const fetchThumb = async url => (await fetchMeta(url)).thumb;
+// Tipo según la dirección: Spotify /album/ /track/ /playlist/ · YouTube con "list=" → playlist; otro vídeo → canción
+function guessKind(url) {
+  if (/spotify\.com\/(intl-[a-z]+\/)?album\//i.test(url)) return 'album';
+  if (/spotify\.com\/(intl-[a-z]+\/)?track\//i.test(url)) return 'song';
+  if (/spotify\.com\/(intl-[a-z]+\/)?playlist\//i.test(url) || /youtu.*[?&]list=/i.test(url)) return 'playlist';
+  if (ytId(url)) return 'song';
+  return null;
 }
 // Profesor: rellena en segundo plano las portadas que falten (elementos creados antes de esta función)
 async function backfillThumbs() {
@@ -2030,13 +2047,26 @@ function answersHtml(a) {
   }).join('');
 }
 
+// Al pegar el enlace: elige el tipo y enseña (en gris) el título que se usará si dejas el campo vacío
+let itemUrlTimer = null;
+function itemUrlChanged(input) {
+  const f = input.form, url = input.value.trim();
+  const k = guessKind(url); if (k) f.kind.value = k;
+  clearTimeout(itemUrlTimer);
+  itemUrlTimer = setTimeout(async () => {
+    const full = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+    const { title } = url ? await fetchMeta(full) : { title: null };
+    if (f.isConnected && input.value.trim() === url) f.title.placeholder = title ? `Se usará: ${title}` : 'Se rellenará solo';
+  }, 450);
+}
+
 function itemFormModal(id) {
   const it = id ? S.items.find(x => x.id === id) : null;
   openModal(`
     <div class="modal-head"><h2>${it ? 'Editar elemento' : 'Nuevo elemento'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="itemForm" data-id="${it ? it.id : ''}">
-      <label class="f">Título<input type="text" name="title" required maxlength="200" value="${esc(it ? it.title : '')}"></label>
-      <label class="f">Enlace (Spotify, YouTube…)<input type="text" name="url" required placeholder="https://" value="${esc(it ? it.url : '')}"></label>
+      <label class="f">Enlace (Spotify, YouTube…)<input type="text" name="url" required placeholder="Pega aquí el enlace" value="${esc(it ? it.url : '')}"></label>
+      <label class="f">Título <span class="sub">(opcional: si lo dejas vacío, se usa el de Spotify o YouTube)</span><input type="text" name="title" maxlength="200" value="${esc(it ? it.title : '')}" placeholder="Se rellenará solo"></label>
       <label class="f">Tipo<select name="kind">
         ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select></label>
@@ -2571,6 +2601,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('input', e => {
   if (cur && e.target.matches('[data-q]')) markDirty();
   if (e.target.matches('#dmForm textarea')) { const t = e.target; t.style.height = ''; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } // crece al escribir
+  if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
 });
 // Mensajes: Enter envía, Mayúsculas+Enter hace salto de línea (en móvil, el botón Enviar)
 document.addEventListener('keydown', e => {
@@ -2679,12 +2710,18 @@ document.addEventListener('submit', async e => {
     f.reset(); toast('Contraseña cambiada', 'ok');
   } else if (f.id === 'itemForm') {
     e.preventDefault();
-    const url = f.url.value.trim();
-    if (!/^https?:\/\//i.test(url)) return toast('El enlace debe empezar por http:// o https://', 'bad');
-    const row = { title: f.title.value.trim(), url, kind: f.kind.value, brief: f.brief.value.trim() || null };
+    let url = f.url.value.trim();
+    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    try { new URL(url); } catch { return toast('Ese enlace no parece válido', 'bad'); }
     const id = f.dataset.id;
     const prev = id ? S.items.find(x => x.id === id) : null;
-    if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = await fetchThumb(url); // portada de Spotify/YouTube
+    const btn = $('button[type=submit]', f); btn.disabled = true; btn.textContent = 'Guardando…';
+    const meta = (!prev || prev.url !== url || !prev.thumb_url || !f.title.value.trim()) ? await fetchMeta(url) : { title: null, thumb: prev.thumb_url };
+    btn.disabled = false; btn.textContent = 'Guardar';
+    const title = f.title.value.trim() || meta.title; // vacío → el título de Spotify/YouTube
+    if (!title) return toast('No he podido sacar el título de ese enlace. Escríbelo tú', 'bad');
+    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null };
+    if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = meta.thumb; // portada de Spotify/YouTube
     const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
     if (error) return toast('Error: ' + error.message, 'bad');
     await loadData();

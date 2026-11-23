@@ -117,6 +117,18 @@ const { chromium } = require('playwright');
   ok((await t.locator('.dm-conv').count())===1 && (await t.textContent('.dm-list')).includes('Marta'), 'Profe: solo ve su conversación con Marta');
   const spy = await t.evaluate(async()=>({ dm:(await sb.from('dm_messages').select('*').eq('id','d1')).data.length, blocks:(await sb.from('user_blocks').select('*')).data.length }));
   ok(spy.dm===0, 'Profe NO puede leer el mensaje privado entre Lu y Marta');
+  // Escucha: al pegar el enlace se elige el tipo y, con el título vacío, se usa el de Spotify
+  await t.evaluate(()=>{ window.__META_STUB = async url => ({ title: url.includes('album/abc') ? 'Master of Puppets' : null, thumb: null }); });
+  await goto(t,'listening'); await t.click('[data-action=new-item]'); await wait(t,250);
+  await t.fill('#itemForm [name=url]','open.spotify.com/album/abc'); await wait(t,700);
+  ok((await t.inputValue('#itemForm [name=kind]'))==='album' && (await t.getAttribute('#itemForm [name=title]','placeholder')).includes('Master of Puppets'), 'Nuevo elemento: tipo "álbum" elegido solo y título sugerido');
+  await t.click('#itemForm button[type=submit]'); await wait(t,500);
+  ok((await db(t,()=>window.__DB.listening_items.some(i=>i.title==='Master of Puppets'&&i.kind==='album'&&i.url==='https://open.spotify.com/album/abc')))===true, 'Con el título vacío se guarda el de Spotify');
+  await t.click('[data-action=new-item]'); await wait(t,250);
+  await t.fill('#itemForm [name=url]','https://youtu.be/abcdefghijk'); await wait(t,600);
+  await t.click('#itemForm button[type=submit]'); await wait(t,400);
+  ok((await t.locator('#itemForm').count())===1 && !(await db(t,()=>window.__DB.listening_items.some(i=>i.url==='https://youtu.be/abcdefghijk'))), 'Si no se puede sacar el título, pide escribirlo (no guarda vacío)');
+  await t.keyboard.press('Escape'); await wait(t);
   await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
   const ficha = await t.textContent('.modal');
   ok(ficha.includes('13 años') && ficha.includes('Menor'), 'Ficha de Marta: 13 años, menor (calculado de la fecha)');
