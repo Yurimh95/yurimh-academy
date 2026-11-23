@@ -2720,6 +2720,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
    S.push: 'unsupported' (este navegador no puede) · 'install' (iPhone: primero hay que instalar la app)
            'denied' (el usuario las bloqueó) · 'off' · 'on' */
 S.push = 'unsupported';
+let lastPushError = ''; // último fallo al activar (se muestra en Perfil para poder copiarlo)
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
 function b64urlToBytes(s) { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); }
 async function pushInit() { // al entrar: averigua el estado y, si ya estaban activadas, refresca la suscripción
@@ -2739,13 +2740,27 @@ async function pushEnable() {
   if (!pushSupported()) return toast(isIOS() ? 'En iPhone, primero instala la app (Compartir → Añadir a pantalla de inicio) y ábrela desde su icono' : 'Este navegador no admite notificaciones', 'bad');
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') { S.push = perm === 'denied' ? 'denied' : 'off'; softRender(); return toast('No se han activado: hace falta que des permiso', 'bad'); }
+  let step = 'service worker';
   try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(CFG.VAPID_PUBLIC_KEY) });
-    if (!(await savePushSub(sub))) throw new Error('no guardada');
+    const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('el service worker no arranca')), 8000))]);
+    step = 'suscripción del navegador';
+    let sub = await reg.pushManager.getSubscription();
+    if (sub && sub.options && sub.options.applicationServerKey) { // si se creó con otra llave, se rehace
+      const same = new Uint8Array(sub.options.applicationServerKey).join() === b64urlToBytes(CFG.VAPID_PUBLIC_KEY).join();
+      if (!same) { await sub.unsubscribe(); sub = null; }
+    }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBytes(CFG.VAPID_PUBLIC_KEY) });
+    step = 'guardar en la base de datos';
+    if (!(await savePushSub(sub))) throw new Error('la base de datos no lo aceptó');
     S.push = 'on'; toast('¡Notificaciones activadas en este dispositivo!', 'ok');
-  } catch (e) { console.warn(e); toast('No se pudieron activar. Inténtalo de nuevo', 'bad'); }
-  if ($('#modalRoot').firstChild && $('.nlist, .modal .push-box')) notifsModal(); else softRender();
+  } catch (e) {
+    console.warn(e);
+    // Mostramos el motivo exacto: así se puede saber qué falla en cada móvil
+    const why = `${e && e.name && e.name !== 'Error' ? e.name + ': ' : ''}${(e && e.message) || e}`;
+    toast(`No se pudieron activar (${step}): ${why}`, 'bad');
+    lastPushError = `${step} · ${why} · ${navigator.userAgent}`;
+  }
+  if ($('#modalRoot').firstChild && $('.nlist, .modal .push-box')) notifsModal(); else { uiStale = false; render(); }
 }
 async function pushDisable() {
   try {
@@ -2762,7 +2777,8 @@ function pushSettingHtml() {
     : st === 'denied' ? '<p class="sub" style="margin:0">Las has bloqueado en este navegador. Para activarlas, permite las notificaciones de esta web en los ajustes del navegador o del móvil y vuelve a entrar.</p>'
     : st === 'install' ? '<p class="sub" style="margin:0">En iPhone, primero instala la app: en Safari pulsa <b>Compartir</b> → <b>"Añadir a pantalla de inicio"</b>, ábrela desde su icono y activa aquí las notificaciones.</p>'
     : '<p class="sub" style="margin:0">Este navegador no permite notificaciones. Prueba con Chrome (Android/ordenador) o instala la app en el iPhone.</p>';
-  return `<div class="push-box"><b>📲 Notificaciones en el móvil</b>${body}</div>`;
+  const err = lastPushError && st !== 'on' ? `<p class="sub" style="margin:6px 0 0;color:var(--bad);overflow-wrap:anywhere">Último error: ${esc(lastPushError)}</p>` : '';
+  return `<div class="push-box"><b>📲 Notificaciones en el móvil</b>${body}${err}</div>`;
 }
 // Abrir la notificación que trae la dirección (?n=…): llegamos tocando un aviso del móvil
 async function openNotifFromUrl(url) {
