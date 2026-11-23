@@ -673,6 +673,9 @@ label.f>.emo-wrap{margin-top:6px}
 .arow-who{display:flex;align-items:center;gap:10px;min-width:0}
 .sdm-head{display:flex;align-items:center;gap:16px;min-width:0}
 .sdm-head h2{overflow-wrap:anywhere}
+.sdm-item{flex:1 1 260px}
+.sdm-item .tmain{flex:1}
+.sdm-item .playbtn{margin-left:4px}
 .grid2{display:grid;grid-template-columns:170px 1fr;gap:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 details{margin-top:10px}
@@ -2896,7 +2899,9 @@ function studentDetailModal(id) {
       if (!it) return '';
       const d = dueInfo(a), n = answeredCount(a);
       return `<div class="arow">
-        <div class="arow-head"><div><span class="badge">${esc(KIND[it.kind] || it.kind)}</span> <strong style="margin-left:6px">${esc(it.title)}</strong></div>
+        <div class="arow-head"><div class="arow-who sdm-item">${coverHtml(it, 56)}
+            <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
+            ${playBtn(it.url)}</div>
           <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
         ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
         <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
