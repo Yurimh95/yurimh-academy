@@ -6,10 +6,12 @@
 // Cómo:
 //  · Spotify: la página pública de "embed" (sin claves). Trae como mucho 100 temas: si hay 100,
 //    la suma puede quedarse corta y se marca partial = true.
-//  · YouTube: la página del vídeo (lengthSeconds) o de la playlist (suma de las primeras 100).
+//  · YouTube: con la API oficial si existe el secret YOUTUBE_API_KEY (exacto, playlists hasta 500 vídeos).
+//    Si no, la página del vídeo (lengthSeconds) o de la playlist (suma de las primeras 100).
 //
 // Seguridad:
 //  · verify_jwt = true: solo usuarios con sesión. No lee ni escribe la base de datos.
+//  · La clave de YouTube solo vive en el secret; nunca se devuelve ni se escribe en los registros.
 //  · Nunca se pide la URL que manda el cliente: se saca el id con una regex y se construye
 //    la dirección de Spotify/YouTube aquí (así nadie puede usarla para pedir otras webs).
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
@@ -23,7 +25,8 @@ const EMPTY: Info = { duration_sec: null, track_count: null, partial: false };
 
 // Si el servicio dice "demasiadas peticiones" (429) o falla (5xx), espera y reintenta hasta 2 veces.
 // Los fallos se apuntan en los registros de la función (Supabase → Edge Functions → media-info → Logs).
-async function get(url: string): Promise<string | null> {
+// label: lo que se apunta en los registros (para no escribir nunca la clave de YouTube)
+async function get(url: string, label = url): Promise<string | null> {
   for (let i = 0; i < 3; i++) {
     try {
       const r = await fetch(url, {
@@ -31,12 +34,12 @@ async function get(url: string): Promise<string | null> {
         signal: AbortSignal.timeout(8000),
       });
       if (r.ok) return await r.text();
-      console.log(`media-info: ${r.status} en ${url}`);
+      console.log(`media-info: ${r.status} en ${label}`);
       if (r.status !== 429 && r.status < 500) return null;
       const wait = Math.min(Number(r.headers.get("retry-after")) || 0, 4) * 1000 || 800 * (i + 1);
       await new Promise((ok) => setTimeout(ok, wait));
     } catch (e) {
-      console.log(`media-info: error en ${url}: ${e}`);
+      console.log(`media-info: error en ${label}: ${e}`);
     }
   }
   return null;
@@ -61,7 +64,57 @@ async function spotify(type: string, id: string): Promise<Info> {
 
 const hms = (t: string) => t.split(":").reduce((s, p) => s * 60 + Number(p), 0);
 
+// ---- YouTube con la API oficial (YouTube Data API v3) ----
+// Clave en el secret YOUTUBE_API_KEY (Supabase → Edge Functions → Secrets). Cupo gratis: 10.000 unidades al día;
+// cada consulta gasta 1 (un vídeo = 1; una playlist = 1 por cada 50 vídeos, ×2).
+const YT_KEY = Deno.env.get("YOUTUBE_API_KEY") ?? "";
+const YT_API = "https://www.googleapis.com/youtube/v3/";
+// "PT1H2M3S" / "P1DT2H" → segundos
+const isoSecs = (d: string) => {
+  const m = d.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/);
+  return m ? (+(m[1] ?? 0)) * 86400 + (+(m[2] ?? 0)) * 3600 + (+(m[3] ?? 0)) * 60 + (+(m[4] ?? 0)) : 0;
+};
+async function ytApi(path: string, params: Record<string, string>): Promise<any | null> {
+  const q = new URLSearchParams({ ...params, key: YT_KEY });
+  const txt = await get(`${YT_API}${path}?${q}`, `${YT_API}${path}`);
+  try { return txt ? JSON.parse(txt) : null; } catch { return null; }
+}
+async function ytDurations(ids: string[]): Promise<number[]> {
+  const out: number[] = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const j = await ytApi("videos", { part: "contentDetails", id: ids.slice(i, i + 50).join(","), maxResults: "50" });
+    for (const v of j?.items ?? []) out.push(isoSecs(v?.contentDetails?.duration ?? ""));
+  }
+  return out;
+}
+async function youtubeApi(video: string | null, list: string | null): Promise<Info | null> {
+  if (list) {
+    const ids: string[] = []; let page = "", total = 0;
+    for (let n = 0; n < 10; n++) { // hasta 500 vídeos
+      const j = await ytApi("playlistItems", { part: "contentDetails", playlistId: list, maxResults: "50", ...(page ? { pageToken: page } : {}) });
+      if (!j) break;
+      total = j.pageInfo?.totalResults ?? total;
+      for (const it of j.items ?? []) if (it?.contentDetails?.videoId) ids.push(it.contentDetails.videoId);
+      page = j.nextPageToken ?? ""; if (!page) break;
+    }
+    if (ids.length) {
+      const secs = await ytDurations(ids);
+      const sum = secs.reduce((a, b) => a + b, 0);
+      if (sum) return { duration_sec: sum, track_count: Math.max(total, ids.length), partial: total > ids.length };
+    }
+  }
+  if (video) {
+    const [s] = await ytDurations([video]);
+    if (s) return { duration_sec: s, track_count: null, partial: false };
+  }
+  return null;
+}
+
 async function youtube(video: string | null, list: string | null): Promise<Info> {
+  if (YT_KEY) {
+    const r = await youtubeApi(video, list);
+    if (r) return r;
+  }
   if (list) {
     const html = await get(`https://www.youtube.com/playlist?list=${list}`);
     if (html) {
