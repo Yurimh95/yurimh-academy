@@ -1665,3 +1665,101 @@ as $$
 $$;
 revoke execute on function public.get_avatar_large(uuid) from public, anon;
 grant  execute on function public.get_avatar_large(uuid) to authenticated;
+
+-- =====================================================================
+--  NÚCLEO: ALUMNOS ARCHIVADOS Y BORRADO DE CUENTA (2026-11-23)
+--   · Archivar = approved false + archived_at. Sin acceso; desaparece de
+--     todas las listas (todas filtran por approved) y se ocultan sus
+--     publicaciones, comentarios y reacciones mientras siga archivado.
+--   · Reactivar = approved true + archived_at null: todo vuelve a verse.
+--   · Borrar: Edge Function "delete-account". Puede hacerlo el propio alumno
+--     o el profesor con un alumno ya archivado. Borra auth.users y, en
+--     cascada, todos sus datos.
+-- =====================================================================
+alter table public.profiles add column if not exists archived_at timestamptz;
+
+-- Solo el profesor archiva o reactiva
+create or replace function public.profiles_archive_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if auth.uid() is not null and not public.is_teacher()
+     and new.archived_at is distinct from old.archived_at then
+    raise exception 'Solo el profesor puede archivar cuentas';
+  end if;
+  if new.archived_at is not null then new.approved = false; end if;
+  return new;
+end;
+$$;
+create or replace trigger profiles_archive_guard_trg before update on public.profiles
+  for each row execute function public.profiles_archive_guard();
+
+create or replace function public.is_archived(uid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.profiles where id = uid and archived_at is not null);
+$$;
+revoke execute on function public.is_archived(uuid) from public, anon;
+grant  execute on function public.is_archived(uuid) to authenticated;
+revoke execute on function public.profiles_archive_guard() from public, anon, authenticated;
+
+-- Lo de un alumno archivado no se ve (tampoco el profesor: si lo reactivas, vuelve)
+alter policy feed_posts_select on public.feed_posts
+  using (public.is_approved() and not public.is_archived(author_id));
+alter policy feed_comments_select on public.feed_comments
+  using (public.is_approved() and not public.is_archived(author_id));
+alter policy listening_comments_select on public.listening_comments
+  using (
+    not public.is_archived(author_id)
+    and (public.is_teacher()
+         or (public.is_approved() and exists (
+               select 1 from public.listening_assignments a
+               where a.item_id = listening_comments.item_id and a.student_id = auth.uid())))
+  );
+alter policy reactions_select on public.reactions
+  using (public.is_approved() and not public.is_archived(user_id)
+         and public.can_see_target(target_type, target_id));
+
+-- ¿Puede quien llama borrar esta cuenta? Devuelve el id que hay que borrar.
+-- Lo usa la Edge Function "delete-account" con el token de quien lo pide.
+create or replace function public.account_delete_check(p_id uuid default null)
+returns uuid language plpgsql stable security definer set search_path = public as $$
+declare
+  me uuid := auth.uid();
+  target uuid := coalesce(p_id, auth.uid());
+  r public.profiles;
+begin
+  if me is null then raise exception 'No autorizado'; end if;
+  select * into r from public.profiles where id = target;
+  if not found then raise exception 'Esa cuenta no existe'; end if;
+  if r.role <> 'student' then raise exception 'La cuenta del profesor no se borra desde la app'; end if;
+  if target <> me and not (public.is_teacher() and r.archived_at is not null) then
+    raise exception 'Solo se puede borrar a un alumno archivado';
+  end if;
+  return target;
+end;
+$$;
+revoke execute on function public.account_delete_check(uuid) from public, anon;
+grant  execute on function public.account_delete_check(uuid) to authenticated;
+
+-- Si un alumno activo borra su cuenta, el profesor recibe un aviso con su nombre
+create or replace function public.profiles_deleted_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare t record;
+begin
+  if old.role = 'student' and old.approved and old.archived_at is null then
+    for t in select id from public.profiles where role = 'teacher' and approved loop
+      insert into public.notifications (user_id, kind, extra)
+      values (t.id, 'account_deleted', left(old.display_name, 160));
+    end loop;
+  end if;
+  return old;
+end;
+$$;
+revoke execute on function public.profiles_deleted_notify() from public, anon, authenticated;
+create or replace trigger profiles_deleted_notify_trg after delete on public.profiles
+  for each row execute function public.profiles_deleted_notify();
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted'));

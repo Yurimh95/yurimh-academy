@@ -28,6 +28,7 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
     case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra ?? "" };
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
+    case "account_deleted": return { title: "Cuenta borrada", body: `${extra ?? "Un alumno"} ha borrado su cuenta` };
     case "report": return { title: "Denuncia nueva", body: "Hay contenido denunciado para revisar" };
     case "mention_feed": return { title: `${actor} te ha mencionado`, body: extra ?? "" };
     case "mention_board": return { title: `📣 ${actor} te ha mencionado en un aviso`, body: extra ?? "" };

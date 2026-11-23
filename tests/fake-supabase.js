@@ -8,6 +8,7 @@
   const P = () => DB.profiles.find(x => x.id === me);
   const isTeacher = () => !!P() && P().role==='teacher' && P().approved;
   const isApproved = () => !!P() && P().approved;
+  const isArchived = id => { const p=DB.profiles.find(x=>x.id===id); return !!p && !!p.archived_at; }; // alumnos archivados: lo suyo no se ve
   const assigned = itemId => DB.listening_assignments.some(a=>a.item_id===itemId && a.student_id===me);
   // ---- Mensajes privados: misma lógica que dm_ok / can_dm del SQL ----
   const ageOf = iso => { if(!iso) return null; const [y,m,d]=iso.split('-').map(Number), t=new Date(); return t.getFullYear()-y-((t.getMonth()+1<m||(t.getMonth()+1===m&&t.getDate()<d))?1:0); };
@@ -39,10 +40,10 @@
     board_posts: r => postVisibleToMe(r),
     board_recipients: r => isTeacher() || (r.student_id===me && isApproved()),
     board_reads: r => isTeacher() || r.student_id===me,
-    feed_posts: () => isApproved(),
-    feed_comments: () => isApproved(),
-    listening_comments: r => isTeacher() || (isApproved() && assigned(r.item_id)),
-    reactions: r => isApproved() && canSee(r.target_type, r.target_id),
+    feed_posts: r => isApproved() && !isArchived(r.author_id),
+    feed_comments: r => isApproved() && !isArchived(r.author_id),
+    listening_comments: r => !isArchived(r.author_id) && (isTeacher() || (isApproved() && assigned(r.item_id))),
+    reactions: r => isApproved() && !isArchived(r.user_id) && canSee(r.target_type, r.target_id),
     moderation_reports: r => isTeacher() || r.reporter_id===me,
     dm_messages: r => r.sender_id===me || r.recipient_id===me || (isTeacher() && dmReported(r.id)),
     user_blocks: r => r.blocker_id===me,
@@ -187,7 +188,9 @@
     if (table==='profiles' && !isTeacher()) {
       if (nw.role!==old.role || nw.approved!==old.approved || nw.email!==old.email || nw.id!==old.id
           || !!nw.family_dm_ok!==!!old.family_dm_ok || (old.birth_date && nw.birth_date!==old.birth_date)) throw new Error('Solo el profesor puede modificar esos campos');
+      if ((nw.archived_at||null)!==(old.archived_at||null)) throw new Error('Solo el profesor puede archivar cuentas');
     }
+    if (table==='profiles' && nw.archived_at) nw.approved=false; // profiles_archive_guard
     if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id)) throw new Error('Solo se puede marcar como leído');
     if (table==='notifications' && (nw.kind!==old.kind||nw.user_id!==old.user_id||nw.extra!==old.extra)) throw new Error('Solo se puede marcar como leída');
     if (table==='profiles'){
@@ -306,6 +309,20 @@
   });
   window.supabase={createClient(){ return {
     from:q, rpc,
+    functions:{ invoke: async (name,{body}={})=>{ // Edge Functions simuladas
+      if(name!=='delete-account') return {data:null,error:{message:'Function not found'}};
+      // account_delete_check
+      const target=(body&&body.user_id)||me, r=DB.profiles.find(p=>p.id===target);
+      const fail=m=>({data:null,error:{message:'Edge Function returned a non-2xx status code',context:{json:async()=>({error:m})}}});
+      if(!me) return fail('No autorizado'); if(!r) return fail('Esa cuenta no existe');
+      if(r.role!=='student') return fail('La cuenta del profesor no se borra desde la app');
+      if(target!==me && !(isTeacher() && r.archived_at)) return fail('Solo se puede borrar a un alumno archivado');
+      // profiles_deleted_notify + borrado en cascada
+      if(r.approved && !r.archived_at) DB.profiles.filter(p=>p.role==='teacher'&&p.approved).forEach(t=>DB.notifications.push({id:'n'+Math.random().toString(36).slice(2),user_id:t.id,kind:'account_deleted',actor_id:null,target_id:null,extra:r.display_name,created_at:new Date().toISOString(),read_at:null}));
+      const F=['author_id','user_id','student_id','sender_id','recipient_id','reporter_id','blocker_id','blocked_id','requester_id','addressee_id','actor_id'];
+      Object.keys(DB).forEach(t=>{ if(Array.isArray(DB[t])) DB[t]=DB[t].filter(x=>t==='profiles'?x.id!==target:!F.some(f=>x[f]===target)); });
+      return {data:{ok:true},error:null};
+    }},
     channel(){ const ch={handlers:[], on(type,f,cb){ ch.handlers.push({table:f.table,cb}); return ch; }, subscribe(cb){ channels.push(ch); setTimeout(()=>cb&&cb('SUBSCRIBED'),0); return ch; }}; return ch; },
     removeChannel(ch){ const i=channels.indexOf(ch); if(i>=0) channels.splice(i,1); },
     auth:{
