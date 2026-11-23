@@ -693,6 +693,18 @@ alter table public.profiles add column if not exists avatar_crop jsonb
   check (avatar_crop is null or octet_length(avatar_crop::text) <= 200);
 
 -- =====================================================================
+--  FOTO DE PERFIL EN GRANDE (2026-11-23)
+--  avatar_lg: la misma foto recortada (mismo encuadre que avatar), en 640×640,
+--  para verla ampliada al pulsarla en un perfil. Nunca enseña nada fuera del
+--  recorte (la original sin recortar, avatar_src, sigue siendo privada).
+--  Las filas de profiles solo las leen su dueño y el profesor: los demás la
+--  piden con get_avatar_large(), que aplica las mismas reglas que get_profile.
+-- =====================================================================
+alter table public.profiles add column if not exists avatar_lg text
+  check (avatar_lg is null or (char_length(avatar_lg) <= 160000
+         and avatar_lg ~ '^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'));
+
+-- =====================================================================
 --  TIEMPO REAL (Supabase Realtime)
 --  La app recibe al momento los cambios de estas tablas. Realtime aplica
 --  las mismas reglas RLS: nadie recibe en directo lo que no podría leer.
@@ -1641,3 +1653,15 @@ end $$;
 -- update public.profiles
 --    set role = 'teacher', approved = true
 --  where email = 'tu@email.com';
+
+-- Foto de perfil en grande: la de 640×640 si existe; si no, la normal
+create or replace function public.get_avatar_large(p_id uuid)
+returns text
+language sql stable security definer set search_path = public
+as $$
+  select coalesce(p.avatar_lg, p.avatar)
+  from public.profiles p
+  where p.id = p_id and p.approved and public.is_approved() and public.can_see_profile(p.id);
+$$;
+revoke execute on function public.get_avatar_large(uuid) from public, anon;
+grant  execute on function public.get_avatar_large(uuid) to authenticated;

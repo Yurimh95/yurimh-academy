@@ -196,6 +196,7 @@
       if(nw.nickname && nw.nickname.length>30) throw new Error('violates check constraint nickname');
       if(nw.avatar!=null && !(nw.avatar.length<=40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(nw.avatar))) throw new Error('violates check constraint avatar');
     }
+    if (table==='profiles' && nw.avatar_lg!=null && !(nw.avatar_lg.length<=160000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(nw.avatar_lg))) throw new Error('violates check constraint avatar_lg');
     if (table==='profiles' && nw.avatar_src!=null && !(nw.avatar_src.length<=120000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(nw.avatar_src))) throw new Error('violates check constraint avatar_src');
     if (table==='listening_assignments' && !isTeacher()) {
       if (nw.item_id!==old.item_id||nw.student_id!==old.student_id||nw.note!==old.note||nw.due_date!==old.due_date) throw new Error('Solo el profesor puede modificar esos campos');
@@ -297,6 +298,8 @@
     if(name==='dm_ok') return {data:null, error:{message:'permission denied for function dm_ok'}};
     if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()||!canSeeProfile(p.id)) return {data:[],error:null};
       return {data:[{id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role,bio:p.bio||null,instrument:p.instrument||null,level:p.level||null,favorites:p.favorites||null,learning:p.learning||null,gear:p.gear||null,can_message:canDm(me,p.id)}],error:null}; }
+    if(name==='get_avatar_large'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()||!canSeeProfile(p.id)) return {data:null,error:null};
+      return {data:p.avatar_lg||p.avatar||null,error:null}; }
     if(name!=='get_directory') return {data:null,error:{message:'function public.'+name+' does not exist'}};
     const rows = isApproved()? DB.profiles.filter(p=>p.approved && canSeeProfile(p.id)).map(p=>({id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role})) : [];
     return {data:rows,error:null};

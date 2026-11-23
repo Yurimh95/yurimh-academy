@@ -672,6 +672,14 @@ label.f>.emo-wrap{margin-top:6px}
 .arow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .arow-who{display:flex;align-items:center;gap:10px;min-width:0}
 .sdm-head{display:flex;align-items:center;gap:16px;min-width:0}
+.av-zoom{padding:0;border:0;background:none;border-radius:50%;cursor:zoom-in;line-height:0;flex:none;transition:transform .15s,filter .15s}
+.av-zoom:hover{filter:brightness(1.08);transform:scale(1.03)}
+.av-zoom:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Visor de foto: fondo oscuro en los dos temas (como cualquier visor de fotos) */
+.lightbox{position:fixed;inset:0;z-index:88;background:rgba(2,6,16,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;cursor:zoom-out;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.lightbox img{width:min(88vw,76vh,640px);aspect-ratio:1;height:auto;object-fit:cover;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.6);background:#0b1530}
+.lightbox .lb-name{color:#fff;font-weight:700;font-size:16px;text-align:center}
+.lightbox .x{position:absolute;top:14px;right:14px;color:#fff;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.08)}
 .sdm-head h2{overflow-wrap:anywhere}
 .sdm-item{flex:1 1 260px}
 .sdm-item .tmain{flex:1}
@@ -1171,6 +1179,7 @@ const CM = {
 const cmList = kind => kind === 'feed' ? S.fcomments : S.lcomments;
 
 const safeAvatar = a => typeof a === 'string' && a.length <= 40000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(a);
+const safeAvatarLg = a => typeof a === 'string' && a.length <= 160000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(a);
 // Nombre que se ve en lo social: apodo o nombre. El profesor ve además el nombre real.
 function whoName(id) {
   const d = S.dir[id];
@@ -1556,7 +1565,7 @@ async function rtHandle(t, p) {
       if (permsChanged) await refreshDmContacts(); // el profe ha cambiado su permiso de mensajes
     }
     if (teacher) {
-      const { avatar_src, avatar_crop, ...lite } = row; // la copia grande de la foto no hace falta en la lista
+      const { avatar_src, avatar_crop, avatar_lg, ...lite } = row; // las copias grandes de la foto no hacen falta en la lista
       if (ev === 'DELETE') S.students = S.students.filter(s => s.id !== old.id);
       else if (row.role === 'student') S.students = rtApply(S.students, t, ev, lite, old);
     }
@@ -1633,6 +1642,7 @@ window.addEventListener('popstate', async e => {
     }
     return;
   }
+  if (lbClose(true)) return; // primero se cierra la foto ampliada
   if ($('#modalRoot').firstChild) { await closeModal(true); return; }
   const st = e.state || {};
   if (!S.profile || !st.app) return;
@@ -1641,6 +1651,42 @@ window.addEventListener('popstate', async e => {
   render(); window.scrollTo(0, 0);
   histRestoring = false;
 });
+
+/* ---------------- Visor de la foto de perfil (pantalla completa) ----------------
+   Se abre al pulsar la foto en un perfil. Enseña al momento la foto normal y la cambia
+   por la grande (get_avatar_large) en cuanto llega. Va por encima de la ventana abierta:
+   "Atrás", Esc, la X o un toque en cualquier sitio lo cierran sin cerrar la ventana. */
+const lgCache = {}; // id -> { small, lg }: si cambia la foto normal, se vuelve a pedir
+function zoomableAvatar(id, size) {
+  return safeAvatar((S.dir[id] || {}).avatar)
+    ? `<button type="button" class="av-zoom" data-action="avatar-zoom" data-id="${id}" title="Ver foto" aria-label="Ver la foto en grande">${avatarHtml(id, size)}</button>`
+    : avatarHtml(id, size);
+}
+async function avatarZoom(id) {
+  const small = (S.dir[id] || {}).avatar;
+  if (!safeAvatar(small) || $('#lightbox')) return;
+  const el = document.createElement('div');
+  el.id = 'lightbox'; el.className = 'lightbox'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  el.innerHTML = `<button class="x" aria-label="Cerrar">×</button><img src="${esc(small)}" alt="Foto de ${esc(whoName(id))}"><div class="lb-name">${esc(whoName(id))}</div>`;
+  el.addEventListener('click', e => { e.stopPropagation(); lbClose(); });
+  document.body.appendChild(el);
+  history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
+  const c = lgCache[id];
+  let lg = c && c.small === small ? c.lg : null;
+  if (!lg) {
+    const { data } = await sb.rpc('get_avatar_large', { p_id: id });
+    lg = typeof data === 'string' && (safeAvatarLg(data) || safeAvatar(data)) ? data : small;
+    lgCache[id] = { small, lg };
+  }
+  const img = el.querySelector('img'); if (img && el.isConnected && lg !== small) img.src = lg;
+}
+function lbClose(fromHistory = false) {
+  const el = $('#lightbox'); if (!el) return false;
+  el.remove();
+  if (!fromHistory && history.state && history.state.lb) { histSkip++; history.back(); }
+  return true;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#lightbox')) { e.stopImmediatePropagation(); lbClose(); } }, true);
 
 /* ------------------------------ Modal ------------------------------- */
 function openModal(html, onClose) {
@@ -1747,7 +1793,7 @@ async function route() {
   $('#app').innerHTML = '<div class="loading">Cargando…</div>';
   const ok = await loadData();
   if (ok) {
-    render(); rtStart(); backfillThumbs();
+    render(); rtStart(); backfillThumbs(); avatarLgBackfill();
     const fromNotif = new URLSearchParams(location.search).has('n');
     pushInit().catch(e => console.warn('Push:', e)).finally(() => installCheck(fromNotif).catch(e => console.warn('Instalar:', e)));
     if (fromNotif) { // llegamos desde un aviso del móvil
@@ -2336,11 +2382,40 @@ function cropClamp() { // que nunca quede hueco vacío dentro del recuadro
   crop.cx = Math.min(Math.max(crop.cx, half), w - half);
   crop.cy = Math.min(Math.max(crop.cy, half), h - half);
 }
-function cropPaint(ctx, view, bg) {
-  const s = cropScale(view);
+// Pinta el encuadre st = { img, zoom, cx, cy } en un lienzo cuadrado de lado view
+function paintCropped(ctx, view, bg, st) {
+  const s = (view / Math.min(st.img.naturalWidth, st.img.naturalHeight)) * st.zoom;
   ctx.fillStyle = bg; ctx.fillRect(0, 0, view, view);
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(crop.img, view / 2 - crop.cx * s, view / 2 - crop.cy * s, crop.img.naturalWidth * s, crop.img.naturalHeight * s);
+  ctx.drawImage(st.img, view / 2 - st.cx * s, view / 2 - st.cy * s, st.img.naturalWidth * s, st.img.naturalHeight * s);
+}
+function cropPaint(ctx, view, bg) { paintCropped(ctx, view, bg, crop); }
+// JPEG cuadrado del encuadre: baja la calidad hasta que quepa en max caracteres (null si no cabe)
+function cropJpeg(st, N, max, qs = [0.85, 0.72, 0.6, 0.5]) {
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  paintCropped(c.getContext('2d'), N, '#0b1530', st);
+  for (const q of qs) { const d = c.toDataURL('image/jpeg', q); if (d.length <= max) return d; }
+  return null;
+}
+const AVATAR_LG = 640; // lado de la foto en grande (avatar_lg), la que se ve al ampliar en un perfil
+/* Fotos subidas antes de existir avatar_lg: se generan a partir de la original y su encuadre.
+   Cada cual la suya y el profesor las de todos (él puede leer avatar_src). Una vez por sesión. */
+let avatarLgDone = false;
+async function avatarLgBackfill() {
+  if (avatarLgDone) return; avatarLgDone = true;
+  try {
+    let q = sb.from('profiles').select('id, avatar, avatar_src, avatar_crop').is('avatar_lg', null);
+    if (!isTeacher()) q = q.eq('id', S.user.id);
+    const { data, error } = await q; if (error) return;
+    for (const p of data || []) {
+      if (!safeAvatar(p.avatar) || !p.avatar_src || !p.avatar_crop) continue;
+      const img = await loadImg(p.avatar_src); if (!img || !img.naturalWidth) continue;
+      const w = img.naturalWidth, h = img.naturalHeight, c = p.avatar_crop;
+      const st = { img, zoom: Math.min(4, Math.max(1, +c.zoom || 1)), cx: (+c.x || 0.5) * w, cy: (+c.y || 0.5) * h };
+      const lg = cropJpeg(st, AVATAR_LG, 150000); if (!lg) continue;
+      await sb.from('profiles').update({ avatar_lg: lg }).eq('id', p.id).is('avatar_lg', null);
+    }
+  } catch (e) { console.warn('Foto grande:', e); }
 }
 function cropDraw() {
   const c = $('#cropCanvas'); if (!c || !crop) return;
@@ -2371,13 +2446,10 @@ function cropBind() {
 }
 async function cropSave() {
   if (!crop) return;
-  const N = 160, c = document.createElement('canvas'); c.width = c.height = N;
-  cropPaint(c.getContext('2d'), N, '#0b1530');
-  let data = c.toDataURL('image/jpeg', 0.85);
-  if (data.length > 38000) data = c.toDataURL('image/jpeg', 0.6);
-  if (data.length > 40000) return toast('La imagen es demasiado pesada', 'bad');
+  const data = cropJpeg(crop, 160, 40000, [0.85, 0.6]);
+  if (!data) return toast('La imagen es demasiado pesada', 'bad');
   const w = crop.img.naturalWidth, h = crop.img.naturalHeight;
-  const fields = { avatar: data, avatar_src: crop.src || null,
+  const fields = { avatar: data, avatar_lg: cropJpeg(crop, AVATAR_LG, 150000), avatar_src: crop.src || null,
     avatar_crop: crop.src ? { x: +(crop.cx / w).toFixed(4), y: +(crop.cy / h).toFixed(4), zoom: +crop.zoom.toFixed(3) } : null };
   await closeModal();
   await saveProfileFields(fields, 'Foto actualizada');
@@ -2864,7 +2936,7 @@ function studentDetailModal(id) {
   if (!s) return;
   const as = S.assigns.filter(a => a.student_id === id).sort(dueSort);
   openModal(`
-    <div class="modal-head"><div class="sdm-head">${avatarHtml(s.id, 96)}<div><h2>${esc(whoName(s.id))}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div>
+    <div class="modal-head"><div class="sdm-head">${zoomableAvatar(s.id, 96)}<div><h2>${esc(whoName(s.id))}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div>
         <button class="btn sm" style="margin-top:8px" data-action="student-profile" data-id="${s.id}">Ver perfil</button></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
@@ -2988,7 +3060,7 @@ async function profileModal(id) {
   const mine = id === S.user.id;
   openModal(`
     <div class="modal-head">${back ? `<button class="btn sm ghost" data-action="open-student" data-id="${id}">← Volver a la ficha</button>` : '<span></span>'}<button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <div class="pf-head">${avatarHtml(id, 96)}
+    <div class="pf-head">${zoomableAvatar(id, 96)}
       <h2>${esc(isTeacher() ? whoName(id) : p.public_name)}${p.role === 'teacher' ? '<span class="tbadge">Profesor</span>' : ''}</h2>
       ${chips.length ? `<div class="chips" style="justify-content:center">${chips.map(c => `<span class="chip acc">${esc(c)}</span>`).join('')}</div>` : ''}
       ${p.bio ? `<p class="pf-bio">${linkify(p.bio)}</p>` : ''}
@@ -3341,6 +3413,7 @@ const actions = {
     await setApproved(s.id, false);
   },
   'open-student'(el) { studentDetailModal(el.dataset.id); },
+  'avatar-zoom'(el) { avatarZoom(el.dataset.id); },
   'student-profile'(el) { profReturn = el.dataset.id; profileModal(el.dataset.id); }, // desde la ficha: el perfil ofrece volver a ella
   async 'rename-student'(el) {
     const name = $('#renameInput').value.trim();
@@ -3434,7 +3507,7 @@ const actions = {
     r.resolved = true;
     render(); toast('Denuncia descartada', 'ok');
   },
-  async 'avatar-remove'() { await saveProfileFields({ avatar: null, avatar_src: null, avatar_crop: null }, 'Foto eliminada'); },
+  async 'avatar-remove'() { await saveProfileFields({ avatar: null, avatar_lg: null, avatar_src: null, avatar_crop: null }, 'Foto eliminada'); },
   'avatar-edit'() { editAvatar(); },
   'new-post'() { postFormModal(null); },
   'edit-post'(el) { postFormModal(el.dataset.id); },
