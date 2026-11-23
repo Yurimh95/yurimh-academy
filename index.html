@@ -161,6 +161,17 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .hwtools{display:flex;gap:4px;flex:none}
 .hwdone{margin-top:14px}
 .hwdone summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:8px}
+/* ---- Agenda ---- */
+.lday{margin:0 0 16px}
+.lday h3{font-size:14px;text-transform:capitalize;color:var(--muted);margin:0 0 8px}
+.lrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:8px}
+.lrow.click{cursor:pointer}.lrow.click:hover{border-color:var(--line-strong);background:var(--hover)}
+.lrow.past{opacity:.6}
+.ltime{display:flex;flex-direction:column;min-width:48px;font-variant-numeric:tabular-nums}
+.ltime b{color:var(--strong)}.ltime span{color:var(--faint);font-size:12.5px}
+.lrow .who{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.lrow .who strong{display:block;color:var(--strong)}.lrow .who .sub{display:block;font-size:12.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .ic.warn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(var(--warn-rgb),.15);color:var(--warn);font-weight:700}
 /* ---- Pagos ---- */
 .monthnav{display:flex;align-items:center;gap:10px;margin:0 0 16px}
 .monthnav h2{margin:0;font-size:20px;min-width:170px;text-align:center;text-transform:capitalize}
@@ -172,6 +183,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .paystatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .hwtools .iconbtn.sm,.paystatus .iconbtn.sm{width:30px;height:30px;font-size:17px;border-color:var(--line);background:var(--panel)}
 .hwtools .iconbtn.sm svg{width:16px;height:16px}
+.privtext p{margin:0 0 12px;font-size:14.5px;line-height:1.55}.privtext b{color:var(--strong)}
 .prof-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
 .prof-bar .btn svg{width:17px;height:17px}
 .settings .h2{display:flex;align-items:center;gap:9px}
@@ -666,6 +678,7 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M8 17h2"/></symbol>
   <symbol id="i-homework" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1"/><path d="m8.5 12 2.2 2.2L15.5 9.5M8.5 17.5h7"/></symbol>
   <symbol id="i-payments" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.6A4 4 0 1 0 15.5 15.4M7 10.6h6M7 13.4h6"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3"/></symbol>
@@ -717,6 +730,7 @@ const S = {
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
   dms: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [],
   homework: [], payPlans: [], payRecords: [], payMonth: null,
+  lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -1336,6 +1350,7 @@ function viewAuth(mode = 'login', msg = null) {
       <label class="f">Email<input type="email" name="email" required autocomplete="email"></label>
       <label class="f">Contraseña${reg ? ' (mínimo 8 caracteres)' : ''}<input type="password" name="password" required minlength="${reg ? 8 : 1}" autocomplete="${reg ? 'new-password' : 'current-password'}"></label>
       <button class="btn" type="submit" id="authBtn">${reg ? 'Crear cuenta' : 'Entrar'}</button>
+      ${reg ? '<p class="sub" style="margin:0;text-align:center">Al crear la cuenta aceptas cómo se tratan tus datos: <button class="linkbtn" type="button" data-action="privacy">qué guardamos y para qué</button>.</p>' : ''}
     </form>
     <p class="center" style="margin:16px 0 0">
       ${reg
@@ -1464,11 +1479,13 @@ async function loadData(quiet = false) {
       S.fposts = fp.data; S.fcomments = fc.data; S.lcomments = lc.data; S.reactions = rx.data;
       S.dir = {}; (dr.data || []).forEach(d => { S.dir[d.id] = d; });
     }
+    // La Agenda no debe tumbar la app si su parte de la base de datos aún no existe o falla
+    try { await loadLessons(); } catch (e) { console.warn('Agenda:', e.message || e); S.lessons = []; }
     return true;
   } catch (e) {
     const m = String(e.message || e);
     if (quiet) { console.warn('Resincronización fallida:', m); return false; }
-    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|homework_|payments_|relation|schema cache|function/i.test(m)
+    viewFatal(/board_|feed_|reactions|moderation_|get_directory|listening_comments|dm_|notifications|user_blocks|homework_|payments_|lessons|relation|schema cache|function/i.test(m)
       ? 'Falta ejecutar la última versión de supabase.sql en el SQL Editor de Supabase. (' + m + ')'
       : 'Error cargando los datos: ' + m);
     return false;
@@ -1483,7 +1500,7 @@ function render() {
   if (!S.profile) return;
   const t = isTeacher();
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
-  if (!['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].concat(t ? ['students', 'payments', 'mod'] : []).includes(S.section)) S.section = 'feed';
+  if (!['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].concat(t ? ['students', 'payments', 'agenda', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
   switch (S.section) {
     case 'messages': body = messagesView(); break;
@@ -1494,11 +1511,12 @@ function render() {
     case 'settings': body = settingsView(); break;
     case 'homework': body = t ? homeworkTeacher() : homeworkStudent(); break;
     case 'payments': body = paymentsView(); break;
+    case 'agenda': body = agendaView(); break;
     case 'mod': body = homeTeacher(); break;
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = ['mod', 'messages', 'profile', 'settings', 'payments'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
+  const rail = ['mod', 'messages', 'profile', 'settings', 'payments', 'agenda'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
   $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
@@ -1530,6 +1548,8 @@ function sections() {
   if (t) list.push({ id: 'students', label: 'Alumnos', short: 'Alumnos', n: pending, badge: pending ? `${pending} por aprobar` : '', cls: 'warn' });
   // Pagos: solo el profesor. En el móvil se entra desde el botón de Alumnos (la barra de abajo va llena)
   if (t) list.push({ id: 'payments', label: 'Pagos', short: 'Pagos', icon: 'payments', mob: false });
+  // Agenda: clases leídas de Google Calendar. En el móvil, desde el botón de Alumnos.
+  if (t) list.push({ id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', mob: false });
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
   list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
@@ -1600,9 +1620,11 @@ function forYou() {
   const unread = S.posts.filter(p => !rs.has(p.id)).sort(postSort);
   const next = S.assigns.filter(a => !a.listened).sort(dueSort)[0];
   const hw = hwPending().sort(hwSort), hwOver = hw.filter(hwOverdue).length;
-  if (!unread.length && !next && !hw.length) return '';
+  const nl = nextLessonHtml();
+  if (!unread.length && !next && !hw.length && !nl) return '';
   const p = unread[0], d = next ? dueInfo(next) : null;
   return `<section class="foryou">
+    ${nl}
     ${hw.length ? `<div class="fy-row" data-action="section" data-s="homework"><span class="ic">${ic('homework')}</span><div class="t"><b>${esc(hw[0].title)}</b><span class="sub">${hw.length > 1 ? `Deberes · y ${hw.length - 1} más` : 'Deberes pendientes'}</span></div>${hwOver ? '<span class="chip bad">Vencidos</span>' : `<span class="chip acc">${hw.length}</span>`}</div>` : ''}
     ${p ? `<div class="fy-row" data-action="home-open-post" data-id="${p.id}"><span class="ic">${ic('board')}</span><div class="t"><b>${esc(p.title)}</b><span class="sub">${unread.length > 1 ? `Aviso nuevo · y ${unread.length - 1} más` : 'Aviso nuevo'}</span></div><span class="chip new">Nuevo</span></div>` : ''}
     ${next ? `<div class="fy-row" data-action="home-open-assign" data-id="${next.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(next.item.title)}</b><span class="sub">Escucha pendiente</span></div><span class="chip ${d.cls}">${esc(d.text)}</span></div>` : ''}
@@ -1869,6 +1891,7 @@ function settingsView() {
     ${installPanelHtml()}
     <div class="panel">
       <h2 class="h2" style="margin-top:0">${ic('shield')} Privacidad</h2>
+      <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
       ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
         : `<ul class="plist">
           <li><b>Lo ve todo el grupo:</b> tu nombre o apodo, tu foto, lo que pones en "Sobre ti" y lo que publicas en Inicio.</li>
@@ -1878,6 +1901,10 @@ function settingsView() {
         ${blocked.length ? `<div class="blist">${blocked.map(id => `<div class="brow">${avatarHtml(id, 32)}<span>${esc(whoName(id))}</span><button class="btn sm ghost" data-action="unblock" data-id="${id}" data-stay="1">Desbloquear</button></div>`).join('')}</div>`
           : '<p class="sub" style="margin:0">No has bloqueado a nadie. Puedes hacerlo desde una conversación privada; nadie se entera, tampoco tu profesor.</p>'}`}
     </div>
+    ${t ? `<div class="panel"><h2 class="h2" style="margin-top:0">${ic('payments')} Copia de seguridad</h2>
+      <p class="sub" style="margin:0 0 12px">El plan gratuito de Supabase no guarda copias que puedas recuperar. Descarga una de vez en cuando (por ejemplo, una al mes) y guárdala en tu ordenador o en tu nube: alumnos, escuchas, avisos, Inicio, deberes, pagos y agenda en un solo archivo.</p>
+      <button class="btn primary" data-action="backup">Descargar copia de seguridad</button>
+      <p class="sub" style="margin:10px 0 0">No incluye los mensajes privados entre alumnos (tú no puedes leerlos) ni las contraseñas.</p></div>` : ''}
     <form id="passForm" class="panel">
       <h2 class="h2" style="margin-top:0">${ic('lock')} Seguridad</h2>
       <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
@@ -2383,7 +2410,7 @@ function teacherStudents() {
     ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
       <div class="row"><div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
       <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div>`).join('')}</div>` : ''}
-    <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div>
+    <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
     ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
       <div class="row click" data-action="open-student" data-id="${s.id}">
         <div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div>
@@ -2491,6 +2518,9 @@ function studentDetailModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
     <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
+    ${(() => { const nl = nextLesson(s.id), cn = (S.lessonNames.find(x => x.student_id === s.id) || {}).calendar_name || '';
+      return `<p class="sub" style="margin:0 0 4px">📅 ${nl ? `Próxima clase: <b>${esc(relDay(nl.starts_at))}</b> a las ${hhmm(nl.starts_at)}` : calSynced() ? 'Sin clases próximas en tu calendario' : 'Calendario sin conectar (Agenda)'}</p>
+        <div class="rename"><input type="text" id="calNameInput" maxlength="80" value="${esc(cn)}" placeholder="Nombre en Google Calendar (si no es &quot;${esc(s.display_name)}&quot;)" aria-label="Nombre en Google Calendar"><button class="btn sm" data-action="cal-name" data-id="${s.id}">Guardar</button></div>`; })()}
     ${(() => { const pl = planOf(s.id);
       return `<div class="chips" style="margin:8px 0 4px">
         <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button></div>`; })()}
@@ -2679,13 +2709,14 @@ function notifText(n) {
     case 'signup': return `<b>${esc(n.extra || 'Alguien')}</b> se ha registrado y espera tu aprobación`;
     case 'report': return 'Hay una denuncia nueva para revisar';
     case 'homework': return `Deberes nuevos: <b>${esc(n.extra || '')}</b>`;
+    case 'lesson': return `🎸 Tienes clase <b>${esc(n.extra || '')}</b>`;
     case 'mention_feed': return `${who} te ha mencionado${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
     case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', lesson: 'calendar' }[kind] || 'bell'; }
 function notifsModal() {
   const list = S.notifs.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -2722,7 +2753,7 @@ async function openNotif(n) {
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
     case 'signup': S.section = 'students'; render(); break;
     case 'report': S.section = 'mod'; render(); break;
-    case 'homework': S.section = 'homework'; render(); break;
+    case 'homework': case 'lesson': S.section = 'homework'; render(); break;
     default: render();
   }
 }
@@ -3187,7 +3218,8 @@ function hwRow(h, teacher) {
 }
 function homeworkStudent() {
   const list = S.homework.slice().sort(hwSort), pend = list.filter(h => !h.done_at), done = list.filter(h => h.done_at);
-  return `<p class="sub" style="margin:0 0 14px">Lo que tienes que practicar para tus próximas clases. Márcalo cuando lo hayas trabajado: tu profesor lo verá.</p>
+  const nl = nextLessonHtml();
+  return `${nl ? `<section class="foryou" style="margin-bottom:14px">${nl}</section>` : ''}<p class="sub" style="margin:0 0 14px">Lo que tienes que practicar para tus próximas clases. Márcalo cuando lo hayas trabajado: tu profesor lo verá.</p>
     ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, false)).join('')}</div>`
       : '<div class="empty">No tienes deberes pendientes. 🤘</div>'}
     ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 40).map(h => hwRow(h, false)).join('')}</div></details>` : ''}`;
@@ -3228,6 +3260,128 @@ function hwFormModal(id, forStudent) {
   $('.modal').classList.add('narrow');
 }
 
+/* ================================ AGENDA ============================== *
+   Las clases se apuntan solo en Google Calendar. La Edge Function calendar-sync las copia en `lessons`
+   cada 15 minutos (y con "Sincronizar ahora"). El alumno ve su próxima clase y recibe un aviso 8 h antes. */
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const hhmm = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const dayLabel = iso => { const d = new Date(iso); return `${WEEKDAYS[d.getDay()]} ${d.getDate()} de ${MONTHS[d.getMonth()]}`; };
+function relDay(iso) { // hoy / mañana / jueves 27 de noviembre
+  const d = new Date(iso), t = new Date(), a = new Date(d.getFullYear(), d.getMonth(), d.getDate()), b = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  const n = Math.round((a - b) / 86400000);
+  return n === 0 ? 'hoy' : n === 1 ? 'mañana' : dayLabel(iso);
+}
+const calSynced = () => !!(S.lessonSync && S.lessonSync.last_ok_at);
+const nextLesson = id => S.lessons.filter(l => l.student_id === id && new Date(l.ends_at || l.starts_at) > new Date()).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] || null;
+// ¿Ha tenido ya alguna clase este mes? (para Pagos: se cobra tras la primera clase del mes)
+const hadClassThisMonth = id => { const now = new Date(); return S.lessons.some(l => { const d = new Date(l.starts_at); return l.student_id === id && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d <= now; }); }; // en hora local, no UTC
+function nextLessonHtml() { // alumno
+  const l = nextLesson(S.user.id); if (!l) return '';
+  return `<div class="fy-row lesson-row"><span class="ic">${ic('calendar')}</span><div class="t"><b>Tu próxima clase: ${esc(relDay(l.starts_at))}</b><span class="sub">a las ${hhmm(l.starts_at)}${l.ends_at ? ' – ' + hhmm(l.ends_at) : ''}</span></div></div>`;
+}
+const weekStart = (d = new Date()) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+function agendaView() {
+  const ws = S.agendaWeek ? new Date(S.agendaWeek) : weekStart(); const we = new Date(ws); we.setDate(ws.getDate() + 7);
+  const thisWeek = ws.getTime() === weekStart().getTime();
+  const st = S.lessonSync;
+  const list = S.lessons.filter(l => { const d = new Date(l.starts_at); return d >= ws && d < we; }).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const days = []; for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(ws.getDate() + i); days.push(d); }
+  const per = monthStart();
+  const row = l => {
+    const s = l.student_id && S.students.find(x => x.id === l.student_id);
+    const pend = s ? S.homework.filter(h => h.student_id === s.id && !h.done_at).length : 0;
+    const pl = s ? planOf(s.id) : null, paid = s && S.payRecords.some(r => r.student_id === s.id && r.period === per && r.kind === 'monthly');
+    const past = new Date(l.ends_at || l.starts_at) < new Date();
+    return `<div class="lrow ${past ? 'past' : ''} ${s ? 'click' : ''}" ${s ? `data-action="open-student" data-id="${s.id}"` : ''}>
+      <div class="ltime"><b>${hhmm(l.starts_at)}</b>${l.ends_at ? `<span>${hhmm(l.ends_at)}</span>` : ''}</div>
+      ${s ? `<div class="who">${avatarHtml(s.id, 32)}<div><strong>${esc(s.display_name)}</strong><span class="sub">${esc(l.title)}</span></div></div>`
+        : `<div class="who"><span class="ic warn">?</span><div><strong>${esc(l.title)}</strong><span class="sub">No sé de qué alumno es</span></div></div>`}
+      ${s ? `<div class="chips">${pend ? `<span class="chip acc">📝 ${pend}</span>` : ''}${pl && pl.mode === 'monthly' ? (paid ? '<span class="chip ok">Pagado</span>' : '<span class="chip">Mes sin cobrar</span>') : ''}</div>` : ''}
+    </div>`;
+  };
+  const head = `<div class="sec-head"><div class="sub">${!st || !st.last_run_at ? 'Aún no se ha sincronizado con Google Calendar.'
+      : st.last_error ? `<span style="color:var(--bad)">⚠ ${esc(st.last_error)}</span>`
+      : `Sincronizado con Google Calendar ${timeAgo(st.last_ok_at)} · se actualiza solo cada 15 min`}</div>
+      <button class="btn sm" data-action="cal-sync">${ic('calendar')} Sincronizar ahora</button></div>`;
+  if (!calSynced()) return head + `<div class="panel"><h2 class="h2" style="margin-top:0">Conecta tu calendario de clases</h2>
+    <ol class="isteps">
+      <li>En el ordenador, abre <b>Google Calendar</b> → ⚙ <b>Configuración</b> → en la izquierda, tu calendario de clases.</li>
+      <li>Baja hasta <b>"Dirección secreta en formato iCal"</b> y cópiala. Es privada: no la compartas con nadie.</li>
+      <li>En <b>Supabase</b> → <b>Edge Functions</b> → <b>Secrets</b> → <b>Add new secret</b>: nombre <code>CALENDAR_ICS_URL</code>, valor la dirección copiada → <b>Save</b>.</li>
+      <li>Vuelve aquí y pulsa <b>Sincronizar ahora</b>.</li></ol>
+    <p class="sub" style="margin:12px 0 0">Cada evento debe llevar el nombre del alumno (por ejemplo "Clase Luis"). Si en el calendario lo llamas distinto, ponlo en su ficha: "Nombre en Google Calendar".</p></div>`;
+  const unk = list.filter(l => !l.student_id).length;
+  return head + `<div class="monthnav"><button class="iconbtn" data-action="agenda-week" data-n="-1" aria-label="Semana anterior">‹</button>
+      <h2>${ws.getDate()} ${MONTHS[ws.getMonth()].slice(0, 3)} – ${new Date(we - 86400000).getDate()} ${MONTHS[new Date(we - 86400000).getMonth()].slice(0, 3)}</h2>
+      <button class="iconbtn" data-action="agenda-week" data-n="1" aria-label="Semana siguiente">›</button>
+      ${thisWeek ? '' : '<button class="btn sm ghost" data-action="agenda-week" data-n="0">Esta semana</button>'}</div>
+    ${unk ? `<div class="callout">Hay ${unk} clase${unk > 1 ? 's' : ''} que no sé de qué alumno ${unk > 1 ? 'son' : 'es'}. El título del evento debe llevar su nombre, o pon en su ficha cómo lo llamas en el calendario.</div>` : ''}
+    ${list.length ? days.map(d => { const ls = list.filter(l => new Date(l.starts_at).toDateString() === d.toDateString()); return ls.length ? `<div class="lday"><h3>${esc(relDay(d.toISOString()))}${relDay(d.toISOString()).startsWith('hoy') || relDay(d.toISOString()).startsWith('mañana') ? ` · ${WEEKDAYS[d.getDay()]} ${d.getDate()}` : ''}</h3>${ls.map(row).join('')}</div>` : ''; }).join('')
+      : '<div class="empty">No hay clases esta semana.</div>'}`;
+}
+async function loadLessons() {
+  const from = new Date(); from.setDate(1); from.setDate(from.getDate() - 7);
+  const to = new Date(); to.setDate(to.getDate() + 60);
+  if (isTeacher()) {
+    const [l, ls, sy] = await Promise.all([
+      sb.from('lessons').select('*').gte('starts_at', from.toISOString()).lte('starts_at', to.toISOString()).order('starts_at').limit(2000),
+      sb.from('lessons_students').select('*'),
+      sb.from('lessons_sync').select('*').eq('id', 1).maybeSingle()
+    ]);
+    const err = [l, ls, sy].map(x => x.error).find(Boolean); if (err) throw err;
+    S.lessons = l.data || []; S.lessonNames = ls.data || []; S.lessonSync = sy.data || null;
+  } else {
+    const { data, error } = await sb.from('lessons').select('*').eq('student_id', S.user.id).gte('starts_at', new Date(Date.now() - 3 * 3600000).toISOString()).order('starts_at').limit(10);
+    if (error) throw error;
+    S.lessons = data || [];
+  }
+}
+
+/* ======================= PRIVACIDAD Y COPIA DE SEGURIDAD ======================= */
+function privacyModal() {
+  openModal(`<div class="modal-head"><h2>Tus datos en ${esc(APP_NAME)}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="privtext">
+      <p><b>Quién es el responsable.</b> Yuri, el profesor de las clases, es quien gestiona esta app y tus datos. Para cualquier duda o petición sobre ellos, escríbele por Mensajes.</p>
+      <p><b>Qué datos se guardan.</b> Los que tú das al registrarte y al usar la app: nombre (y apodo, si pones uno), email, fecha de nacimiento, foto de perfil, lo que escribes en "Sobre ti", tus publicaciones, comentarios, reacciones y mensajes, tus respuestas de las escuchas y tus deberes. El profesor apunta además las fechas de tus clases y, solo para él, los pagos.</p>
+      <p><b>Para qué.</b> Únicamente para organizar las clases: avisos, escuchas, deberes, comunicación entre el grupo y el seguimiento de las clases. No se usan para publicidad, no se venden y no se comparten con nadie.</p>
+      <p><b>Quién ve qué.</b> El grupo ve tu nombre o apodo, tu foto, tu "Sobre ti" y lo que publicas en Inicio. Solo el profesor ve tu email, tu fecha de nacimiento, tus respuestas, tus deberes y tus pagos. Los mensajes privados solo los leéis quienes participáis; el profesor solo ve un mensaje si alguien lo denuncia.</p>
+      <p><b>Dónde se guardan.</b> En Supabase, con servidores en la Unión Europea, protegidos con contraseña y con reglas que impiden que nadie lea lo que no le corresponde. La web se sirve desde GitHub Pages. La app no usa cookies de publicidad ni rastreadores; tu navegador solo guarda tu sesión y si prefieres el tema claro u oscuro.</p>
+      <p><b>Cuánto tiempo.</b> Mientras tengas cuenta. Si dejas las clases o lo pides, se borra tu cuenta y, con ella, tus datos.</p>
+      <p><b>Tus derechos.</b> Puedes pedir en cualquier momento ver, corregir o borrar tus datos, o retirar tu permiso. Pídelo al profesor por Mensajes. Si crees que algo no se ha hecho bien, puedes reclamar a la Agencia Española de Protección de Datos (aepd.es).</p>
+      <p><b>Menores.</b> Si tienes menos de 14 años, necesitas el permiso de tu madre, padre o tutor para usar la app. Sin fecha de nacimiento, la app te trata como menor: solo puedes escribir en privado al profesor, salvo que tu familia lo autorice.</p>
+    </div>`);
+  $('.modal').classList.add('narrow');
+}
+async function downloadBackup(btn) { // solo profesor: todo lo que él puede leer, en un archivo
+  btn.disabled = true; const old = btn.innerHTML; btn.textContent = 'Preparando la copia…';
+  try {
+    const tables = {
+      profiles: 'id, display_name, nickname, email, role, approved, created_at, birth_date, family_dm_ok, bio, instrument, level, favorites, gear, app_installed_at',
+      listening_items: '*', listening_assignments: '*', listening_comments: '*',
+      board_posts: '*', board_recipients: '*', board_reads: '*',
+      feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*',
+      homework_tasks: '*', payments_plans: '*', payments_records: '*', lessons: '*', lessons_students: '*'
+    };
+    const out = { app: APP_NAME, created_at: new Date().toISOString(), note: 'Copia de seguridad. No incluye mensajes privados entre alumnos (no los puede leer el profesor) ni contraseñas (las guarda Supabase cifradas).', tables: {} };
+    for (const [t, cols] of Object.entries(tables)) {
+      const rows = []; let from = 0;
+      for (;;) { // de 1000 en 1000
+        const { data, error } = await sb.from(t).select(cols).range(from, from + 999);
+        if (error) throw new Error(t + ': ' + error.message);
+        rows.push(...data); if (data.length < 1000) break; from += 1000;
+      }
+      out.tables[t] = rows;
+    }
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `yurimh-music-academy-copia-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    const n = Object.values(out.tables).reduce((s, r) => s + r.length, 0);
+    toast(`Copia descargada (${n} registros). Guárdala en un sitio seguro: contiene datos personales.`, 'ok');
+  } catch (e) { toast('No se pudo hacer la copia: ' + (e.message || e), 'bad'); }
+  btn.disabled = false; btn.innerHTML = old;
+}
+
 /* ================================= PAGOS ============================== *
    Solo el profesor. payments_plans = el trato de cada alumno; payments_records = cada pago apuntado.
    Cada mes empieza sin pagos marcados ("se desmarca al acabar el mes") y los anteriores quedan de historial. */
@@ -3254,7 +3408,8 @@ function paymentsView() {
     else if (pl.mode === 'monthly') {
       const r = mine.find(x => x.kind === 'monthly');
       if (r) status = `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}</span><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
-      else { pendN++; status = `${!isNow && !future ? '<span class="chip warn">No pagado</span>' : ''}<button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
+      else if (isNow && calSynced() && !hadClassThisMonth(s.id)) status = `<span class="chip">Aún sin clase este mes</span><button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
+      else { pendN++; status = `${!isNow && !future ? '<span class="chip warn">No pagado</span>' : isNow && calSynced() ? '<span class="chip warn">Ya tuvo clase: toca cobrar</span>' : ''}<button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
     } else { // por clase
       const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
       status = `<span class="chip ${n ? 'ok' : ''}">${n} clase${n === 1 ? '' : 's'} pagada${n === 1 ? '' : 's'}${n ? ' · ' + money(sum) : ''}</span>
@@ -3269,7 +3424,7 @@ function paymentsView() {
       <h2>${monthLabel(per)}</h2><button class="iconbtn" data-action="pay-month" data-n="1" aria-label="Mes siguiente">›</button>
       ${isNow ? '' : '<button class="btn sm ghost" data-action="pay-month" data-n="0">Mes actual</button>'}</div>
     <div class="stats"><div class="stat"><b>${money(total) || '0 €'}</b><span>Cobrado en ${MONTHS[Number(per.slice(5, 7)) - 1]}</span></div>
-      <div class="stat ${pendN && !isNow && !future ? 'warn' : ''}"><b>${pendN}</b><span>${isNow ? 'Mensuales por pagar' : future ? 'Mensuales' : 'Sin pagar ese mes'}</span></div>
+      <div class="stat ${pendN && !isNow && !future ? 'warn' : ''}"><b>${pendN}</b><span>${isNow ? (calSynced() ? 'Toca cobrar (ya tuvieron clase)' : 'Mensuales por pagar') : future ? 'Mensuales' : 'Sin pagar ese mes'}</span></div>
       <div class="stat"><b>${ok.filter(s => (planOf(s.id) || {}).mode === 'free').length}</b><span>Con clases gratis</span></div></div>
     ${ok.length ? `<div class="paylist">${rows}</div>` : '<div class="empty">Aún no tienes alumnos aprobados.</div>'}
     <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Cada mes empieza sin pagos marcados; los meses anteriores quedan guardados (usa las flechas).</p>`;
@@ -3297,6 +3452,30 @@ async function payInsert(studentId, kind) {
 
 Object.assign(actions, {
   async goto(el) { await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
+  privacy() { privacyModal(); },
+  backup(el) { downloadBackup(el); },
+  async 'cal-sync'(el) {
+    el.disabled = true; el.textContent = 'Sincronizando…';
+    try {
+      const r = await fetch(CFG.SUPABASE_URL + '/functions/v1/calendar-sync', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_KEY }, body: '{}' });
+      const j = await r.json().catch(() => ({}));
+      if (j.skipped) toast('Se acaba de sincronizar hace un momento', 'ok');
+      else if (j.error) toast('No se pudo sincronizar: ' + j.error, 'bad');
+      else toast(`Calendario al día: ${j.events} clase${j.events === 1 ? '' : 's'}${j.unmatched ? ` (${j.unmatched} sin alumno)` : ''}`, 'ok');
+      await loadLessons();
+    } catch (e) { toast('No se pudo sincronizar: ' + (e.message || e), 'bad'); }
+    render();
+  },
+  'agenda-week'(el) { const n = Number(el.dataset.n), ws = S.agendaWeek ? new Date(S.agendaWeek) : weekStart(); if (n === 0) S.agendaWeek = null; else { ws.setDate(ws.getDate() + 7 * n); S.agendaWeek = ws.toISOString(); } render(); },
+  async 'cal-name'(el) {
+    const id = el.dataset.id, v = ($('#calNameInput') || {}).value; const name = (v || '').trim() || null;
+    const ex = S.lessonNames.find(x => x.student_id === id);
+    const { data, error } = ex ? await sb.from('lessons_students').update({ calendar_name: name, updated_at: new Date().toISOString() }).eq('student_id', id).select()
+      : await sb.from('lessons_students').insert({ student_id: id, calendar_name: name }).select();
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + error.message : ''), 'bad');
+    S.lessonNames = S.lessonNames.filter(x => x.student_id !== id).concat(data[0]);
+    toast('Guardado. Se aplicará en la próxima sincronización (pulsa "Sincronizar ahora" en Agenda para no esperar).', 'ok');
+  },
   'hw-new'(el) { hwReturn = hwFromCard(el); hwFormModal(null, el.dataset.id); },
   'hw-edit'(el) { hwReturn = hwFromCard(el); hwFormModal(el.dataset.id); },
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
@@ -3558,7 +3737,7 @@ async function openNotifFromUrl(url) {
     // setTimeout: evita llamar a supabase dentro del propio callback (puede bloquearse)
     setTimeout(() => {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; viewRecovery(); }
-      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.homework = []; S.payPlans = []; S.payRecords = []; S.payMonth = null; S.section = 'feed'; viewAuth(); }
+      else if (event === 'SIGNED_OUT') { rtStop(); S.feedQueue = []; S.user = null; S.profile = null; S.items = []; S.assigns = []; S.students = []; S.posts = []; S.recipients = []; S.reads = []; S.fposts = []; S.fcomments = []; S.lcomments = []; S.reactions = []; S.reports = []; S.dir = {}; S.dms = []; S.blocks = []; S.dmContacts = []; S.dmCan = {}; S.dmWith = null; S.notifs = []; S.homework = []; S.payPlans = []; S.payRecords = []; S.payMonth = null; S.lessons = []; S.lessonNames = []; S.lessonSync = null; S.agendaWeek = null; S.section = 'feed'; viewAuth(); }
       else if (event === 'SIGNED_IN' && !recovering && (!S.user || S.user.id !== (session && session.user.id))) route();
     }, 0);
   });

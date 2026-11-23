@@ -1,4 +1,7 @@
 const T=(m)=>new Date(Date.now()-m*60000).toISOString();
+// Fecha a N días de hoy a una hora concreta (hora local), para las clases de la Agenda
+const D=(days,h,mi=0)=>{ const d=new Date(); d.setDate(d.getDate()+days); d.setHours(h,mi,0,0); return d.toISOString(); };
+const M1=()=>{ const d=new Date(); d.setDate(1); d.setHours(0,30,0,0); return d.toISOString(); }; // día 1 del mes, 0:30
 window.__DB_SEED = {
   profiles:[
     {id:'t1',install_prompted_at:'2026-01-01',display_name:'Yuri',email:'p@x.com',role:'teacher',approved:true,nickname:null,avatar:null,birth_date:null,family_dm_ok:false},
@@ -63,4 +66,12 @@ window.__DB_SEED = {
   ],
   payments_plans:[ {student_id:'s1',mode:'monthly',amount:60,note:null,updated_at:T(5000)}, {student_id:'s2',mode:'free',amount:null,note:'Intercambio',updated_at:T(5000)} ],
   payments_records:[]
+  ,lessons:[
+    {id:'l1',event_key:'luis@g|1',student_id:'s2',title:'Clase Luis',starts_at:D(1,18),ends_at:D(1,19),reminded_at:null,synced_at:T(5)},
+    {id:'l2',event_key:'marta@g|1',student_id:'s1',title:'Guitarra Marta',starts_at:D(2,16,30),ends_at:D(2,17,30),reminded_at:null,synced_at:T(5)},
+    {id:'l3',event_key:'marta@g|0',student_id:'s1',title:'Guitarra Marta',starts_at:M1(),ends_at:M1(),reminded_at:M1(),synced_at:T(5)},
+    {id:'l4',event_key:'x@g|1',student_id:null,title:'Clase Pedro (prueba)',starts_at:D(1,20),ends_at:D(1,21),reminded_at:null,synced_at:T(5)}
+  ],
+  lessons_students:[],
+  lessons_sync:[ {id:1,last_run_at:T(5),last_ok_at:T(5),last_error:null,events:4,unmatched:1} ]
 };

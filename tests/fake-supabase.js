@@ -36,7 +36,10 @@
     notifications: r => r.user_id===me,
     homework_tasks: r => isTeacher() || (r.student_id===me && isApproved()),
     payments_plans: () => isTeacher(),
-    payments_records: () => isTeacher()
+    payments_records: () => isTeacher(),
+    lessons: r => isTeacher() || (r.student_id===me && isApproved()),
+    lessons_students: () => isTeacher(),
+    lessons_sync: () => isTeacher()
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -62,7 +65,10 @@
     notifications: (op,r) => r.user_id===me,
     homework_tasks: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
     payments_plans: () => isTeacher(),
-    payments_records: () => isTeacher()
+    payments_records: () => isTeacher(),
+    lessons: () => false,
+    lessons_students: () => isTeacher(),
+    lessons_sync: () => false
   };
   const canInsert = {
     profiles: () => false,
@@ -81,7 +87,10 @@
     notifications: () => false,
     homework_tasks: () => isTeacher(),
     payments_plans: () => isTeacher(),
-    payments_records: () => isTeacher()
+    payments_records: () => isTeacher(),
+    lessons: () => false,
+    lessons_students: () => isTeacher(),
+    lessons_sync: () => false
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
@@ -94,7 +103,7 @@
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], payments_plans:['student_id'], lessons_students:['student_id'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){
@@ -181,10 +190,13 @@
     const b={
       select(cols){ if(cols&&cols.includes('item:listening_items(*)')) st.embed=true; st.sel=true; return b; },
       eq(k,v){ st.filters.push(r=>r[k]===v); return b; },
+      gte(k,v){ st.filters.push(r=>r[k]!=null && r[k]>=v); return b; },
+      lte(k,v){ st.filters.push(r=>r[k]!=null && r[k]<=v); return b; },
       is(k,v){ st.filters.push(r=>(r[k]??null)===v); return b; },
       in(k,arr){ st.filters.push(r=>arr.includes(r[k])); return b; },
       order(k,o){ st.order=[k,!o||o.ascending!==false]; return b; },
       limit(n){ st.lim=n; return b; },
+      range(a,z){ st.rng=[a,z]; return b; },
       update(p){ st.op='update'; st.payload=p; st.sel=false; return b; },
       insert(p){ st.op='insert'; st.payload=p; st.sel=false; return b; },
       upsert(p,o){ st.op='upsert'; st.payload=p; st.opts=o||{}; st.sel=false; return b; },
@@ -209,6 +221,7 @@
         let rows=DB[table].filter(canRead[table]).filter(match);
         if(st.order) rows.sort((a,b)=>(a[st.order[0]]>b[st.order[0]]?1:-1)*(st.order[1]?1:-1));
         if(st.lim) rows=rows.slice(0,st.lim);
+        if(st.rng) rows=rows.slice(st.rng[0],st.rng[1]+1);
         return finish(rows);
       }
       if(st.op==='update'){

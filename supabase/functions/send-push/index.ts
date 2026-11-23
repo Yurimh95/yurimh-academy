@@ -32,6 +32,7 @@ function texts(kind: string, actor: string, extra: string | null): { title: stri
     case "mention_feed": return { title: `${actor} te ha mencionado`, body: extra ?? "" };
     case "mention_board": return { title: `📣 ${actor} te ha mencionado en un aviso`, body: extra ?? "" };
     case "mention_listening": return { title: `🎧 ${actor} te ha mencionado en una escucha`, body: extra ?? "" };
+    case "lesson": return { title: "🎸 Recordatorio de clase", body: `Tienes clase ${extra ?? "hoy"}` };
     case "homework": return { title: "📝 Deberes nuevos", body: extra ?? "Tienes deberes nuevos para practicar" };
     default: return { title: "Yurimh Music Academy", body: "Tienes una novedad" };
   }

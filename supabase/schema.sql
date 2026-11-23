@@ -1266,7 +1266,7 @@ revoke execute on function public.homework_tasks_guard() from public, anon, auth
 alter table public.notifications drop constraint if exists notifications_kind_check;
 alter table public.notifications add constraint notifications_kind_check
   check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
-                  'mention_feed', 'mention_board', 'mention_listening'));
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson')); -- 'lesson': ver módulo Agenda
 drop trigger if exists notify_homework_tasks on public.homework_tasks;
 create trigger notify_homework_tasks after insert on public.homework_tasks for each row execute function public.notify_trg();
 
@@ -1319,6 +1319,78 @@ create policy payments_plans_all_teacher on public.payments_plans for all to aut
 drop policy if exists payments_records_all_teacher on public.payments_records;
 create policy payments_records_all_teacher on public.payments_records for all to authenticated
   using (public.is_teacher()) with check (public.is_teacher());
+
+-- =====================================================================
+--  MÓDULO: CLASES / AGENDA  (prefijo lessons_)
+--   Las clases se apuntan SOLO en Google Calendar (un calendario dedicado a clases). La Edge Function
+--   "calendar-sync" lo lee por su dirección secreta iCal (secreto CALENDAR_ICS_URL) cada 15 minutos
+--   y lo copia aquí. Nadie escribe en estas tablas desde la app salvo el "nombre en el calendario".
+--   lessons:          una fila por clase (cada repetición de un evento). Sin descripción, solo título y hora.
+--   lessons_students: cómo se llama cada alumno en el calendario (si no, se usa su nombre o apodo).
+--   lessons_sync:     estado de la última sincronización (para la Agenda del profesor).
+--   Recordatorio: 8 horas antes, notificación 'lesson' al alumno (la crea la función; el push sale solo).
+-- =====================================================================
+create table if not exists public.lessons (
+  id          uuid primary key default gen_random_uuid(),
+  event_key   text not null unique,             -- UID del evento de Google + inicio original de esa repetición
+  student_id  uuid references public.profiles(id) on delete set null,
+  title       text not null check (char_length(title) <= 300),
+  starts_at   timestamptz not null,
+  ends_at     timestamptz,
+  reminded_at timestamptz,
+  synced_at   timestamptz not null default now()
+);
+create index if not exists lessons_starts_idx on public.lessons (starts_at);
+create index if not exists lessons_student_idx on public.lessons (student_id, starts_at);
+create table if not exists public.lessons_students (
+  student_id    uuid primary key references public.profiles(id) on delete cascade,
+  calendar_name text check (calendar_name is null or char_length(calendar_name) <= 80),
+  updated_at    timestamptz not null default now()
+);
+create table if not exists public.lessons_sync (
+  id          int primary key default 1 check (id = 1),
+  last_run_at timestamptz,
+  last_ok_at  timestamptz,
+  last_error  text,
+  events      int,
+  unmatched   int
+);
+
+grant select on public.lessons, public.lessons_sync to authenticated;
+grant select, insert, update, delete on public.lessons_students to authenticated;
+revoke all on public.lessons, public.lessons_students, public.lessons_sync from anon;
+alter table public.lessons          enable row level security;
+alter table public.lessons_students enable row level security;
+alter table public.lessons_sync     enable row level security;
+-- El alumno solo ve SUS clases; el profesor, todas. Nadie las escribe desde la app.
+drop policy if exists lessons_select on public.lessons;
+create policy lessons_select on public.lessons for select to authenticated
+  using (public.is_teacher() or (student_id = auth.uid() and public.is_approved()));
+drop policy if exists lessons_students_all_teacher on public.lessons_students;
+create policy lessons_students_all_teacher on public.lessons_students for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+drop policy if exists lessons_sync_select_teacher on public.lessons_sync;
+create policy lessons_sync_select_teacher on public.lessons_sync for select to authenticated
+  using (public.is_teacher());
+
+-- La Edge Function entra como service_role: solo lo que necesita
+grant select, insert, update, delete on public.lessons to service_role;
+grant select on public.lessons_students to service_role;
+grant select, insert, update on public.lessons_sync to service_role;
+grant select on public.homework_tasks to service_role;          -- cuántos deberes tiene pendientes (para el aviso)
+grant insert on public.notifications to service_role;           -- el recordatorio de clase
+
+-- Tipo de notificación nuevo: recordatorio de clase
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson'));
+
+-- Sincronización automática cada 15 minutos (pg_cron llama a la Edge Function)
+create extension if not exists pg_cron;
+select cron.schedule('calendar-sync', '*/15 * * * *',
+  $cron$select net.http_post(url := 'https://gyzwevayeloishhldumd.supabase.co/functions/v1/calendar-sync',
+    body := '{}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb)$cron$);
 
 -- =====================================================================
 -- TU CUENTA DE PROFESOR

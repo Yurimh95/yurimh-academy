@@ -1,0 +1,92 @@
+// Agenda (clases leídas de Google Calendar), recordatorio, pagos según la primera clase del mes,
+// copia de seguridad y texto de privacidad. Semilla: Luis mañana 18:00, Marta pasado mañana 16:30
+// (y una clase el día 1 de este mes), y un evento "Clase Pedro (prueba)" sin alumno.
+const { chromium } = require('playwright');
+(async()=>{
+  const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+  const errors=[]; let fails=0;
+  const ok=(c,m)=>{ console.log((c?'OK   ':'FAIL ')+m); if(!c) fails++; };
+  async function open(me, vp={width:1400,height:900}, db=null){
+    const ctx = await browser.newContext({ viewport:vp, acceptDownloads:true });
+    const page = await ctx.newPage();
+    page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+    page.on('console',m=>{ if(m.type()==='error' && !/Failed to load resource/.test(m.text())) errors.push('console: '+m.text()); });
+    page.on('dialog',d=>d.accept());
+    await page.addInitScript(`window.__ME=${JSON.stringify(me)}`);
+    if (db) await page.addInitScript(`window.__DB_OVERRIDE=${JSON.stringify(db)}`);
+    await page.goto(require('url').pathToFileURL(require('path').join(__dirname,'test.html')).href);
+    await page.waitForTimeout(450);
+    return page;
+  }
+  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(200); };
+  const wait = (p,ms=250) => p.waitForTimeout(ms);
+  const shot = (p,n) => p.screenshot({path:require('path').join(__dirname,'shots',n)});
+
+  // ================= PROFESOR: Agenda =================
+  const t = await open('t1');
+  await goto(t,'agenda');
+  ok((await t.locator('.lrow').count())>=3, 'Agenda: muestra las clases de la semana');
+  ok((await t.textContent('#app')).includes('Sincronizado con Google Calendar'), 'Dice cuándo se sincronizó');
+  ok((await t.locator('.lrow:has-text("Clase Pedro") :text("No sé de qué alumno es")').count())===1 && (await t.locator('.callout').count())===1, 'Avisa del evento que no corresponde a ningún alumno');
+  ok((await t.locator('.lrow:has-text("Marta") .chip:has-text("📝 2")').count())===1, 'En cada clase ve los deberes pendientes del alumno');
+  ok((await t.locator('.lrow:has-text("Marta") .chip:has-text("Mes sin cobrar")').count())===1, 'Y si ese mes ya ha cobrado o no');
+  await t.click('.lrow:has-text("Luis")'); await wait(t,300);
+  ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Pulsar una clase abre la ficha del alumno');
+  ok((await t.textContent('.modal')).includes('Próxima clase: mañana'), 'La ficha dice cuándo es su próxima clase');
+  await t.fill('#calNameInput','Lucho'); await t.click('[data-action=cal-name]'); await wait(t,300);
+  ok((await t.evaluate(()=>window.__DB.lessons_students.find(x=>x.student_id==='s2').calendar_name))==='Lucho', 'Guarda cómo se llama el alumno en el calendario');
+  await t.keyboard.press('Escape'); await wait(t,200);
+  await t.click('[data-action=agenda-week][data-n="1"]'); await wait(t,200);
+  ok((await t.textContent('#app')).includes('Esta semana'), 'Navega a la semana siguiente (con botón para volver)');
+  await shot(t,'agenda.png');
+
+  // Pagos: solo "toca cobrar" a quien ya tuvo su primera clase del mes
+  await goto(t,'payments');
+  ok((await t.textContent('.payrow:has-text("Marta")')).includes('Ya tuvo clase: toca cobrar'), 'Pagos: Marta ya tuvo su primera clase del mes → toca cobrar');
+  const noClass = await t.evaluate(()=>{ S.lessons = S.lessons.filter(l=>l.id!=='l3'); render(); return document.querySelector('.payrow:last-child').innerText; });
+  ok(noClass.includes('Aún sin clase este mes'), 'Sin clase todavía este mes → no sale como pendiente de cobro');
+
+  // Copia de seguridad
+  await goto(t,'settings');
+  const [dl] = await Promise.all([t.waitForEvent('download'), t.click('[data-action=backup]')]);
+  const file = await dl.path(); const j = JSON.parse(require('fs').readFileSync(file,'utf8'));
+  ok(/^yurimh-music-academy-copia-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()), 'Copia de seguridad: descarga un archivo con la fecha');
+  ok(j.tables.profiles.length>=3 && j.tables.homework_tasks.length>=3 && j.tables.payments_plans.length>=1 && j.tables.lessons.length>=3, 'Incluye alumnos, deberes, pagos y clases');
+  ok(!('dm_messages' in j.tables) && !j.tables.profiles.some(p=>'avatar_src' in p), 'No incluye mensajes privados ni fotos grandes');
+
+  // ================= ALUMNA =================
+  const p = await open('s1');
+  ok((await p.textContent('.foryou')).includes('Tu próxima clase'), 'Alumna: "Tu próxima clase" en su Inicio');
+  ok(!(await p.textContent('#app')).includes('Clase Luis') && !(await p.textContent('#app')).includes('Pedro'), 'No ve las clases de nadie más');
+  const sneak = await p.evaluate(async()=>{ const a=await sb.from('lessons').select('*'); const b=await sb.from('lessons_students').select('*'); const c=await sb.from('lessons_sync').select('*'); return [a.data.length, b.data.length, c.data.length, a.data.every(l=>l.student_id==='s1')]; });
+  ok(sneak[3] && sneak[1]===0 && sneak[2]===0, 'Privacidad: solo lee sus propias clases; ni nombres de calendario ni estado de sincronización');
+  ok(!(await p.locator('.nav button[data-s=agenda]').count()), 'La alumna no tiene Agenda');
+  await goto(p,'homework');
+  ok((await p.textContent('#app')).includes('Tu próxima clase'), 'En Deberes también ve cuándo es su próxima clase');
+  // Recordatorio de clase (lo crea la función del servidor): así se ve en la campanita
+  await p.evaluate(()=>window.__rtExternal('notifications',{id:'nl',user_id:'s1',kind:'lesson',actor_id:null,target_id:'l2',extra:'hoy a las 16:30 · 2 deberes pendientes',read_at:null,pushed_at:null})); await wait(p,300);
+  await p.click('.bell'); await wait(p,250);
+  ok((await p.textContent('.modal')).includes('Tienes clase hoy a las 16:30 · 2 deberes pendientes'), 'Recordatorio: "Tienes clase hoy a las 16:30 · 2 deberes pendientes"');
+  await p.click('.nrow:has-text("Tienes clase")'); await wait(p,300);
+  ok(await p.evaluate(()=>S.section==='homework'), 'Al tocarlo abre sus Deberes');
+  // Privacidad
+  await goto(p,'settings'); await p.click('.panel [data-action=privacy]'); await wait(p,250);
+  const priv = await p.textContent('.modal');
+  ok(priv.includes('Qué datos se guardan') && priv.includes('Tus derechos') && priv.includes('Unión Europea'), 'Ajustes: texto de privacidad completo');
+  const a = await open(null);
+  await a.click('[data-action=auth-mode][data-mode=register]'); await wait(a,200);
+  await a.click('#authForm [data-action=privacy]'); await wait(a,250);
+  ok((await a.textContent('.modal')).includes('Quién es el responsable'), 'Al registrarse se puede leer qué datos se guardan');
+  await shot(a,'privacidad.png');
+
+  // Móvil del profesor: Agenda desde Alumnos
+  const m = await open('t1',{width:390,height:844});
+  await goto(m,'students'); await m.click('.dhead [data-action=section][data-s=agenda]'); await wait(m,250);
+  ok((await m.locator('.lrow').count())>=3 && await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: Agenda desde Alumnos, sin scroll horizontal');
+  await shot(m,'m_agenda.png');
+
+  console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
+  console.log(fails? `\n${fails} FALLOS`:'\nTODO OK');
+  await browser.close();
+  process.exit(fails?1:0);
+})().catch(e=>{ console.error('CRASH',e); process.exit(1); });
