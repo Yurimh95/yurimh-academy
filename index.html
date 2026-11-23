@@ -134,6 +134,13 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .qrwrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .qr{width:150px;height:150px;flex:none;border-radius:12px;background:#fff;padding:8px;display:grid;place-items:center;color:#555;font-size:12px;text-align:center}
 .qr svg{width:100%;height:100%}
+.two.prof-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+@media (max-width:760px){.two.prof-grid{grid-template-columns:1fr}}
+.about{grid-column:1/-1}
+/* "Sobre ti" a lo ancho en el ordenador: bio arriba, 3 campos cortos en fila y 2 largos debajo */
+.about-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 14px}
+.about-grid .a-bio{grid-column:1/-1}.about-grid .a-3{grid-column:span 2}.about-grid .a-2{grid-column:span 3}
+@media (max-width:760px){.about-grid{grid-template-columns:1fr}.about-grid .a-3,.about-grid .a-2{grid-column:1/-1}}
 .prof-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
 .prof-bar .btn svg{width:17px;height:17px}
 .settings .h2{display:flex;align-items:center;gap:9px}
@@ -1264,7 +1271,7 @@ function render() {
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  const rail = ['mod', 'messages'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, más sitio
+  const rail = ['mod', 'messages', 'profile', 'settings'].includes(S.section) ? '' : railView(); // en Moderación ya está todo; en Mensajes, Perfil y Ajustes, más sitio
   $('#app').innerHTML = `<div class="shell ${rail ? 'has-rail' : ''}">
     ${sidebar(secs)}
     <div class="main">${topbar(here)}${body}</div>
@@ -1578,7 +1585,7 @@ function profileView() {
   const p = S.profile;
   return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
     <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></div>
-  <div class="two">
+  <div class="two prof-grid">
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
       <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
@@ -1597,17 +1604,17 @@ function profileView() {
         </div></div>
       <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verá todo el grupo, así que elige una que quieras compartir.</p>
     </div>
-    <form id="aboutForm" class="panel">
+    <form id="aboutForm" class="panel about">
       <h2 class="h2" style="margin-top:0">Sobre ti</h2>
       <p class="sub" style="margin:0 0 12px">Lo verán tus compañeros al pulsar en tu nombre o tu foto. Todo es opcional.</p>
-      <label class="f">Bio corta<textarea name="bio" maxlength="200" rows="2" placeholder="Un par de frases sobre ti y tu música">${esc(p.bio || '')}</textarea></label>
-      <div class="grid2" style="grid-template-columns:1fr 1fr">
-        <label class="f">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label class="f">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <div class="about-grid">
+        <label class="f a-bio">Bio corta<textarea name="bio" maxlength="200" rows="3" placeholder="Un par de frases sobre ti y tu música">${esc(p.bio || '')}</textarea></label>
+        <label class="f a-3">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="f a-3">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="f a-3">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
+        <label class="f a-2">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
+        <label class="f a-2">Ahora estoy aprendiendo<input type="text" name="learning" maxlength="200" value="${esc(p.learning || '')}" placeholder="Ej.: el solo de Fade to Black, sweep picking"></label>
       </div>
-      <label class="f">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
-      <label class="f">Ahora estoy aprendiendo<input type="text" name="learning" maxlength="200" value="${esc(p.learning || '')}" placeholder="Ej.: el solo de Fade to Black, sweep picking"></label>
-      <label class="f">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
     </form>
   </div>`;
