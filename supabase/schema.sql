@@ -1125,6 +1125,12 @@ drop trigger if exists notifications_push_trg on public.notifications;
 create trigger notifications_push_trg after insert on public.notifications
   for each row execute function public.notify_push_trg();
 
+-- La Edge Function "send-push" entra como service_role (solo existe en el servidor de Supabase).
+-- En este proyecto service_role no tiene permisos por defecto: se le dan solo los que necesita.
+grant select, update on public.notifications to service_role;   -- leer la notificación y marcar pushed_at
+grant select on public.profiles to service_role;                -- nombre de quien la provoca
+grant select, delete on public.push_subscriptions to service_role; -- dispositivos; borra los dados de baja
+
 -- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto
