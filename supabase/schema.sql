@@ -1131,6 +1131,12 @@ grant select, update on public.notifications to service_role;   -- leer la notif
 grant select on public.profiles to service_role;                -- nombre de quien la provoca
 grant select, delete on public.push_subscriptions to service_role; -- dispositivos; borra los dados de baja
 
+-- Invitación a instalar la app del móvil (los marca la propia app; cada uno solo puede tocar su perfil)
+--   install_prompted_at: ya se le enseñó la ventana de bienvenida (solo sale una vez)
+--   app_installed_at:    ya abrió la app instalada en el móvil (deja de recordárselo para siempre)
+alter table public.profiles add column if not exists install_prompted_at timestamptz;
+alter table public.profiles add column if not exists app_installed_at timestamptz;
+
 -- =====================================================================
 -- TU CUENTA DE PROFESOR
 --    Primero REGÍSTRATE en la web con tu email. Después ejecuta esto

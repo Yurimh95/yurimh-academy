@@ -1,10 +1,10 @@
 const T=(m)=>new Date(Date.now()-m*60000).toISOString();
 window.__DB_SEED = {
   profiles:[
-    {id:'t1',display_name:'Yuri',email:'p@x.com',role:'teacher',approved:true,nickname:null,avatar:null,birth_date:null,family_dm_ok:false},
+    {id:'t1',install_prompted_at:'2026-01-01',display_name:'Yuri',email:'p@x.com',role:'teacher',approved:true,nickname:null,avatar:null,birth_date:null,family_dm_ok:false},
     // Marta: menor (13 años) y sin permiso familiar · Luis: adulto
-    {id:'s1',display_name:'Marta',email:'m@x.com',role:'student',approved:true,nickname:null,avatar:null,birth_date:'2013-05-10',family_dm_ok:false,bio:null},
-    {id:'s2',display_name:'Luis',email:'l@x.com',role:'student',approved:true,nickname:'Lu',avatar:'javascript:alert(1)',birth_date:'2000-03-02',family_dm_ok:false,bio:'Bajista y fan del jazz',instrument:'bass',level:'intermediate',favorites:'Joe Pass, Jaco'},
+    {id:'s1',install_prompted_at:'2026-01-01',display_name:'Marta',email:'m@x.com',role:'student',approved:true,nickname:null,avatar:null,birth_date:'2013-05-10',family_dm_ok:false,bio:null},
+    {id:'s2',install_prompted_at:'2026-01-01',display_name:'Luis',email:'l@x.com',role:'student',approved:true,nickname:'Lu',avatar:'javascript:alert(1)',birth_date:'2000-03-02',family_dm_ok:false,bio:'Bajista y fan del jazz',instrument:'bass',level:'intermediate',favorites:'Joe Pass, Jaco'},
     {id:'s3',display_name:'Nuevo',email:'n@x.com',role:'student',approved:false,nickname:null,avatar:null,birth_date:null,family_dm_ok:false}
   ],
   listening_items:[

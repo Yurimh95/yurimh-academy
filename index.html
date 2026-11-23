@@ -120,6 +120,35 @@ svg.i{width:20px;height:20px;flex:none}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0 0 18px}
 .top h1.sec{font-size:24px;letter-spacing:-.02em}
 .top-r{display:flex;align-items:center;gap:8px;margin-left:auto}
+/* Botón "Instalar app": visible mientras no tenga la app del móvil. Neón, pero quieto (sin parpadeos) */
+.installbtn{font:inherit;font-size:13.5px;font-weight:650;cursor:pointer;height:38px;padding:0 13px;border-radius:11px;display:inline-flex;align-items:center;gap:7px;color:var(--neon);background:rgba(var(--accent-rgb),.10);border:1.5px solid var(--neon);box-shadow:0 0 12px rgba(var(--neon-rgb),.35),inset 0 0 10px rgba(var(--neon-rgb),.10);white-space:nowrap;transition:filter .15s,background .15s}
+.installbtn:hover{background:rgba(var(--accent-rgb),.2);filter:brightness(1.1)}
+.installbtn svg{width:18px;height:18px}
+html[data-theme="light"] .installbtn{color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.12)}
+.install-hero{display:flex;gap:16px;align-items:center;margin:4px 0 16px}
+.install-hero img{width:72px;height:72px;border-radius:18px;flex:none;box-shadow:var(--glow)}
+.perks{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14.5px}
+.perks li::before{content:"✓";color:var(--neon);font-weight:700;margin-right:8px}
+html[data-theme="light"] .perks li::before{color:var(--accent)}
+.isteps{margin:0;padding-left:22px;display:grid;gap:8px;font-size:14.5px}
+.qrwrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.qr{width:150px;height:150px;flex:none;border-radius:12px;background:#fff;padding:8px;display:grid;place-items:center;color:#555;font-size:12px;text-align:center}
+.qr svg{width:100%;height:100%}
+.prof-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.prof-bar .btn svg{width:17px;height:17px}
+.settings .h2{display:flex;align-items:center;gap:9px}
+.settings .h2 svg{width:20px;height:20px;color:var(--accent)}
+.settings .push-box{margin:0;padding:0;border:0;background:none}
+.settings .push-box > b:first-child{display:none}
+.settings .h3{font-size:14.5px;margin:16px 0 8px;color:var(--strong)}
+.plist{margin:0;padding-left:18px;display:grid;gap:7px;font-size:14px;color:var(--muted)}
+.plist b{color:var(--text)}
+.blist{display:grid;gap:8px}
+.brow{display:flex;align-items:center;gap:10px}
+.brow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.install-how{padding:14px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+@media (max-width:420px){.installbtn{padding:0 10px;font-size:13px}.installbtn .l-long{display:none}}
+@media (min-width:421px){.installbtn .l-short{display:none}}
 .mbrand{display:none;align-items:center;gap:10px;font-weight:700;color:var(--strong)}
 .mbrand img{width:34px;height:34px;border-radius:10px;box-shadow:var(--glow)}
 .only-m{display:none}
@@ -565,7 +594,10 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
-  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3"/></symbol>
+  <symbol id="i-clock"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </svg>
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="modalRoot"></div>
@@ -851,6 +883,7 @@ function uiBusy() {
 function refreshChrome() {
   const secs = sections();
   $$('.bell').forEach(b => { b.outerHTML = bellHtml(); });
+  if (!installBtnHtml()) $$('.installbtn').forEach(b => b.remove());
   const nav = $('.sidebar .nav'); if (nav) nav.outerHTML = navHtml(secs);
   const tb = $('.tabbar'); if (tb) tb.outerHTML = tabbar(secs);
   const rl = $('.rail'); if (rl) rl.innerHTML = railView();
@@ -1133,8 +1166,9 @@ async function route() {
   const ok = await loadData();
   if (ok) {
     render(); rtStart(); backfillThumbs();
-    pushInit().catch(e => console.warn('Push:', e));
-    if (new URLSearchParams(location.search).has('n')) { // llegamos desde un aviso del móvil
+    const fromNotif = new URLSearchParams(location.search).has('n');
+    pushInit().catch(e => console.warn('Push:', e)).finally(() => installCheck(fromNotif).catch(e => console.warn('Instalar:', e)));
+    if (fromNotif) { // llegamos desde un aviso del móvil
       const url = location.href;
       history.replaceState(history.state, '', location.pathname); // limpia ?n= de la barra
       openNotifFromUrl(url);
@@ -1170,7 +1204,7 @@ async function loadData(quiet = false) {
         sb.from('listening_items').select('*').order('created_at', { ascending: false }),
         sb.from('listening_assignments').select('*'),
         // sin avatar_src (la copia grande de la foto): no hace falta y pesa. Al añadir campos al perfil, añádelos aquí.
-        sb.from('profiles').select('id, display_name, nickname, avatar, email, role, approved, created_at, birth_date, family_dm_ok').eq('role', 'student').order('display_name'),
+        sb.from('profiles').select('id, display_name, nickname, avatar, email, role, approved, created_at, birth_date, family_dm_ok, app_installed_at').eq('role', 'student').order('display_name'),
         sb.from('board_posts').select('*'),
         sb.from('board_recipients').select('*'),
         sb.from('board_reads').select('*'),
@@ -1217,7 +1251,7 @@ function render() {
   if (!S.profile) return;
   const t = isTeacher();
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
-  if (!['feed', 'messages', 'board', 'listening', 'profile'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
+  if (!['feed', 'messages', 'board', 'listening', 'profile', 'settings'].concat(t ? ['students', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
   switch (S.section) {
     case 'messages': body = messagesView(); break;
@@ -1225,6 +1259,7 @@ function render() {
     case 'listening': body = t ? teacherCatalog() : studentListening(); break;
     case 'students': body = teacherStudents(); break;
     case 'profile': body = profileView(); break;
+    case 'settings': body = settingsView(); break;
     case 'mod': body = homeTeacher(); break;
     default: body = feedView();
   }
@@ -1259,6 +1294,8 @@ function sections() {
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
   list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
+  // En el móvil, a Ajustes se llega desde el botón ⚙ de Perfil (como en Instagram)
+  list.push({ id: 'settings', label: 'Ajustes', short: 'Ajustes', icon: 'gear', mob: false });
   return list;
 }
 function themeSwitch() {
@@ -1286,6 +1323,7 @@ function topbar(cur) {
     <div class="mbrand"><img src="logo.png" alt="">${esc(APP_NAME)}</div>
     ${S.section !== 'feed' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
     <div class="top-r">
+      ${installBtnHtml()}
       <button class="iconbtn only-m" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
       ${bellHtml()}
       <button class="iconbtn only-m avbtn" data-action="section" data-s="profile" title="Tu perfil" aria-label="Tu perfil">${avatarHtml(S.user.id, 30)}</button>
@@ -1529,7 +1567,7 @@ function postFormModal(id) {
       </div>
       <div class="checks">
         <label class="chk"><input type="checkbox" name="pinned" ${p && p.pinned ? 'checked' : ''}> Fijar arriba del tablón</label>
-        <label class="chk off"><input type="checkbox" disabled> Enviar también por email (próximamente)</label>
+        <!-- Envío por email: aparcado (Yuri, 2026-11-23). Los avisos ya llegan al móvil con las notificaciones push. -->
       </div>
       <div class="actions"><button class="btn" type="submit">${p ? 'Guardar cambios' : 'Publicar'}</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
@@ -1538,13 +1576,14 @@ function postFormModal(id) {
 /* ================================ PERFIL ============================== */
 function profileView() {
   const p = S.profile;
-  return `<div class="two">
+  return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
+    <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></div>
+  <div class="two">
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
       <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
       <label class="f">Nombre<input type="text" name="display_name" required maxlength="60" value="${esc(p.display_name)}"></label>
       <label class="f">Apodo (opcional)<input type="text" name="nickname" maxlength="30" value="${esc(p.nickname || '')}" placeholder="Cómo quieres que te vea el grupo"></label>
-      <label class="f">Email (no se puede cambiar desde aquí)<input type="text" value="${esc(p.email || '')}" disabled></label>
       <button class="btn" type="submit">Guardar</button>
     </form>
     <div class="panel">
@@ -1571,16 +1610,37 @@ function profileView() {
       <label class="f">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
     </form>
+  </div>`;
+}
+
+/* ================================ AJUSTES ============================= */
+// Perfil = lo que ven los demás. Ajustes = cómo funciona la app para ti. El tema claro/oscuro sigue en el menú.
+function settingsView() {
+  const p = S.profile, t = isTeacher();
+  const blocked = S.blocks.map(b => b.blocked_id);
+  const minor = !t && isMinorProfile(p);
+  return `<div class="two settings">
+    <div class="panel"><h2 class="h2" style="margin-top:0">${ic('bell')} Notificaciones</h2>${pushSettingHtml()}</div>
+    ${installPanelHtml()}
+    <div class="panel">
+      <h2 class="h2" style="margin-top:0">${ic('shield')} Privacidad</h2>
+      ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
+        : `<ul class="plist">
+          <li><b>Lo ve todo el grupo:</b> tu nombre o apodo, tu foto, lo que pones en "Sobre ti" y lo que publicas en Inicio.</li>
+          <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
+          <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
+        <h3 class="h3">Personas bloqueadas</h3>
+        ${blocked.length ? `<div class="blist">${blocked.map(id => `<div class="brow">${avatarHtml(id, 32)}<span>${esc(whoName(id))}</span><button class="btn sm ghost" data-action="unblock" data-id="${id}" data-stay="1">Desbloquear</button></div>`).join('')}</div>`
+          : '<p class="sub" style="margin:0">No has bloqueado a nadie. Puedes hacerlo desde una conversación privada; nadie se entera, tampoco tu profesor.</p>'}`}
+    </div>
     <form id="passForm" class="panel">
-      <h2 class="h2" style="margin-top:0">Cambiar contraseña</h2>
+      <h2 class="h2" style="margin-top:0">${ic('lock')} Seguridad</h2>
       <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
       <label class="f">Repite la contraseña<input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
       <button class="btn" type="submit">Cambiar contraseña</button>
     </form>
-    ${installPanelHtml()}
-    <div class="panel">${pushSettingHtml()}</div>
     <div class="panel">
-      <h2 class="h2" style="margin-top:0">Sesión</h2>
+      <h2 class="h2" style="margin-top:0">${ic('profile')} Cuenta</h2>
       <p class="sub" style="margin:0 0 12px">Conectado como ${esc(p.email || '')}</p>
       <button class="btn ghost" data-action="logout">${ic('logout')} Cerrar sesión</button>
     </div>
@@ -2129,6 +2189,7 @@ function studentDetailModal(id) {
     <div class="modal-head"><div><h2>${esc(s.display_name)}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
+    <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
     <h2 class="h2">Edad y mensajes privados</h2>
     <div class="agebox">
       <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
@@ -2320,7 +2381,8 @@ function notifsModal() {
     ${pushPromptHtml()}`);
   $('.modal').classList.add('narrow');
 }
-function pushPromptHtml() { return typeof pushSettingHtml === 'function' ? pushSettingHtml() : ''; }
+// En la campanita solo se invita a activarlas; el resto de opciones está en Ajustes
+function pushPromptHtml() { return typeof pushSettingHtml === 'function' && S.push === 'off' ? pushSettingHtml() : ''; }
 async function markNotifsRead(ids) {
   if (!ids.length) return;
   const now = new Date().toISOString();
@@ -2380,7 +2442,16 @@ const actions = {
   'avatar-save'() { cropSave(); },
   'push-on'() { pushEnable(); },
   'push-off'() { pushDisable(); },
-  async 'install-app'() { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; render(); },
+  async 'install-app'() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const c = await installPrompt.userChoice; installPrompt = null;
+    if (c && c.outcome === 'accepted') { if ($('#installHow')) await closeModal(); }
+    else if ($('#installHow')) $('#installHow').innerHTML = installHowHtml();
+    else render();
+  },
+  'install-open'() { installModal(); },
+  async 'push-welcome'() { await pushEnable(); if (S.push === 'on' && $('.app-welcome')) closeModal(); },
   // ---- Perfiles ----
   'open-profile'(el) { profileModal(el.dataset.id); },
   // ---- Mensajes privados ----
@@ -2404,7 +2475,9 @@ const actions = {
     const { error } = await sb.from('user_blocks').delete().eq('blocker_id', S.user.id).eq('blocked_id', el.dataset.id);
     if (error) return toast('No se pudo desbloquear: ' + error.message, 'bad');
     S.blocks = S.blocks.filter(b => b.blocked_id !== el.dataset.id);
-    delete S.dmCan[el.dataset.id]; await openDm(el.dataset.id); toast('Desbloqueado', 'ok');
+    delete S.dmCan[el.dataset.id];
+    if (el.dataset.stay) render(); else await openDm(el.dataset.id); // desde Ajustes se queda en Ajustes
+    toast('Desbloqueado', 'ok');
   },
   // ---- Notificaciones ----
   notifs() { notifsModal(); },
@@ -2732,18 +2805,99 @@ document.addEventListener('submit', async e => {
 });
 
 /* ------------------------- Instalar como app (PWA) ------------------------- */
+/* Cómo funciona la invitación a instalar:
+   · La primera vez que alguien entra (móvil u ordenador) sale una ventana de bienvenida que invita a instalarla
+     (una sola vez: profiles.install_prompted_at).
+   · Mientras no tenga la app del móvil, arriba hay un botón neón "Instalar app" que abre esa misma ventana.
+   · Cuando abre la app instalada en el móvil, se marca profiles.app_installed_at: desaparece el botón en todos
+     sus dispositivos, y se le invita una vez a activar las notificaciones. */
 let installPrompt = null; // Android/Chrome/Edge: el navegador nos deja mostrar su ventana de instalar
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; if (S.section === 'profile' && !uiBusy()) softRender(); });
-window.addEventListener('appinstalled', () => { installPrompt = null; toast('¡App instalada! Ya la tienes en tu pantalla de inicio', 'ok'); });
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); installPrompt = e;
+  if ($('#installHow')) $('#installHow').innerHTML = installHowHtml();
+  else if (S.section === 'settings' && !uiBusy()) softRender();
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  toast('¡App instalada! Ábrela desde su icono en tu pantalla de inicio', 'ok');
+  if (S.profile && isMobile()) markInstall({ app_installed_at: new Date().toISOString() }).then(() => softRender());
+});
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-function installPanelHtml() {
-  if (isStandalone()) return ''; // ya la está usando como app
-  const how = installPrompt ? '<button class="btn primary" data-action="install-app">Instalar la app</button>'
-    : isIOS() ? '<p class="sub" style="margin:0">En iPhone: abre esta web en <b>Safari</b>, pulsa el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba) y elige <b>"Añadir a pantalla de inicio"</b>.</p>'
-    : '<p class="sub" style="margin:0">En Android: abre esta web en <b>Chrome</b>, pulsa el menú <b>⋮</b> y elige <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>.</p>';
+const isMobile = () => isIOS() || /android|mobile/i.test(navigator.userAgent);
+const hasMobileApp = () => !!(S.profile && S.profile.app_installed_at);
+const appLink = () => location.origin + location.pathname;
+
+function installBtnHtml() {
+  if (isStandalone() || hasMobileApp()) return '';
+  return `<button class="installbtn" data-action="install-open" title="Instala la app en tu móvil">${ic('phone')}<span class="l-long">Instalar app</span><span class="l-short">Instalar</span></button>`;
+}
+function installPanelHtml() { // en Ajustes, por si alguien la desinstaló o quiere ponerla en otro móvil
+  if (isStandalone()) return '';
   return `<div class="panel"><h2 class="h2" style="margin-top:0">Tenla en el móvil como una app</h2>
-    <p class="sub" style="margin:0 0 12px">Se abre a pantalla completa desde su icono, sin barra del navegador. No ocupa casi espacio.</p>${how}</div>`;
+    <p class="sub" style="margin:0 0 12px">Se abre a pantalla completa desde su icono y te llegan los avisos al móvil.</p>
+    <button class="btn primary" data-action="install-open">${ic('phone')} Cómo instalarla</button></div>`;
+}
+const stepsHtml = list => `<ol class="isteps">${list.map(s => `<li>${s}</li>`).join('')}</ol>`;
+function installHowHtml() {
+  if (installPrompt) return `<button class="btn primary" style="width:100%;justify-content:center" data-action="install-app">${ic('phone')} Instalar ahora</button>
+    <p class="sub" style="margin:8px 0 0;text-align:center">Se añade a tu pantalla de inicio, como cualquier app.</p>`;
+  if (isIOS()) return stepsHtml(['Abre esta web en <b>Safari</b>.', 'Pulsa <b>Compartir</b> (el cuadrado con la flecha hacia arriba, abajo en la pantalla).', 'Elige <b>"Añadir a pantalla de inicio"</b> y pulsa <b>Añadir</b>.', 'Abre la app desde su icono nuevo.']);
+  if (isMobile()) return stepsHtml(['Pulsa el menú <b>⋮</b> del navegador (arriba a la derecha).', 'Elige <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>.', 'Confirma con <b>Instalar</b> y ábrela desde su icono nuevo.']);
+  // Ordenador: la app es para el móvil, así que damos un QR para abrir la web allí
+  return `<div class="qrwrap"><div class="qr" id="qrBox">${esc(appLink().replace(/^https?:\/\//, ''))}</div>
+    <div style="flex:1;min-width:180px"><p style="margin:0 0 8px"><b>Escanea este código con la cámara del móvil</b> para abrir la web allí.</p>
+    <p class="sub" style="margin:0 0 8px">O escribe en el navegador del móvil:<br><b style="color:var(--text);overflow-wrap:anywhere">${esc(appLink().replace(/^https?:\/\//, ''))}</b></p>
+    <p class="sub" style="margin:0">Entra con tu cuenta y te dirá cómo instalarla en un par de toques.</p></div></div>`;
+}
+function installModal() {
+  openModal(`<div class="modal-head"><h2>Llévate ${esc(APP_NAME)} en el móvil</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="install-hero"><img src="icon-192.png" alt=""><ul class="perks">
+      <li>Se abre desde su icono, a pantalla completa</li>
+      <li>Te llegan al móvil los avisos, mensajes y escuchas nuevas</li>
+      <li>Gratis, sin Play Store y sin ocupar casi espacio</li></ul></div>
+    <div class="install-how" id="installHow">${installHowHtml()}</div>
+    <div class="actions" style="margin-top:14px"><button class="btn ghost" data-action="close">Ahora no</button>
+      <span class="sub" style="align-self:center">Siempre tendrás el botón <b>Instalar app</b> arriba.</span></div>`);
+  $('.modal').style.maxWidth = '580px'; // un poco más ancha que las estrechas: el QR cabe al lado del texto
+  renderQr();
+}
+// QR del enlace a la web (solo en ordenador). La librería se carga al abrir la ventana, no antes.
+let qrLib = null;
+async function renderQr() {
+  const box = $('#qrBox');
+  if (!box || CFG.NO_EXTERNAL) return;
+  try {
+    qrLib = qrLib || new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+    await qrLib;
+    const q = window.qrcode(0, 'M'); q.addData(appLink()); q.make();
+    if ($('#qrBox')) $('#qrBox').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true, alt: 'Código QR de la web' });
+  } catch (e) { qrLib = null; console.warn('QR:', e); }
+}
+async function markInstall(fields) { // guarda en el perfil propio; si falla (p. ej. sin la columna aún), no pasa nada
+  const { data, error } = await sb.from('profiles').update(fields).eq('id', S.user.id).select('id');
+  if (error || !data || !data.length) { console.warn('Instalar:', error && error.message); return false; }
+  Object.assign(S.profile, fields); return true;
+}
+function appWelcomeModal() {
+  openModal(`<div class="app-welcome"><div class="modal-head"><h2>¡Ya tienes la app! 🎸</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <p style="margin:0 0 8px">Último paso: <b>activa las notificaciones</b> para enterarte de los avisos, mensajes y escuchas nuevas aunque tengas la app cerrada.</p>
+    <p class="sub" style="margin:0 0 14px">Tu móvil te pedirá permiso: pulsa <b>Permitir</b>. Puedes cambiarlo cuando quieras en Ajustes.</p>
+    <div class="actions"><button class="btn primary" data-action="push-welcome">${ic('bell')} Activar notificaciones</button><button class="btn ghost" data-action="close">Ahora no</button></div></div>`);
+  $('.modal').classList.add('narrow');
+}
+async function installCheck(quiet) {
+  const p = S.profile; if (!p) return;
+  const now = new Date().toISOString();
+  if (isStandalone() && isMobile()) { // está usando la app instalada en el móvil
+    if (p.app_installed_at) return;
+    if (!(await markInstall({ app_installed_at: now }))) return;
+    softRender();
+    if (!quiet && S.push === 'off' && !$('#modalRoot').firstChild) appWelcomeModal();
+    return;
+  }
+  if (quiet || isStandalone() || p.app_installed_at || p.install_prompted_at || $('#modalRoot').firstChild) return;
+  if (await markInstall({ install_prompted_at: now })) installModal();
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker:', e));
@@ -2757,7 +2911,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
    S.push: 'unsupported' (este navegador no puede) · 'install' (iPhone: primero hay que instalar la app)
            'denied' (el usuario las bloqueó) · 'off' · 'on' */
 S.push = 'unsupported';
-let lastPushError = ''; // último fallo al activar (se muestra en Perfil para poder copiarlo)
+let lastPushError = ''; // último fallo al activar (se muestra en Ajustes para poder copiarlo)
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
 function b64urlToBytes(s) { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); }
 async function pushInit() { // al entrar: averigua el estado y, si ya estaban activadas, refresca la suscripción

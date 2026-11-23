@@ -103,11 +103,15 @@ const { chromium } = require('playwright');
   ok(nTracks>0 && (await p.locator('.track .kicon').count())===nTracks && (await p.locator('.track .playbtn').count())===nTracks && (await p.locator('.track .cover').count())===nTracks, 'Escucha: filas con portada/icono, icono de tipo y botón ▶ ('+nTracks+')');
   ok((await p.locator('.track .playbtn.sp, .track .playbtn.yt').count())===nTracks, 'El botón ▶ lleva el color de Spotify o YouTube');
   await p.screenshot({path:require('path').join(__dirname,'shots','escucha_lista.png')});
-  await goto(p,'profile');
-  ok((await p.textContent('#app')).includes('Tenla en el móvil como una app'), 'Perfil: explica cómo instalarla en el móvil');
-  ok((await p.textContent('#app')).includes('Notificaciones en el móvil'), 'Perfil: apartado de notificaciones en el móvil');
+  await goto(p,'settings');
+  ok((await p.textContent('#app')).includes('Tenla en el móvil como una app'), 'Ajustes: explica cómo instalarla en el móvil');
+  ok((await p.textContent('#app')).includes('Notificaciones en el móvil'), 'Ajustes: apartado de notificaciones en el móvil');
+  ok((await p.textContent('#app')).includes('Solo lo ve tu profesor') && (await p.textContent('#app')).includes('Personas bloqueadas'), 'Ajustes: privacidad explicada y lista de bloqueados');
   await p.click('.bell'); await wait(p,250);
-  ok((await p.locator('.modal .push-box').count())===1, 'La campanita también ofrece activar las notificaciones en el móvil');
+  ok((await p.locator('.modal .push-box').count())===0, 'La campanita no muestra ajustes de push si no se pueden activar (eso va en Ajustes)');
+  await p.keyboard.press('Escape'); await wait(p,200);
+  await p.evaluate(()=>{ S.push='off'; }); await p.click('.bell'); await wait(p,250);
+  ok((await p.locator('.modal .push-box [data-action=push-on]').count())===1, 'Si se pueden activar y están apagadas, la campanita invita a activarlas');
   await p.keyboard.press('Escape'); await wait(p);
   let state = await snapshot(p);
 
@@ -181,6 +185,24 @@ const { chromium } = require('playwright');
   ok(await m.locator('.dm-list').isHidden() && await m.locator('.dm-back').isVisible(), 'Móvil: la conversación ocupa la pantalla y hay botón Volver');
   ok(await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: mensajes sin scroll horizontal');
   await m.screenshot({path:require('path').join(__dirname,'shots','m_dm.png')});
+
+  // ================= Invitación a instalar la app =================
+  const base = await snapshot(m);
+  const fresh = JSON.parse(JSON.stringify(base)); fresh.profiles.find(x=>x.id==='s1').install_prompted_at = null;
+  const i1 = await open('s1', undefined, fresh); await wait(i1,400);
+  ok(await i1.locator('#installHow').isVisible() && (await i1.locator('#qrBox').count())===1, 'Primera visita (ordenador): ventana de bienvenida con QR para abrirla en el móvil');
+  ok(!!(await db(i1,()=>window.__DB.profiles.find(x=>x.id==='s1').install_prompted_at)), 'Queda apuntado que ya se le enseñó');
+  await i1.screenshot({path:require('path').join(__dirname,'shots','install_modal.png')});
+  await i1.click('.modal [data-action=close]:has-text("Ahora no")'); await wait(i1,250);
+  ok(await i1.locator('.installbtn').isVisible(), 'Tras "Ahora no", queda el botón neón "Instalar app" arriba');
+  await i1.click('.installbtn'); await wait(i1,250);
+  ok(await i1.locator('#installHow').isVisible(), 'El botón vuelve a abrir la ventana');
+  const again = await open('s1', undefined, await snapshot(i1)); await wait(again,400);
+  ok((await again.locator('#installHow').count())===0 && await again.locator('.installbtn').isVisible(), 'Segunda visita: sin ventana, solo el botón');
+  const inst = JSON.parse(JSON.stringify(base)); inst.profiles.find(x=>x.id==='s1').app_installed_at = '2026-11-23T10:00:00Z';
+  const i3 = await open('s1', {width:390,height:844}, inst);
+  ok((await i3.locator('.installbtn').count())===0, 'Con la app del móvil ya instalada, el botón desaparece para siempre');
+  ok(await i3.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: barra superior sin scroll horizontal');
 
   console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
   console.log(fails? `\n${fails} FALLOS`:'\nTODO OK');

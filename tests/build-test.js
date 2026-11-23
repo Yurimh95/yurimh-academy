@@ -8,7 +8,7 @@ if (!cdn.test(html) || !html.includes('<script src="config.js"></script>')) {
 html = html.replace(cdn, '<script src="seed.js"></script><script src="fake-supabase.js"></script>')
            .replace('<script src="config.js"></script>', '<script src="config.test.js"></script>');
 fs.writeFileSync(path.join(__dirname, 'test.html'), html);
-for (const img of ['logo.png', 'icon-round.png']) // imágenes que usa la interfaz
+for (const img of ['logo.png', 'icon-round.png', 'icon-192.png']) // imágenes que usa la interfaz
   fs.copyFileSync(path.join(__dirname, '..', img), path.join(__dirname, img));
 fs.mkdirSync(path.join(__dirname, 'shots'), { recursive: true });
 console.log('tests/test.html generado');
