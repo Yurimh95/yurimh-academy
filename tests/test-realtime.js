@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
   await ext(p,'__rtExternal','reactions',{target_type:'feed_post',target_id:'rt1',user_id:'s2',emoji:'love'}); await wait(p);
   ok((await p.textContent('.fpost:has-text("Post en directo") .rx-list')).includes('❤️1'), 'Reacción de otro aparece sola');
   await ext(p,'__rtExternal','feed_comments',{id:'rtc1',post_id:'rt1',author_id:'t1',body:'¡Muy bien!'}); await wait(p);
-  ok((await p.textContent('.fpost:has-text("Post en directo")')).includes('1 comentario'), 'Comentario de otro: el contador se actualiza solo');
+  ok(await p.locator('.fpost:has-text("Post en directo") .peek-cmt').count() === 1, 'Comentario de otro: aparece solo en la vista previa');
   await ext(p,'__rtExternalDelete','feed_posts','rt1'); await wait(p);
   ok((await p.locator('.fpost:has-text("Post en directo")').count())===0, 'Si el autor (o el profe) lo borra, desaparece solo');
 

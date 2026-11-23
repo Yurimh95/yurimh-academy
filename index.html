@@ -378,6 +378,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .pickbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:-2px 0 14px}
 .pickbox[hidden]{display:none}
 .pickbox.hwcopy-list{grid-template-columns:1fr}
+.pickbox.am-items{grid-template-columns:1fr;max-height:min(300px,40vh);overflow:auto;gap:6px}
+.am-items .chk{display:flex;align-items:center;gap:8px}
+.am-items .chk[hidden]{display:none}
+.am-items .chk .cover{flex:none}
+.am-items .chk .sub{margin-left:auto;white-space:nowrap}
 .hwcopy-due{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:6px 0 14px}
 .hwcopy-due input[type=date]{width:auto;margin-left:6px}
 .checks{display:flex;flex-direction:column;gap:9px;margin:6px 0 4px}
@@ -503,6 +508,25 @@ label.f>.emo-wrap{margin-top:6px}
 .cmt-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px;padding-left:4px}
 .cm-new{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
 .cm-new textarea{min-height:44px}
+/* Vista previa de comentarios en las tarjetas del Inicio */
+.cm-peek{display:flex;flex-direction:column;gap:8px;margin-top:-2px}
+.peek-more{align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--muted)}
+.peek-more:hover{color:var(--accent-hi)}
+.peek-cmt{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.peek-bubble{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:6px 12px 7px;min-width:0;max-width:100%;transition:border-color .15s,background .15s}
+.peek-cmt:hover .peek-bubble{border-color:var(--line-strong);background:rgba(var(--accent-rgb),.06)}
+.peek-bubble .cmt-head b{font-size:13px}
+.peek-body{font-size:14px;overflow-wrap:anywhere;white-space:pre-wrap;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+.peek-body .rt-list{margin:0;white-space:normal}
+.peek-rx{position:absolute;right:-6px;bottom:-10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:0 6px;font-size:12px;line-height:20px;color:var(--muted);box-shadow:var(--shadow)}
+.peek-rx b{font-weight:600}
+.peek-cmt:has(.peek-rx){margin-bottom:6px}
+.peek-new{display:flex;gap:8px;align-items:center;cursor:text}
+.peek-input{flex:1;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--faint);font-size:14px;transition:border-color .15s}
+.peek-new:hover .peek-input{border-color:rgba(var(--accent-rgb),.5)}
+.cmt.flash .cmt-bubble{animation:cmtFlash 1.6s ease}
+@keyframes cmtFlash{0%,40%{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.25)}100%{box-shadow:none}}
+@media (prefers-reduced-motion:reduce){.cmt.flash .cmt-bubble{animation:none;border-color:var(--accent)}}
 .avrow{display:flex;gap:18px;align-items:center;margin-bottom:12px}
 .rowav{display:flex;gap:10px;align-items:center;min-width:0}
 .sub.clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:44ch}
@@ -1463,13 +1487,16 @@ function rxHoverInit() {
   addEventListener('keydown', e => { if (e.key === 'Escape' && rxOpenEl) rxHide(); });
 }
 rxHoverInit();
-function updateRx(type, id) { $$(`[data-rx="${type}:${id}"]`).forEach(n => { n.outerHTML = rxBar(type, id); }); }
+function updateRx(type, id) {
+  $$(`[data-rx="${type}:${id}"]`).forEach(n => { n.outerHTML = rxBar(type, id); });
+  if (type === 'feed_comment') { const c = S.fcomments.find(x => x.id === id); if (c) updateCmPeek(c.post_id); }
+}
 
 /* ---- Comentarios: el mismo bloque sirve para el feed y para la escucha ---- */
 function commentRow(kind, x) {
   const c = CM[kind], mine = x.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
-  return `<div class="cmt">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
+  return `<div class="cmt" data-cmt-id="${x.id}">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
     <div class="cmt-body">${richText(x.body)}</div></div>${mediaLinkCard(x.body)}
     <div class="cmt-foot">${rxBar(c.type, x.id)}
@@ -1491,9 +1518,37 @@ function updateComments(kind, pid) {
     n.innerHTML = commentsInner(kind, pid);
     const t2 = n.querySelector('textarea'); if (t2 && v) { t2.value = v; t2._mentions = mm; } // conserva lo que estabas escribiendo
   });
-  if (kind === 'feed') $$(`[data-cmcount="${pid}"]`).forEach(n => { n.textContent = cmCountLabel(pid); });
+  if (kind === 'feed') updateCmPeek(pid);
 }
-function cmCountLabel(pid) { const n = S.fcomments.filter(c => c.post_id === pid).length; return n ? `${n} comentario${n === 1 ? '' : 's'}` : 'Comentar'; }
+// Vista previa de comentarios en la tarjeta del Inicio: los 2 más relevantes a la vista
+// (más reacciones; a igualdad, los del profesor y luego los más nuevos) y una caja de "Escribe un comentario…".
+// Todo es pulsable y abre la publicación entera (sin botón de "mostrar comentarios").
+const CM_PEEK = 2;
+function cmPeekPick(pid) {
+  const nrx = id => S.reactions.filter(r => r.target_type === 'feed_comment' && r.target_id === id).length;
+  return S.fcomments.filter(c => c.post_id === pid)
+    .map(c => ({ c, n: nrx(c.id), t: isTeacherId(c.author_id) ? 1 : 0 }))
+    .sort((a, b) => b.n - a.n || b.t - a.t || String(b.c.created_at || '').localeCompare(String(a.c.created_at || '')))
+    .slice(0, CM_PEEK);
+}
+function cmPeekRx(id) {
+  const rows = S.reactions.filter(r => r.target_type === 'feed_comment' && r.target_id === id);
+  if (!rows.length) return '';
+  const top = REACTIONS.map(r => ({ e: r.e, n: rows.filter(x => x.emoji === r.k).length })).filter(r => r.n).sort((a, b) => b.n - a.n).slice(0, 3);
+  return `<span class="peek-rx">${top.map(r => r.e).join('')}${rows.length > 1 ? ` <b>${rows.length}</b>` : ''}</span>`;
+}
+function cmPeekInner(pid) {
+  const total = S.fcomments.filter(c => c.post_id === pid).length;
+  const pick = cmPeekPick(pid);
+  return `${total > pick.length ? `<button class="peek-more linkbtn" data-action="fpost-peek" data-id="${pid}">Ver los ${total} comentarios</button>` : ''}
+    ${pick.map(({ c }) => `<div class="peek-cmt" data-action="fpost-peek" data-id="${pid}" data-cmt="${c.id}">
+      ${whoLink(c.author_id, avatarHtml(c.author_id, 28))}
+      <div class="peek-bubble"><div class="cmt-head">${whoLink(c.author_id, `<b>${esc(whoName(c.author_id))}</b>`)}${teacherTag(c.author_id)}<span class="sub">${timeAgo(c.created_at)}</span></div>
+        <div class="peek-body">${richText(c.body)}</div>${cmPeekRx(c.id)}</div></div>`).join('')}
+    <div class="peek-new" data-action="fpost-peek" data-id="${pid}" data-focus="1">${avatarHtml(S.user.id, 28)}
+      <span class="peek-input">${total ? 'Escribe un comentario…' : 'Sé el primero en comentar…'}</span></div>`;
+}
+const updateCmPeek = pid => $$(`[data-cmpeek="${pid}"]`).forEach(n => { n.innerHTML = cmPeekInner(pid); });
 
 /* ---- Enlaces ---- */
 // Spotify y YouTube salen como en Escucha analítica: portada, título, tipo y duración.
@@ -2302,11 +2357,12 @@ function feedCard(p) {
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
     <div class="factions">
-      <button class="linkbtn" data-action="open-fpost" data-id="${p.id}"><span data-cmcount="${p.id}">${cmCountLabel(p.id)}</span></button>
+      <button class="linkbtn" data-action="open-fpost" data-id="${p.id}" data-focus="1">Comentar</button>
       ${mine ? `<button class="linkbtn mute" data-action="feed-edit" data-id="${p.id}">Editar</button>` : ''}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="feed-delete" data-id="${p.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="feed_post" data-id="${p.id}">Denunciar</button>`) : ''}
-    </div></article>`;
+    </div>
+    <div class="cm-peek" data-cmpeek="${p.id}">${cmPeekInner(p.id)}</div></article>`;
 }
 
 function feedPostModal(id) {
@@ -3020,7 +3076,8 @@ const exportActions = {
 /* ============================= PROFESOR ============================= */
 function teacherCatalog() {
   return `<div class="toolbar"><span class="sub" style="color:var(--muted)">Pulsa una fila para ver respuestas y asignar alumnos.</span>
-      <button class="btn primary" data-action="new-item">+ Nuevo elemento</button></div>
+      <div class="chips">${S.items.length ? `<button class="btn" data-action="assign-many">${ic('students')} Asignar varias</button>` : ''}
+      <button class="btn primary" data-action="new-item">+ Nuevo elemento</button></div></div>
     ${S.items.length ? `<div class="tracklist teacher">
       <div class="track-head"><span>#</span><span></span><span>Título</span><span>Alumnos</span><span>Estado</span><span></span></div>
       ${S.items.map((it, i) => {
@@ -3105,6 +3162,32 @@ function itemFormModal(id) {
       <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" ${it && itemReturn ? `data-action="open-item" data-keep="1" data-id="${it.id}"` : 'data-action="close"'}>Cancelar</button></div>
     </form>`);
+}
+
+// Asignar varias escuchas a varios alumnos de golpe (catálogo). Fecha y nota comunes, opcionales;
+// luego se ajustan una a una en cada escucha. Las parejas que ya existen se saltan.
+// La base de datos manda un solo aviso por alumno (trigger listening_assignments_notify).
+function assignManyModal() {
+  const ok = S.students.filter(s => s.approved);
+  openModal(`<div class="modal-head"><h2>Asignar varias escuchas</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="assignManyForm">
+      <div class="f">Qué escuchas <span class="sub" data-am-count></span>
+        <input type="text" id="amFilter" data-no-emoji autocomplete="off" placeholder="Buscar por título…" aria-label="Buscar escucha" style="margin-top:6px">
+        <div class="pickbox am-items">${S.items.map(it => `<label class="chk" data-am-title="${esc((it.title || '').toLowerCase())}"><input type="checkbox" name="item" value="${it.id}"> ${coverHtml(it, 30)}<span>${esc(it.title)}</span><span class="sub">${esc(KIND[it.kind] || '')}</span></label>`).join('')}</div></div>
+      <div class="f">A quién <button type="button" class="linkbtn" data-action="am-all" style="margin-left:8px">Marcar todos</button>
+        <div class="pickbox">${ok.length ? ok.map(s => `<label class="chk"><input type="checkbox" name="pick" value="${s.id}"> ${avatarHtml(s.id, 22)}${esc(s.display_name)}</label>`).join('') : '<span class="sub">No hay alumnos aprobados.</span>'}</div></div>
+      <div class="grid2">
+        <label class="f">Fecha límite (opcional)<input type="date" name="due_date"></label>
+        <label class="f">Nota para todas (opcional)<input type="text" name="note" maxlength="2000" placeholder="Ej.: Fíjate sobre todo en las guitarras"></label>
+      </div>
+      <p class="sub" style="margin:0 0 12px">Si un alumno ya tiene alguna de esas escuchas, se deja como está. A cada alumno le llega un solo aviso con todas.</p>
+      <div class="actions"><button class="btn" type="submit">Asignar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+  amCount();
+}
+function amCount() {
+  const n = $$('#assignManyForm input[name=item]:checked').length, el = $('[data-am-count]');
+  if (el) el.textContent = n ? `(${n} marcada${n > 1 ? 's' : ''})` : '';
 }
 
 let itemReturn = null; // alumno cuya ficha estaba abierta al pulsar una de sus escuchas (para volver a ella)
@@ -3558,7 +3641,7 @@ function notifText(n) {
   const who = n.actor_id ? `<b>${esc(whoName(n.actor_id))}</b>` : '';
   switch (n.kind) {
     case 'board_post': return `Nuevo aviso: <b>${esc(n.extra || '')}</b>`;
-    case 'assignment': return `Nueva escucha asignada: <b>${esc(n.extra || '')}</b>`;
+    case 'assignment': return n.target_id ? `Nueva escucha asignada: <b>${esc(n.extra || '')}</b>` : `Escuchas nuevas asignadas: <b>${esc(n.extra || '')}</b>`; // sin target = varias de golpe
     case 'dm': return n.extra ? `${who} ha reaccionado ${esc(n.extra)} a tu mensaje` : `${who} te ha enviado un mensaje`;
     case 'comment': return `${who} ha comentado tu publicación${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'reaction': return `${who} ha reaccionado ${RX_EMOJI[n.extra] || ''} a tu publicación`;
@@ -3719,6 +3802,8 @@ const actions = {
     studentDetailModal(el.dataset.id); toast('Fecha guardada', 'ok');
   },
   'new-item'() { itemFormModal(null); },
+  'assign-many'() { assignManyModal(); },
+  'am-all'() { const boxes = $$('#assignManyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   'open-item'(el) { if (!el.dataset.keep) itemReturn = null; itemModal(el.dataset.id); },
   'sdm-item'(el) { itemReturn = el.dataset.sid; itemModal(el.dataset.id); }, // desde la ficha del alumno
   'item-back'() { const r = itemReturn; itemReturn = null; if (r) studentDetailModal(r); else closeModal(); },
@@ -3831,7 +3916,20 @@ const actions = {
   'home-open-post'(el) { goPost(el.dataset.id); },
   'open-post'(el) { goPost(el.dataset.id); },
   'home-open-fpost'(el) { S.section = 'feed'; render(); feedPostModal(el.dataset.id); },
-  'open-fpost'(el) { feedPostModal(el.dataset.id); },
+  'open-fpost'(el, e) { actions['fpost-peek'](el, e); },
+  // Vista previa de comentarios: abre la publicación; si se pulsó un comentario, baja hasta él;
+  // si se pulsó "Escribe un comentario…", deja el cursor en la caja. Los enlaces se abren normal.
+  'fpost-peek'(el, e) {
+    if (e && e.target.closest('a')) return;
+    const id = el.dataset.id, cid = el.dataset.cmt, focus = el.dataset.focus;
+    feedPostModal(id);
+    requestAnimationFrame(() => {
+      const root = $('#modalRoot');
+      if (focus) { const ta = root.querySelector(`#cmInput-feed-${id}`); if (ta) { ta.scrollIntoView({ block: 'center' }); ta.focus(); } return; }
+      const c = cid && root.querySelector(`[data-cmt-id="${cid}"]`);
+      if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 1600); }
+    });
+  },
   // Menciones pulsables: #sección y #escucha (las @personas usan open-profile)
   async 'mention-go'(el) { if ($('#modalRoot').firstChild) await closeModal(); S.section = el.dataset.s; render(); window.scrollTo(0, 0); },
   async 'mention-item'(el) { if ($('#modalRoot').firstChild) await closeModal(); openMentionItem(el.dataset.id); },
@@ -3950,7 +4048,12 @@ document.addEventListener('input', e => {
   if (cur && e.target.matches('[data-q]')) markDirty();
   if (e.target.matches('#dmForm textarea')) { const t = e.target; t.style.height = ''; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } // crece al escribir
   if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
+  if (e.target.id === 'amFilter') { // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
+    const q = amNorm(e.target.value.trim());
+    $$('#assignManyForm .am-items .chk').forEach(l => { l.hidden = !!q && !l.querySelector('input').checked && !amNorm(l.dataset.amTitle).includes(q); });
+  }
 });
+const amNorm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 // Mensajes: Enter envía, Mayúsculas+Enter hace salto de línea (en móvil, el botón Enviar)
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && e.target.matches('#dmForm textarea') && matchMedia('(hover:hover)').matches) {
@@ -3962,6 +4065,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('change', e => {
   if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); }
   if (e.target.id === 'avatarFile') { const f0 = e.target.files[0]; e.target.value = ''; processAvatar(f0); }
+  if (e.target.matches('#assignManyForm input[name=item]')) amCount();
   if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }
   if (e.target.id === 'familyDm') setFamilyDm(e.target.dataset.id, e.target.checked);
@@ -4820,6 +4924,28 @@ document.addEventListener('submit', async e => {
     const back = hwReturn; hwReturn = null;
     if (back) { render(); studentDetailModal(back); } else { await closeModal(); render(); }
     toast(ids.length > 1 ? `Deberes puestos a ${ids.length} alumnos. Les llegará un aviso.` : 'Deberes puestos. Le llegará un aviso.', 'ok');
+  } else if (f.id === 'assignManyForm') {
+    e.preventDefault();
+    const items = $$('#assignManyForm input[name=item]:checked').map(x => x.value);
+    const ids = $$('#assignManyForm input[name=pick]:checked').map(x => x.value);
+    if (!items.length) return toast('Marca al menos una escucha', 'bad');
+    if (!ids.length) return toast('Marca al menos un alumno', 'bad');
+    const due_date = f.due_date.value || null, note = f.note.value.trim() || null;
+    const has = new Set(S.assigns.map(a => a.item_id + '|' + a.student_id));
+    const rows = []; let skipped = 0;
+    ids.forEach(student_id => items.forEach(item_id => {
+      if (has.has(item_id + '|' + student_id)) { skipped++; return; }
+      rows.push({ item_id, student_id, due_date, note });
+    }));
+    if (!rows.length) return toast('Esos alumnos ya tienen todas esas escuchas', 'warn');
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+    const { error } = await sb.from('listening_assignments').insert(rows); // un solo insert = un solo aviso por alumno
+    btn.disabled = false;
+    if (error) return toast('No se pudo asignar: ' + errEs(error), 'bad');
+    await loadData();
+    await closeModal(); render();
+    const who = new Set(rows.map(r => r.student_id)).size;
+    toast(`${rows.length} asignaci${rows.length > 1 ? 'ones hechas' : 'ón hecha'} a ${who} alumno${who > 1 ? 's' : ''}.${skipped ? ` ${skipped} ya ${skipped > 1 ? 'estaban asignadas' : 'estaba asignada'}.` : ''}`, 'ok');
   } else if (f.id === 'hwCopyForm') {
     e.preventDefault();
     const tasks = $$('#hwCopyForm input[name=task]:checked').map(x => S.homework.find(h => h.id === x.value)).filter(Boolean);

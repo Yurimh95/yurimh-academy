@@ -150,7 +150,8 @@ const { chromium } = require('playwright');
   await p.click('.modal .row.click:has-text("Lu")'); await wait(p,350);
   await p.fill('#dmForm textarea','Hola Lu, ¿me pasas la tab?'); await p.click('#dmForm button[type=submit]'); await wait(p,350);
   ok((await db(p,()=>window.__DB.dm_messages.some(m=>m.sender_id==='s1'&&m.recipient_id==='s2'&&m.body.includes('tab'))))===true, 'Mensaje a Lu enviado');
-  await p.click('[data-action=block]'); await wait(p,350);
+  await p.click('[data-action=block]'); await wait(p,250);
+  await p.click('#blockForm button[type=submit]'); await wait(p,350);
   ok((await p.locator('#dmForm').count())===0 && (await db(p,()=>window.__DB.user_blocks.some(b=>b.blocker_id==='s1'&&b.blocked_id==='s2')))===true, 'Bloquea a Lu: ya no puede escribirle');
   state = await snapshot(p);
 
@@ -159,7 +160,8 @@ const { chromium } = require('playwright');
   const lb = await l.evaluate(async()=>({ ins:(await sb.from('dm_messages').insert({sender_id:'s2',recipient_id:'s1',body:'¿Por qué?'})).error, seeBlocks:(await sb.from('user_blocks').select('*')).data.length }));
   ok(!!lb.ins && lb.seeBlocks===0, 'Lu no puede escribir a quien le ha bloqueado, ni ve el bloqueo');
   await goto(l,'messages'); await l.click('.dm-conv:has-text("Marta")'); await wait(l,350);
-  await l.click('.msg-row:has-text("me pasas la tab") [data-action=report]'); await wait(l,350);
+  await l.hover('.msg-row:has-text("me pasas la tab") .msg'); await l.click('.msg-row:has-text("me pasas la tab") .msg-more'); await wait(l,200);
+  await l.click('#dmMenu [data-action=report]'); await wait(l,350);
   ok((await db(l,()=>window.__DB.moderation_reports.some(r=>r.target_type==='dm_message'&&r.reporter_id==='s2')))===true, 'Lu denuncia un mensaje privado');
   state = await snapshot(l);
 

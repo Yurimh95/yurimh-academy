@@ -91,7 +91,7 @@ const { chromium } = require('playwright');
   await p.fill('.modal textarea[id^=cmInput]','Totalmente de acuerdo'); await p.click('.modal [data-action=comment-send]'); await p.waitForTimeout(300);
   ok((await p.locator('.modal .cmt').count())===2, 'Comentario nuevo añadido (2)');
   ok((await dbq(p,()=>window.__DB.feed_comments.filter(c=>c.post_id==='f1').length))===2, 'Comentario en BD');
-  ok((await p.textContent('.fpost:has-text("Joe Pass") [data-cmcount]')).includes('2 comentarios'), 'Contador de la tarjeta se actualiza en vivo');
+  ok(await p.locator('.fpost:has-text("Joe Pass") .peek-cmt').count() === 2, 'La vista previa de comentarios de la tarjeta se actualiza en vivo');
   await rxPick(p,'.modal .cmt:has-text("Totalmente")','wow'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_type==='feed_comment'&&r.emoji==='wow'&&r.user_id==='s1')), 'Reacción a un comentario');
   ok((await p.locator('.modal .cmt:has-text("Qué bueno") [data-action=comment-delete]').count())===1 && (await p.locator('.modal .cmt:has-text("Qué bueno") [data-action=report]').count())===0, 'Puede eliminar su comentario y no denunciarse a sí misma');
@@ -191,7 +191,7 @@ const { chromium } = require('playwright');
   ok((await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar_crop.zoom))===3, 'Reencuadre guardado (zoom 3)');
   await goto(p,'feed');
   ok((await p.textContent('.fpost:has-text("Probando mi primera")')).includes('Marti'), 'En el feed ahora aparece como "Marti"');
-  ok(await p.locator('.fpost:has-text("Probando mi primera") img.av').count()===1, 'Con su foto en el feed');
+  ok(await p.locator('.fpost:has-text("Probando mi primera") .fhead img.av').count()===1, 'Con su foto en el feed');
   await goto(p,'profile'); await p.click('[data-action=avatar-remove]'); await p.waitForTimeout(300);
   ok((await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar))===null, 'Quitar foto');
   // ================= PROFESOR =================
