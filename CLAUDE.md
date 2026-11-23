@@ -69,7 +69,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
 
 - Primero carga `config.js` y luego el script principal. `configured` detecta si falta la configuración y muestra un aviso.
 - **Estado**: un objeto global `S`. `S.section` decide qué pinta `render()`. `header()` incluye la navegación con contadores.
-- **Vistas**: funciones que devuelven template literals: `homeStudent`/`homeTeacher`, `boardStudent`/`boardTeacher`, `feedView`, `studentListening`, `teacherCatalog`, `teacherStudents`, `profileView`. Los modales son `studentModal`, `itemModal`, `postModal`, `postFormModal`, `feedPostModal`, `studentDetailModal` y `closeModal()`.
+- **Vistas**: funciones que devuelven template literals: `homeStudent`/`homeTeacher`, `boardStudent`/`boardTeacher`, `feedView`, `studentListening`, `teacherCatalog`, `teacherStudents`, `profileView`. Los modales son `studentModal`, `itemModal`, `postFormModal`, `feedPostModal`, `studentDetailModal` y `closeModal()`.
 - **Eventos**: delegados. Un clic en `[data-action=X]` llama a `actions[X](el)`, y los `submit` van por id de formulario (`authForm`, `recForm`, `feedForm`, `nameForm`, `passForm`, `postForm`, `itemForm`). **Después de cambiar datos hay que llamar a `render()`**; olvidarlo ya causó un bug.
 - **Carga de datos**: `loadData()` tiene una rama para el profesor y otra para el alumno. `loadDirectory()` llama a la RPC `get_directory`, que da nombre público, avatar y rol de los demás.
 - **Helpers de seguridad**: `esc()` para **todo** el texto de usuario que va a HTML, `linkify()`, `safeAvatar()` (solo acepta `data:image/jpeg;base64` y rechaza `javascript:` y similares) y `cleanUrl()`.
@@ -121,7 +121,7 @@ Esta carpeta la ha descomprimido él de un zip y **todavía no está conectada a
   - `listening_assignments` tiene una fila por alumno y elemento, con `due_date` y `note` individuales, `listened` y `answers` (jsonb).
   - El trigger guard impide que el alumno toque la nota, la fecha, el elemento o el alumno asignado.
   - `listening_comments` solo la ven el profesor y los alumnos que tienen ese elemento asignado.
-- **Avisos**: `board_posts` (con `pinned`), `board_recipients` (si un aviso no tiene destinatarios, es para todos) y `board_reads` (confirmaciones de lectura).
+- **Avisos**: se leen enteros en el tablón, como un post (`postCard`; sin modal ni "ver más", decisión de Yuri 2026-11-23). El alumno los marca como leídos al verlos en pantalla (`watchPostReads`, IntersectionObserver); la etiqueta "Nuevo" sigue mientras esté en Avisos (`postSeenNow`). El profesor tiene Editar/Fijar/Eliminar en cada aviso y "Leído X/Y ▾" despliega quién lo ha leído. Para ir a uno desde fuera: `goPost(id)`. Tablas: `board_posts` (con `pinned`), `board_recipients` (si un aviso no tiene destinatarios, es para todos) y `board_reads` (confirmaciones de lectura).
 - **Feed**: `feed_posts` y `feed_comments`. Lo ven todos los aprobados, cada uno borra lo suyo y el profesor borra cualquier cosa.
 - **`reactions`**: polimórfica (`target_type`, `target_id`, `emoji`). Una por emoji y persona.
 - **`moderation_reports`**: cualquiera denuncia lo que puede ver. Solo el profesor las lee y las resuelve.

@@ -311,6 +311,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
 /* ---------- Social: avatares, feed, reacciones, comentarios ---------- */
 .postbody a{overflow-wrap:anywhere}
+.card.post .postbody{background:none;border:0;border-radius:0;padding:0;margin:8px 0 2px;color:var(--text);font-size:15px;line-height:1.6}
+.card.post .post-foot{margin:12px 0 0}
+.card.post .post-reads{margin-top:10px}
+.card.post .post-reads summary{list-style:none;cursor:pointer;display:flex}
+.card.post .post-reads summary::-webkit-details-marker{display:none}
+.card.post .post-reads[open] summary{margin-bottom:8px}
+.card.post .post-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.card.post.flash{box-shadow:0 0 0 2px rgba(var(--accent-rgb),.7),var(--glow);transition:box-shadow .3s}
 .av{border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--panel2)}
 .av.ini{font-weight:700;color:#fff;background:linear-gradient(135deg,hsl(var(--h) 70% 58%),hsl(calc(var(--h) + 40) 75% 48%))}
 .av.teach{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--accent),0 0 12px rgba(var(--accent-rgb),.45)}
@@ -1498,6 +1506,7 @@ function render() {
   </div>
   ${tabbar(secs)}`;
   histSync();
+  watchPostReads();
 }
 
 /* ---------- Navegación: menú lateral (escritorio) y barra inferior (móvil) ---------- */
@@ -1706,24 +1715,65 @@ function feedPostModal(id) {
 }
 
 /* ================================ AVISOS ============================== */
+// El aviso se lee entero en el tablón, como un post (sin modal ni "ver más").
 function postCard(p, isNew) {
-  let extra = '';
+  let tools = '', reads = '';
   if (isTeacher()) {
     const r = postReadInfo(p);
-    extra = `<div class="chips"><span class="chip">${p.audience === 'all' ? 'Todos los alumnos' : `${r.rec.length} alumno${r.rec.length === 1 ? '' : 's'}`}</span><span class="chip ${r.rec.length && r.read === r.rec.length ? 'ok' : ''}">Leído ${r.read}/${r.rec.length}</span></div>`;
+    tools = `<div class="post-tools">
+      <button class="btn sm violet" data-action="edit-post" data-id="${p.id}">Editar</button>
+      <button class="btn sm" data-action="toggle-pin" data-id="${p.id}">${p.pinned ? 'Quitar de fijados' : 'Fijar arriba'}</button>
+      <button class="btn sm danger" data-action="delete-post" data-id="${p.id}">Eliminar</button></div>`;
+    reads = `<details class="post-reads">
+      <summary class="chips"><span class="chip">${p.audience === 'all' ? 'Todos los alumnos' : `${r.rec.length} alumno${r.rec.length === 1 ? '' : 's'}`}</span><span class="chip ${r.rec.length && r.read === r.rec.length ? 'ok' : ''}">Leído ${r.read}/${r.rec.length} ▾</span></summary>
+      ${r.rec.length ? `<div class="chips">${r.rec.map(s => `<span class="chip ${r.readIds.has(s.id) ? 'ok' : ''}">${r.readIds.has(s.id) ? '✔ ' : '○ '}${esc(s.display_name)}</span>`).join('')}</div>`
+        : '<div class="sub">Este aviso no tiene destinatarios.</div>'}
+    </details>`;
   }
-  return `<article class="card post ${isNew ? 'isnew' : ''}" data-action="open-post" data-id="${p.id}">
+  return `<article class="card post ${isNew ? 'isnew' : ''}" data-post="${p.id}">
     <div class="card-top"><div class="chips">${p.pinned ? '<span class="chip acc">Fijado</span>' : ''}${isNew ? '<span class="chip new">Nuevo</span>' : ''}</div><span class="sub">${fmtDateTime(p.created_at)}</span></div>
     <h3>${esc(p.title)}</h3>
-    <p class="brief">${esc(plainText(p.body))}</p>
-    ${extra}
+    <div class="postbody">${richText(p.body)}</div>
+    <div class="post-foot">${rxBar('board_post', p.id)}</div>
+    ${reads}${tools}
   </article>`;
+}
+
+// Alumno: un aviso cuenta como leído cuando ha estado en pantalla.
+// La etiqueta "Nuevo" se mantiene mientras siga en Avisos (postSeenNow) y se quita al volver.
+let postSeenObs = null;
+const postSeenNow = new Set();
+function watchPostReads() {
+  if (postSeenObs) { postSeenObs.disconnect(); postSeenObs = null; }
+  if (S.section !== 'board') postSeenNow.clear();
+  if (S.section !== 'board' || isTeacher() || !('IntersectionObserver' in window)) return;
+  const cards = $$('.card.post.isnew[data-post]');
+  if (!cards.length) return;
+  postSeenObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      postSeenObs.unobserve(e.target);
+      postSeenNow.add(e.target.dataset.post);
+      markRead(e.target.dataset.post).then(refreshChrome);
+    });
+  }, { threshold: 0.6 });
+  cards.forEach(c => postSeenObs.observe(c));
+}
+
+// Lleva al tablón y resalta un aviso (desde Inicio, notificaciones, etc.)
+async function goPost(id) {
+  if ($('#modalRoot').firstChild) await closeModal();
+  S.section = 'board'; render();
+  const el = $(`.card.post[data-post="${id}"]`);
+  if (!el) return window.scrollTo(0, 0);
+  el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
 }
 
 function boardStudent() {
   const rs = myReadSet();
   const list = S.posts.slice().sort(postSort);
-  return list.length ? `<div class="grid one">${list.map(p => postCard(p, !rs.has(p.id))).join('')}</div>`
+  return list.length ? `<div class="grid one">${list.map(p => postCard(p, !rs.has(p.id) || postSeenNow.has(p.id))).join('')}</div>`
     : `<div class="empty">No tienes avisos todavía.</div>`;
 }
 
@@ -1739,35 +1789,6 @@ async function markRead(postId) {
   if (isTeacher() || myReadSet().has(postId)) return;
   const { error } = await sb.from('board_reads').upsert({ post_id: postId, student_id: S.user.id }, { onConflict: 'post_id,student_id', ignoreDuplicates: true });
   if (!error) addUnique(S.reads, { post_id: postId, student_id: S.user.id, read_at: new Date().toISOString() }, 'board_reads');
-}
-
-function postModal(id) {
-  const p = S.posts.find(x => x.id === id);
-  if (!p) return;
-  const t = isTeacher();
-  let teacherBlock = '', buttons = '';
-  if (t) {
-    const r = postReadInfo(p);
-    teacherBlock = `
-      <h2 class="h2">Leído por ${r.read} de ${r.rec.length}</h2>
-      ${r.rec.length ? `<div class="chips">${r.rec.map(s => `<span class="chip ${r.readIds.has(s.id) ? 'ok' : ''}">${r.readIds.has(s.id) ? '✔ ' : '○ '}${esc(s.display_name)}</span>`).join('')}</div>`
-        : '<div class="sub">Este aviso no tiene destinatarios.</div>'}`;
-    buttons = `<div class="actions" style="margin:0 0 6px">
-      <button class="btn sm violet" data-action="edit-post" data-id="${p.id}">Editar</button>
-      <button class="btn sm" data-action="toggle-pin" data-id="${p.id}">${p.pinned ? 'Quitar de fijados' : 'Fijar arriba'}</button>
-      <button class="btn sm danger" data-action="delete-post" data-id="${p.id}">Eliminar</button></div>`;
-  }
-  openModal(`
-    <div class="modal-head">
-      <div><div class="chips">${p.pinned ? '<span class="chip acc">Fijado</span>' : ''}<span class="sub">${fmtDateTime(p.created_at)}${t ? ' · ' + (p.audience === 'all' ? 'Todos los alumnos' : 'Alumnos concretos') : ''}</span></div>
-        <h2>${esc(p.title)}</h2></div>
-      <button class="x" data-action="close" aria-label="Cerrar">×</button>
-    </div>
-    ${buttons}
-    <div class="postbody">${richText(p.body)}</div>
-    <div style="margin:10px 0">${rxBar('board_post', p.id)}</div>
-    ${teacherBlock}`, async () => render());
-  markRead(p.id);
 }
 
 function postFormModal(id) {
@@ -2694,7 +2715,7 @@ async function openNotif(n) {
   await markNotifsRead([n.id]);
   await closeModal();
   switch (n.kind) {
-    case 'board_post': case 'mention_board': S.section = 'board'; render(); if (S.posts.some(p => p.id === n.target_id)) postModal(n.target_id); break;
+    case 'board_post': case 'mention_board': goPost(n.target_id); break;
     case 'mention_listening': openMentionItem(n.target_id); break;
     case 'assignment': S.section = 'listening'; render(); break;
     case 'dm': await openDm(n.actor_id); break;
@@ -2861,8 +2882,8 @@ const actions = {
   },
   'home-open-assign'(el) { S.section = 'listening'; render(); studentModal(el.dataset.id); },
   'home-open-item'(el) { S.section = 'listening'; render(); itemModal(el.dataset.id); },
-  'home-open-post'(el) { S.section = 'board'; render(); postModal(el.dataset.id); },
-  'open-post'(el) { postModal(el.dataset.id); },
+  'home-open-post'(el) { goPost(el.dataset.id); },
+  'open-post'(el) { goPost(el.dataset.id); },
   'home-open-fpost'(el) { S.section = 'feed'; render(); feedPostModal(el.dataset.id); },
   'open-fpost'(el) { feedPostModal(el.dataset.id); },
   // Menciones pulsables: #sección y #escucha (las @personas usan open-profile)
@@ -2949,14 +2970,14 @@ const actions = {
     const { data, error } = await sb.from('board_posts').update({ pinned: !p.pinned }).eq('id', p.id).select();
     if (error || !data.length) return toast('No se pudo cambiar' + (error ? ': ' + error.message : ''), 'bad');
     Object.assign(p, data[0]);
-    postModal(p.id);
+    render(); goPost(p.id);
   },
   async 'delete-post'(el) {
     const p = S.posts.find(x => x.id === el.dataset.id);
     if (!confirm(`¿Eliminar el aviso "${p.title}"?\nDesaparecerá para todos. No se puede deshacer.`)) return;
     const { error } = await sb.from('board_posts').delete().eq('id', p.id);
     if (error) return toast('Error: ' + error.message, 'bad');
-    await loadData(); await closeModal(); toast('Aviso eliminado', 'ok');
+    await loadData(); await closeModal(); render(); toast('Aviso eliminado', 'ok');
   },
   ...exportActions
 };

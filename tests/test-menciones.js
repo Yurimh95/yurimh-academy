@@ -113,8 +113,7 @@ const { chromium } = require('playwright');
   const nb = await p.evaluate(() => window.__DB.notifications.filter(n => n.kind === 'mention_board' || (n.kind === 'board_post' && n.extra === 'Concierto')).map(n => n.user_id + ':' + n.kind));
   ok(nb.includes('s1:mention_board') && nb.includes('s2:board_post') && !nb.includes('s1:board_post'), 'La mencionada recibe "te ha mencionado en un aviso"; el resto, "nuevo aviso": ' + nb);
   // editar conserva las menciones
-  await p.click('.card.post:has-text("Concierto")'); await p.waitForTimeout(200);
-  await p.click('[data-action=edit-post]'); await p.waitForTimeout(200);
+  await p.click('.card.post:has-text("Concierto") [data-action=edit-post]'); await p.waitForTimeout(200);
   ok((await p.inputValue(bta)) === 'Felicidades @Marta mira #Alumnos', 'Al editar se ven nombres, no códigos');
   await p.click('#postForm button[type=submit]'); await p.waitForTimeout(400);
   ok(await p.evaluate(() => window.__DB.board_posts.find(x => x.title === 'Concierto').body) === 'Felicidades <@s1> mira <#students>', 'Y al guardar se conservan');
@@ -123,9 +122,8 @@ const { chromium } = require('playwright');
   // ================= Marta ve el aviso: #Alumnos (solo profesor) no enlaza =================
   p = await open('s1', undefined, db2);
   await goto(p, 'board');
-  ok((await p.textContent('.card.post:has-text("Concierto") .brief')) === 'Felicidades @Marta mira #Alumnos', 'El resumen del aviso sale en texto legible');
-  await p.click('.card.post:has-text("Concierto")'); await p.waitForTimeout(200);
-  ok(await p.locator('.modal .postbody .mention.off:has-text("#Alumnos")').count() === 1 && await p.locator('.modal .postbody [data-s=students]').count() === 0, 'A un alumno, #Alumnos le sale como texto normal (no enlaza)');
+  ok((await p.textContent('.card.post:has-text("Concierto") .postbody')).trim() === 'Felicidades @Marta mira #Alumnos', 'El aviso sale en texto legible');
+  ok(await p.locator('.card.post .postbody .mention.off:has-text("#Alumnos")').count() === 1 && await p.locator('.card.post .postbody [data-s=students]').count() === 0, 'A un alumno, #Alumnos le sale como texto normal (no enlaza)');
   await shot(p, 'm6-aviso-alumna.png');
   await p.keyboard.press('Escape');
 

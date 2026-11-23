@@ -119,10 +119,9 @@ const { chromium } = require('playwright');
   await p.screenshot({path:require('path').join(__dirname,'shots','escucha_modal.png')});
   await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   // Aviso: reacción
-  await goto(p,'board'); await p.click('.card.post:has-text("Clase del jueves")');
-  await p.click('.modal [data-rx^=board_post] .rxb.add'); await p.click('.modal [data-rx^=board_post] [data-e=like]'); await p.waitForTimeout(200);
+  await goto(p,'board');
+  await p.click('.card.post:has-text("Clase del jueves") [data-rx^=board_post] .rxb.add'); await p.click('.card.post:has-text("Clase del jueves") [data-rx^=board_post] [data-e=like]'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_type==='board_post'&&r.target_id==='p1'&&r.user_id==='s1')), 'Reacción a un aviso');
-  await p.keyboard.press('Escape');
 
   // Perfil: apodo + foto
   await goto(p,'profile');

@@ -31,16 +31,13 @@ const { chromium } = require('playwright');
   const bodyTxt = await p.textContent('body');
   ok(!bodyTxt.includes('Secreto de Luis')&&!bodyTxt.includes('no lo debe ver'), 'Aviso ajeno no aparece en ningún sitio');
   ok((await p.locator('.card.post .chip.new').count())===2, 'Dos avisos marcados "Nuevo"');
-  await p.click('.card.post:has-text("Clase del jueves")');
-  const mh = await p.innerHTML('.modal .postbody');
+  const mh = await p.innerHTML('.card.post:has-text("Clase del jueves") .postbody');
+  ok((await p.locator('.card.post .brief').count())===0 && (await p.locator('.card.post:has-text("Clase del jueves") .postbody').isVisible()), 'El aviso se lee entero en el tablón, sin resumen ni modal');
   ok(mh.includes('<a href="https://example.com/clase"')&&mh.includes('</a>.'), 'Enlace clicable y punto final fuera del enlace');
-  ok((await p.locator('.modal img').count())===0 && mh.includes('&lt;img'), 'HTML del aviso escapado (sin XSS)');
-  await p.waitForTimeout(250);
-  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-  ok((await nav(p)).join('|').includes('Avisos1 nuevo'), 'Al leerlo baja a "1 nuevo"');
-  ok((await p.evaluate(()=>window.__DB.board_reads.some(r=>r.post_id==='p1'&&r.student_id==='s1'))), 'Lectura guardada en la BD');
-  await p.click('.card.post:has-text("Solo para Marta")'); await p.waitForTimeout(250); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-  ok(!(await nav(p)).join('|').includes('nuevo'), 'Sin avisos nuevos');
+  ok((await p.locator('.card.post img').count())===0 && mh.includes('&lt;img'), 'HTML del aviso escapado (sin XSS)');
+  await p.waitForTimeout(500);
+  ok((await p.evaluate(()=>window.__DB.board_reads.some(r=>r.post_id==='p1'&&r.student_id==='s1'))), 'Al verlo en pantalla se guarda como leído');
+  ok(!(await nav(p)).join('|').includes('nuevo'), 'Sin avisos nuevos tras verlos en pantalla');
   await p.screenshot({path:require('path').join(__dirname,'shots','b_alumna.png')});
 
   // intentos de saltarse la seguridad
@@ -110,10 +107,9 @@ const { chromium } = require('playwright');
   const c1 = (await p.textContent('.card.post:has-text("Clase del jueves")')).replace(/\s+/g,' ');
   ok(c1.includes('Fijado')&&c1.includes('Leído 1/2')&&c1.includes('Todos los alumnos'), 'Aviso general: fijado, Leído 1/2');
   ok((await p.textContent('.card.post:has-text("Solo para Marta")')).includes('Leído 0/1'), 'Aviso individual: Leído 0/1');
-  await p.click('.card.post:has-text("Clase del jueves")');
-  const mt = (await p.textContent('.modal')).replace(/\s+/g,' ');
-  ok(mt.includes('Leído por 1 de 2')&&mt.includes('○ Marta')&&mt.includes('✔ Luis'), 'Modal: quién lo ha leído');
-  await p.keyboard.press('Escape');
+  await p.click('.card.post:has-text("Clase del jueves") .post-reads summary');
+  const mt = (await p.textContent('.card.post:has-text("Clase del jueves") .post-reads')).replace(/\s+/g,' ');
+  ok(mt.includes('○ Marta')&&mt.includes('✔ Luis'), 'Desplegable: quién lo ha leído');
   // nuevo aviso
   await p.click('[data-action=new-post]');
   ok(await p.locator('#pickBox').isHidden(), 'Selector de alumnos oculto con "Todos"');
@@ -132,15 +128,15 @@ const { chromium } = require('playwright');
   ok((await p.locator('.card.post').count())===4, 'Lista con 4 avisos');
   await p.screenshot({path:require('path').join(__dirname,'shots','b_profe.png')});
   // editar -> todos
-  await p.click('.card.post:has-text("Concierto")'); await p.click('[data-action=edit-post]');
+  await p.click('.card.post:has-text("Concierto") [data-action=edit-post]');
   await p.check('#postForm [name=audience][value=all]');
   await p.click('#postForm button[type=submit]'); await p.waitForTimeout(400);
   ok((await p.evaluate(id=>window.__DB.board_recipients.filter(r=>r.post_id===id).length,np.id))===0 && (await p.evaluate(id=>window.__DB.board_posts.find(x=>x.id===id).audience,np.id))==='all', 'Editar a "Todos" limpia destinatarios');
   // fijar/desfijar
-  await p.click('.card.post:has-text("Concierto")'); await p.click('[data-action=toggle-pin]'); await p.waitForTimeout(300);
+  await p.click('.card.post:has-text("Concierto") [data-action=toggle-pin]'); await p.waitForTimeout(300);
   ok((await p.evaluate(id=>window.__DB.board_posts.find(x=>x.id===id).pinned,np.id))===false, 'Quitar de fijados');
   // eliminar
-  await p.click('[data-action=delete-post]'); await p.waitForTimeout(400);
+  await p.click('.card.post:has-text("Concierto") [data-action=delete-post]'); await p.waitForTimeout(400);
   ok((await p.evaluate(()=>window.__DB.board_posts.length))===3 && (await p.locator('.card.post').count())===3, 'Aviso eliminado');
   // alumnos: renombrar
   await goto(p,'students');
