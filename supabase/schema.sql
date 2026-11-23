@@ -1134,8 +1134,32 @@ drop trigger if exists notify_board_posts on public.board_posts;
 create trigger notify_board_posts after insert on public.board_posts for each row execute function public.notify_trg();
 drop trigger if exists notify_board_recipients on public.board_recipients;
 create trigger notify_board_recipients after insert on public.board_recipients for each row execute function public.notify_trg();
-drop trigger if exists notify_listening_assignments on public.listening_assignments;
-create trigger notify_listening_assignments after insert on public.listening_assignments for each row execute function public.notify_trg();
+-- Escuchas asignadas: un solo aviso por alumno y por insert (al asignar varias de golpe no le llegan N avisos).
+-- Una sola escucha: aviso normal con su id. Varias: target_id null y extra = sus títulos.
+create or replace function public.listening_assignments_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare r record;
+begin
+  for r in
+    select n.student_id, count(*) as cnt, (array_agg(n.item_id))[1] as one_item,
+           string_agg(i.title, ', ' order by i.title) as titles
+    from new_rows n join public.listening_items i on i.id = n.item_id
+    group by n.student_id
+  loop
+    if r.cnt = 1 then
+      perform public.notify(r.student_id, 'assignment', null, r.one_item, r.titles);
+    else
+      insert into public.notifications (user_id, kind, target_id, extra)
+      values (r.student_id, 'assignment', null,
+              case when char_length(r.titles) > 160 then left(r.titles, 159) || '…' else r.titles end);
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+revoke execute on function public.listening_assignments_notify() from public, anon, authenticated;
+create or replace trigger notify_listening_assignments after insert on public.listening_assignments
+  referencing new table as new_rows for each statement execute function public.listening_assignments_notify();
 drop trigger if exists notify_dm_messages on public.dm_messages;
 create trigger notify_dm_messages after insert on public.dm_messages for each row execute function public.notify_trg();
 drop trigger if exists notify_feed_comments on public.feed_comments;

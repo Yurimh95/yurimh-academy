@@ -168,6 +168,17 @@
     if(table==='user_blocks') removeRows('classmates',c=>(c.requester_id===row.blocker_id&&c.addressee_id===row.blocked_id)||(c.requester_id===row.blocked_id&&c.addressee_id===row.blocker_id));
   }
 
+  // Imita listening_assignments_notify (FOR EACH STATEMENT): una sola escucha = aviso normal; varias = un aviso con los títulos
+  function notifyAssignments(rows){
+    const by={}; rows.forEach(r=>{ (by[r.student_id]=by[r.student_id]||[]).push(r); });
+    Object.entries(by).forEach(([sid,l])=>{
+      const titles=l.map(r=>(DB.listening_items.find(i=>i.id===r.item_id)||{}).title||'').sort().join(', ');
+      if(l.length===1) return notify(sid,'assignment',null,l[0].item_id,titles);
+      const n={id:uid('nt'),user_id:sid,kind:'assignment',actor_id:null,target_id:null,extra:titles.length>160?titles.slice(0,159)+'…':titles,read_at:null,created_at:new Date().toISOString()};
+      DB.notifications.push(n); emit('notifications','INSERT',n);
+    });
+  }
+
   // ---- Tiempo real simulado: como Supabase Realtime, INSERT/UPDATE solo llegan si RLS deja leer la fila;
   //      los DELETE llegan a todos, pero solo con la clave primaria.
   const channels=[];
@@ -302,8 +313,9 @@
             return finish([],'duplicate key value violates unique constraint'); }
           if(table==='moderation_reports' && DB[table].some(e=>e.reporter_id===row.reporter_id&&e.target_type===row.target_type&&e.target_id===row.target_id)) return finish([],'duplicate key value violates unique constraint');
           if(table==='listening_assignments' && DB[table].some(e=>e.item_id===row.item_id&&e.student_id===row.student_id)) return finish([],'duplicate key value');
-          DB[table].push(row); made.push(row); emit(table,'INSERT',row); notifyFor(table,row);
+          DB[table].push(row); made.push(row); emit(table,'INSERT',row); if(table!=='listening_assignments') notifyFor(table,row);
         }
+        if(table==='listening_assignments') notifyAssignments(made); // trigger por sentencia: un aviso por alumno
         return st.sel?finish(made):{data:null,error:null};
       }
       if(st.op==='delete'){

@@ -20,10 +20,12 @@ webpush.setVapidDetails(APP_URL, VAPID_PUBLIC_KEY, Deno.env.get("VAPID_PRIVATE_K
 
 const EMOJI: Record<string, string> = { like: "👍🏼", love: "❤️", laugh: "😂", wow: "😮", sad: "😢", angry: "😡" };
 
-function texts(kind: string, actor: string, extra: string | null): { title: string; body: string } {
+function texts(kind: string, actor: string, extra: string | null, target: string | null): { title: string; body: string } {
   switch (kind) {
     case "board_post": return { title: "📣 Nuevo aviso", body: extra ?? "Tienes un aviso nuevo" };
-    case "assignment": return { title: "🎧 Nueva escucha", body: extra ?? "Tienes una escucha nueva" };
+    case "assignment": return target // sin target = varias escuchas asignadas de golpe (extra = sus títulos)
+      ? { title: "🎧 Nueva escucha", body: extra ?? "Tienes una escucha nueva" }
+      : { title: "🎧 Escuchas nuevas", body: extra ?? "Tienes escuchas nuevas" };
     case "dm": return { title: `💬 ${actor}`, body: extra ? `Ha reaccionado ${extra} a tu mensaje` : "Te ha enviado un mensaje" }; // extra = emoji de la reacción
     case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra ?? "" };
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
     const { data: p } = await supa.from("profiles").select("display_name, nickname").eq("id", n.actor_id).maybeSingle();
     if (p) actor = (p.nickname && p.nickname.trim()) || p.display_name;
   }
-  const { title, body } = texts(n.kind, actor, n.extra);
+  const { title, body } = texts(n.kind, actor, n.extra, n.target_id);
   const payload = JSON.stringify({ title, body, tag: `${n.kind}-${n.target_id ?? n.id}`, url: `${APP_URL}?n=${n.id}` });
 
   const { data: subs } = await supa.from("push_subscriptions").select("*").eq("user_id", n.user_id);
