@@ -49,17 +49,35 @@ const { chromium } = require('playwright');
   ok(await p.locator(card+' .rx-pick').isVisible(), 'Pasar el ratón por el 👍🏼 abre el selector');
   await p.mouse.move(5, 5); await p.waitForTimeout(500);
   ok(!(await p.locator(card+' .rx-pick').isVisible()), 'Al salir con el ratón se cierra');
-  // Móvil: pulsación larga (simulada con eventos táctiles)
-  await p.locator(card+' .rxb.main').evaluate(b => { const r = b.getBoundingClientRect();
-    const t = new Touch({ identifier: 1, target: b, clientX: r.left+5, clientY: r.top+5 });
-    b.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [t], targetTouches: [t], changedTouches: [t] })); });
-  await p.waitForTimeout(550);
-  await p.locator(card+' .rxb.main').evaluate(b => { const r = b.getBoundingClientRect();
-    const t = new Touch({ identifier: 1, target: b, clientX: r.left+5, clientY: r.top+5 });
-    b.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [t] })); b.click(); });
-  await p.waitForTimeout(200);
+  // Móvil: pulsación larga + arrastrar el dedo (simulado con eventos táctiles)
+  const touch = (type, x, y) => p.locator(card+' .rxb.main').evaluate((b, [type, x, y]) => {
+    const t = new Touch({ identifier: 1, target: b, clientX: x, clientY: y });
+    const on = type === 'touchend' ? [] : [t];
+    b.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: on, targetTouches: on, changedTouches: [t] }));
+  }, [type, x, y]);
+  const center = async sel => { const r = await p.locator(sel).boundingBox(); return [r.x + r.width/2, r.y + r.height/2]; };
+  const [mx, my] = await center(card+' .rxb.main');
+  await touch('touchstart', mx, my); await p.waitForTimeout(550);
   ok(await p.locator(card+' .rx-pick').isVisible(), 'Mantener pulsado (móvil) abre el selector');
+  const [wx, wy] = await center(card+' .rx-pick [data-e=wow]');
+  await touch('touchmove', wx, wy); await p.waitForTimeout(50);
+  ok(await p.locator(card+' .rx-pick [data-e=wow].hot').count()===1 && await p.locator(card+' .rx-pick .rxb.hot').count()===1, 'Al arrastrar, el emoji bajo el dedo se resalta (solo ese)');
+  await touch('touchend', wx, wy); await p.waitForTimeout(250);
+  ok(!(await p.locator(card+' .rx-pick').isVisible()), 'Al soltar el dedo la burbuja desaparece');
+  ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='wow')), 'Soltar encima de 😮 la aplica');
+  // Mantener y soltar sin moverse: se cierra y no hace nada
+  const [mx2, my2] = await center(card+' .rxb.main');
+  await touch('touchstart', mx2, my2); await p.waitForTimeout(550);
+  await touch('touchend', mx2, my2); await p.locator(card+' .rxb.main').evaluate(b => b.click()); await p.waitForTimeout(200);
+  ok(!(await p.locator(card+' .rx-pick').isVisible()), 'Soltar sin arrastrar cierra la burbuja');
   ok(!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like'))), 'Soltar tras mantener no da "me gusta"');
+  // Quitar 😮 arrastrando otra vez encima
+  const [mx3, my3] = await center(card+' .rxb.main');
+  await touch('touchstart', mx3, my3); await p.waitForTimeout(550);
+  const [wx2, wy2] = await center(card+' .rx-pick [data-e=wow]');
+  await touch('touchmove', wx2, wy2); await touch('touchend', wx2, wy2); await p.waitForTimeout(250);
+  ok(!(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='wow'))), 'Arrastrar a un emoji que ya tenía lo quita');
+  await p.hover(card+' .rxb.main'); await p.waitForTimeout(650);
   ok((await p.locator(card+' .rx-pick .rxb').allTextContents()).join('')==='👍🏼❤️😂😮😢😡', 'Los 6 emojis pedidos, en orden');
   await p.click(card+' .rx-pick [data-e=laugh]'); await p.waitForTimeout(200);
   ok((await p.textContent(card+' .rx-list .rxb.mine')).includes('😂'), 'Reacción 😂 marcada como mía');

@@ -410,8 +410,10 @@ ol.rt-list li::marker{font-weight:600}
 .rx-pick[hidden]{display:none}
 .fpost,.rx,.rxb{-webkit-tap-highlight-color:transparent}
 .rx-pick .rxb{font-size:24px;padding:4px 7px;border-color:transparent;border-radius:50%;transition:transform .12s,background .12s}
-.rx-pick .rxb:hover,.rx-pick .rxb:focus-visible{background:var(--hover);transform:scale(1.25) translateY(-3px)}
 .rx-pick .rxb.mine{background:rgba(var(--accent-rgb),.16)}
+/* Resaltado: ratón encima (PC) o dedo encima al arrastrar (.hot, móvil) */
+.rx-pick .rxb.hot,.rx-pick .rxb:focus-visible{background:var(--hover);transform:scale(1.25) translateY(-3px)}
+@media (hover:hover){ .rx-pick .rxb:hover{background:var(--hover);transform:scale(1.25) translateY(-3px)} }
 @keyframes rxIn{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}
 .cm{display:flex;flex-direction:column}
 .cmt{display:flex;gap:10px;padding:8px 0}
@@ -1048,7 +1050,7 @@ function rxBar(type, id) {
 /* ---- Selector de reacciones estilo Facebook ----
    Ordenador: pasar el ratón por el 👍🏼 (o por el selector) lo abre; salir lo cierra.
    Móvil: mantener pulsado el 👍🏼. Un toque normal da o quita el "me gusta". */
-let rxOpenEl = null, rxShowT = 0, rxHideT = 0, rxPress = null, rxLong = false, rxScrollY = 0;
+let rxOpenEl = null, rxShowT = 0, rxHideT = 0, rxPress = null, rxLong = false, rxLongEnd = 0, rxScrollY = 0;
 function rxShow(main) {
   const bar = main.closest('.rx'), pk = bar && bar.querySelector('.rx-pick');
   if (!pk) return;
@@ -1103,19 +1105,33 @@ function rxHoverInit() {
     }, 400) };
   }, { passive: true });
   const cancel = () => { if (rxPress) clearTimeout(rxPress.t); rxPress = null; };
+  // Con el selector abierto por pulsación larga, se elige arrastrando el dedo:
+  // el emoji que queda debajo se resalta (.hot) y al soltar se aplica.
+  const under = p => {
+    const el = p && document.elementFromPoint(p.clientX, p.clientY);
+    const b = el && el.closest && el.closest('.rx-pick .rxb');
+    return b && rxOpenEl && rxOpenEl.contains(b) ? b : null;
+  };
+  const hot = b => { if (rxOpenEl) rxOpenEl.querySelectorAll('.rxb.hot').forEach(x => { if (x !== b) x.classList.remove('hot'); }); if (b && !b.classList.contains('hot')) { b.classList.add('hot'); if (navigator.vibrate) try { navigator.vibrate(5); } catch (_) {} } };
   document.addEventListener('touchmove', e => {
     const p = e.touches[0];
+    if (rxLong && rxOpenEl) { if (e.cancelable) e.preventDefault(); hot(under(p)); return; }
     if (rxPress && p && Math.hypot(p.clientX - rxPress.x, p.clientY - rxPress.y) > 12) cancel();
-  }, { passive: true });
+  }, { passive: false });
   document.addEventListener('touchend', e => {
     cancel();
-    // Al soltar tras mantener: ni clic ("me gusta") ni selección de texto
-    if (rxLong && e.cancelable && e.target.closest && e.target.closest('.rxb.main')) e.preventDefault();
-  });
-  document.addEventListener('touchcancel', cancel);
+    if (!rxLong) return;
+    // Al soltar tras mantener: ni clic ("me gusta") ni selección de texto;
+    // se aplica el emoji que haya bajo el dedo (si hay) y la burbuja se cierra.
+    if (e.cancelable) e.preventDefault();
+    const b = under(e.changedTouches[0]);
+    rxLong = false; rxLongEnd = Date.now(); rxHide();
+    if (b) actions['rx-toggle'](b);
+  }, { passive: false });
+  document.addEventListener('touchcancel', () => { cancel(); if (rxLong) { rxLong = false; rxHide(); } });
   // Por si aun así llega el clic tras una pulsación larga
   document.addEventListener('click', e => {
-    if (rxLong && e.target.closest && e.target.closest('.rxb.main')) { rxLong = false; e.stopPropagation(); e.preventDefault(); }
+    if (Date.now() - rxLongEnd < 700 && e.target.closest && e.target.closest('.rxb.main')) { rxLongEnd = 0; e.stopPropagation(); e.preventDefault(); }
   }, true);
   document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.rxb.main, .rx-pick')) e.preventDefault(); });
   // Desplazar la página cierra el selector (con margen, por si el dedo tiembla)
