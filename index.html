@@ -422,13 +422,29 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .composer-main textarea{min-height:64px}
 .composer .actions{justify-content:flex-end}
 .feed{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
-.foryou{display:flex;flex-direction:column;gap:2px;background:linear-gradient(180deg,rgba(var(--accent-rgb),.08),transparent 80%),var(--panel);border:1px solid var(--line-strong);border-radius:16px;padding:8px;margin-bottom:14px;box-shadow:var(--shadow)}
-.fy-row{display:flex;align-items:center;gap:12px;padding:8px;border-radius:11px;cursor:pointer;transition:background .15s}
-.fy-row:hover{background:var(--hover)}
-.fy-row .ic{width:36px;height:36px;border-radius:10px;background:rgba(var(--accent-rgb),.13);color:var(--accent-hi);display:grid;place-items:center;flex:none}
-.fy-row .ic svg{width:18px;height:18px}
-.fy-row .t{flex:1;min-width:0}
-.fy-row b{display:block;color:var(--strong);font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foryou{margin-bottom:14px}
+.fy-chips{display:flex;flex-wrap:wrap;gap:10px}
+.fy-chip{display:inline-flex;align-items:center;gap:10px;max-width:100%;min-width:0;flex:1 1 200px;font:inherit;text-align:left;cursor:pointer;color:var(--strong);background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:8px 18px 8px 8px;box-shadow:var(--shadow);transition:background .15s,border-color .15s}
+.fy-chip:hover{background:var(--hover)}
+.fyc-ic{width:34px;height:34px;border-radius:50%;background:rgba(var(--accent-rgb),.13);color:var(--accent-hi);display:grid;place-items:center;flex:none}
+.fyc-ic svg{width:17px;height:17px}
+.fyc-t{display:flex;flex-direction:column;min-width:0}
+.fyc-t b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fyc-t small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fy-chip.bad{border-color:rgba(var(--bad-rgb),.55);background:rgba(var(--bad-rgb),.1)}
+.fy-chip.bad .fyc-ic{background:rgba(var(--bad-rgb),.15);color:var(--bad)}
+.fy-chip.new{border-color:var(--accent);background:rgba(var(--accent-rgb),.14);box-shadow:var(--glow-sm)}
+@media (max-width:760px){
+  .foryou{margin:0 -16px 12px}
+  .fy-chips{flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .fy-chips::-webkit-scrollbar{display:none}
+  .fy-chip{flex:none;max-width:62vw;gap:7px;padding:7px 13px 7px 10px;box-shadow:none}
+  .fy-chip.new{box-shadow:var(--glow-sm)}
+  .fyc-ic{width:auto;height:auto;background:none!important}
+  .fyc-ic svg{width:16px;height:16px}
+  .fyc-t b{font-size:13.5px;font-weight:650}
+  .fyc-t small{display:none}
+}
 .newposts-wrap{position:sticky;top:12px;z-index:20;display:flex;justify-content:center;height:0;overflow:visible}
 .newposts{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:999px;padding:9px 18px;color:var(--on-accent);background:var(--accent);box-shadow:var(--glow),0 8px 24px rgba(0,0,0,.25);animation:tin .25s ease-out;transform:translateY(-6px)}
 .newposts:hover{filter:brightness(1.08)}
@@ -2351,22 +2367,25 @@ function setTheme(t) {
 
 /* =============================== INICIO =============================== */
 
-// Bloque compacto "Para ti" encima del Inicio (alumno): avisos sin leer y la próxima escucha
+// Bloque "Para ti" encima del Inicio (alumno): una fila de chips (próxima clase, deberes, avisos sin leer, próxima escucha).
+// En el móvil se deslizan en horizontal y solo enseñan la línea principal; en el PC son más grandes y llevan el detalle debajo.
 function forYou() {
   if (isTeacher()) return '';
   const rs = myReadSet();
   const unread = S.posts.filter(p => !rs.has(p.id)).sort(postSort);
   const next = S.assigns.filter(a => !a.listened).sort(dueSort)[0];
   const hw = hwPending().sort(hwSort), hwOver = hw.filter(hwOverdue).length;
-  const nl = nextLessonHtml();
-  if (!unread.length && !next && !hw.length && !nl) return '';
-  const p = unread[0], d = next ? dueInfo(next) : null;
-  return `<section class="foryou">
-    ${nl}
-    ${hw.length ? `<div class="fy-row" data-action="section" data-s="homework"><span class="ic">${ic('homework')}</span><div class="t"><b>${esc(hw[0].title)}</b><span class="sub">${hw.length > 1 ? `Deberes · y ${hw.length - 1} más` : 'Deberes pendientes'}</span></div>${hwOver ? '<span class="chip bad">Vencidos</span>' : `<span class="chip acc">${hw.length}</span>`}</div>` : ''}
-    ${p ? `<div class="fy-row" data-action="home-open-post" data-id="${p.id}"><span class="ic">${ic('board')}</span><div class="t"><b>${esc(p.title)}</b><span class="sub">${unread.length > 1 ? `Aviso nuevo · y ${unread.length - 1} más` : 'Aviso nuevo'}</span></div><span class="chip new">Nuevo</span></div>` : ''}
-    ${next ? `<div class="fy-row" data-action="home-open-assign" data-id="${next.id}"><span class="ic">${ic('listening')}</span><div class="t"><b>${esc(next.item.title)}</b><span class="sub">Escucha pendiente</span></div><span class="chip ${d.cls}">${esc(d.text)}</span></div>` : ''}
-  </section>`;
+  const l = nextLesson(S.user.id), out = [];
+  const chip = (cls, attrs, icon, main, sub) => `<button class="fy-chip${cls ? ' ' + cls : ''}" ${attrs}><span class="fyc-ic">${ic(icon)}</span><span class="fyc-t"><b>${esc(main)}</b><small>${esc(sub)}</small></span></button>`;
+  if (l) {
+    const r = relDay(l.starts_at), day = r === 'hoy' ? 'Hoy' : r === 'mañana' ? 'Mañana'
+      : new Date(l.starts_at).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '');
+    out.push(chip('', 'data-action="section" data-s="homework"', 'calendar', `${day.charAt(0).toUpperCase() + day.slice(1)} ${hhmm(l.starts_at)}`, 'Tu próxima clase'));
+  }
+  if (hw.length) out.push(chip(hwOver ? 'bad' : '', 'data-action="section" data-s="homework"', 'homework', `${hw.length} ${hw.length > 1 ? 'deberes' : 'deber'}`, (hwOver ? 'Vencidos · ' : '') + hw[0].title));
+  if (unread.length) out.push(chip('new', `data-action="home-open-post" data-id="${unread[0].id}"`, 'board', `${unread.length} ${unread.length > 1 ? 'avisos nuevos' : 'aviso nuevo'}`, unread[0].title));
+  if (next) { const d = dueInfo(next); out.push(chip(d.cls === 'bad' ? 'bad' : '', `data-action="home-open-assign" data-id="${next.id}"`, 'listening', next.item.title, d.cls === 'bad' ? d.text : 'Escucha pendiente')); }
+  return out.length ? `<section class="foryou"><div class="fy-chips">${out.join('')}</div></section>` : '';
 }
 
 /* ============================ MODERACIÓN (profesor) ============================ */
@@ -2422,7 +2441,7 @@ function feedView() {
   return `${forYou()}<form id="feedForm" class="panel composer">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
-        <textarea name="body" required maxlength="2000" rows="3" placeholder="Comparte una reflexión, menciona con @ o # o pega un enlace de Spotify o YouTube…"></textarea>
+        <textarea name="body" required maxlength="2000" rows="3" placeholder="¿Qué estás tocando? Comparte un riff, una duda o un enlace de Spotify o YouTube"></textarea>
         <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}

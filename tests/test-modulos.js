@@ -26,7 +26,7 @@ const { chromium } = require('playwright');
   // ================= ALUMNA: sus deberes =================
   let p = await open('s1');
   ok((await p.locator('.nav button[data-s=homework]').textContent()).includes('2 pendientes'), 'Menú: "Deberes 2 pendientes"');
-  ok((await p.textContent('.foryou')).includes('Deberes') && (await p.locator('.foryou .chip.bad:has-text("Vencidos")').count())===1, 'Inicio: el bloque "Para ti" recuerda los deberes (y que hay vencidos)');
+  ok((await p.textContent('.foryou')).includes('deberes') && (await p.locator('.fy-chip.bad:has-text("Vencidos")').count())===1, 'Inicio: el bloque "Para ti" recuerda los deberes (y que hay vencidos)');
   await goto(p,'homework');
   ok((await p.locator('.hw:not(.done)').count())===2 && !(await p.textContent('#app')).includes('Walking bass'), 'Ve solo sus 2 deberes pendientes (no los de Luis)');
   ok((await p.locator('.hw:has-text("Acordes con cejilla") .chip.bad').count())===1, 'El deber con fecha pasada sale como vencido');

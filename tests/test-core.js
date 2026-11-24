@@ -24,7 +24,7 @@ const { chromium } = require('playwright');
   const n1 = (await nav(p)).join('|');
   ok(n1.includes('Inicio')&&n1.includes('Avisos2 nuevos')&&n1.includes('Escucha analítica')&&n1.includes('Perfil')&&!n1.includes('Alumnos')&&!n1.includes('Moderación')&&!n1.includes('Feed'), 'Menú alumna con "2 nuevos", sin "Alumnos" ni "Moderación": '+n1);
   const home = await p.textContent('.foryou');
-  ok(home.includes('Kind of Blue')&&home.includes('Aviso nuevo')&&!home.includes('Secreto de Luis'), 'Inicio: bloque "Para ti" con su aviso nuevo y su escucha, sin el aviso de Luis');
+  ok(home.includes('Kind of Blue')&&/avisos? nuevos?/.test(home)&&!home.includes('Secreto de Luis'), 'Inicio: bloque "Para ti" con su aviso nuevo y su escucha, sin el aviso de Luis');
   await p.screenshot({path:require('path').join(__dirname,'shots','h_alumna.png')});
   await goto(p,'board');
   ok((await p.locator('.card.post').count())===2, 'Avisos: Marta ve 2 de 3');
@@ -82,7 +82,7 @@ const { chromium } = require('playwright');
   ok((await p.evaluate(()=>window.__lastPassword))==='abcdefgh', 'Contraseña nueva enviada');
   // inicio -> abrir pendiente
   await goto(p,'feed');
-  await p.click('.foryou [data-action=home-open-assign]'); await p.waitForTimeout(250);
+  await p.click('.fy-chip[data-action=home-open-assign]'); await p.waitForTimeout(250);
   ok((await p.locator('.modal textarea').count())===7 && (await p.textContent('.nav button.on')).includes('Escucha'), 'Desde Inicio se abre la escucha pendiente');
   await p.keyboard.press('Escape');
 
