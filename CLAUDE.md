@@ -172,6 +172,17 @@ Yuri pide a veces "rellena el texto de las escuchas nuevas". Es el campo `brief`
 4. ~~Pagos~~: hecho (2026-11-23). Ver "Deberes y Pagos".
 5. ~~Deberes~~: hecho (2026-11-23). Ver "Deberes y Pagos".
 6. **RGPD y menores**: sin prisa (Yuri, 2026-11-23: nunca ha tenido alumnos menores; es un supuesto futuro). Cuando toque: texto informativo para familias y apartado de privacidad. Pedir solo los datos necesarios.
+7. **Dirección propia / dejar GitHub Pages: aparcado** (Yuri, 2026-11-24, solo se estaba informando). Ver "Alojamiento, dominio y escalar".
+
+## Alojamiento, dominio y escalar (hablado el 2026-11-24, sin decidir)
+
+- **Decisión actual**: seguir en GitHub Pages. Nada urgente.
+- **Si quiere dirección fija sin pagar**: Cloudflare Pages (`<nombre>.pages.dev`), subiendo con `wrangler pages deploy` (instalar en D:) sin conectar GitHub; así el repo puede pasar a privado. Descartados: Netlify/Vercel (límites gratis más justos), Firebase (otra cuenta), eu.org (aprobación de semanas o meses), Supabase (no sirve páginas).
+- **Lo mejor si algún día paga**: **solo un dominio** (~10 €/año en Cloudflare Registrar, Porkbun o Namecheap), **no** Hostinger: Hostinger vende alojamiento (servidor WordPress/PHP, correo) que esta app no usa, y regala el dominio el primer año para renovar más caro. GitHub Pages admite dominio propio gratis, así que se puede comprar el dominio sin mudar nada; luego cambiar de alojamiento no afecta a los alumnos. Correo `yuri@dominio` gratis con Cloudflare Email Routing (reenvía a su email).
+- **Consejo dado**: una sola mudanza. Si va a comprar dominio, esperar e ir directo al dominio (no pasar antes por `.pages.dev`). Si nunca lo va a comprar, pasar a Cloudflare cuanto antes (cada alumno nuevo es uno más que reinstala).
+- **Qué tocar al mudar**: Supabase → Authentication → URL Configuration (Site URL y Redirect URLs nuevas, mantener la vieja durante la transición); `APP_URL` en `supabase/functions/send-push/index.ts` (redesplegar); enlaces en `GUIA.md` y `CLAUDE.md`; dejar en GitHub Pages un `index.html` que redirija a la nueva. `emailRedirectTo` y el manifest ya son relativos. Esfuerzo: ~1 h de Claude + ~10 min de Yuri (cuenta y autorizar).
+- **Coste para los alumnos** (otra dirección = otra web para el navegador): volver a iniciar sesión, reinstalar la PWA y reactivar las push (las suscripciones van por dirección). Avisarles con un aviso en el tablón; `installModal`/`installCheck` ayudan.
+- **Escalar (miles de usuarios, fotos y vídeos)**: la web estática no es el cuello de botella; lo es Supabase. El paso natural es el plan Pro de Supabase (un botón, sin migrar). Las fotos tendrían que pasar a Supabase Storage (hoy son base64 en `profiles`) y los vídeos a un servicio de vídeo (YouTube, Cloudflare Stream, Bunny Stream), no a la base de datos. GitHub Pages no admite usos comerciales tipo SaaS: si la app se convierte en negocio, salir de GitHub Pages. Hostinger no ayuda a escalar esta app.
 
 No empieces un módulo nuevo sin confirmar el alcance con Yuri mediante preguntas tipo test.
 
