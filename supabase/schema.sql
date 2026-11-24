@@ -2202,3 +2202,106 @@ begin
     alter publication supabase_realtime add table public.listening_answer_reactions;
   end if;
 end $$;
+
+-- =====================================================================
+--  ESCUCHA ANALÍTICA · CARPETAS, GÉNEROS Y ARTISTA (2026-11-24)
+--   · listening_folders: colecciones como las de Spotify ("Essentials",
+--     "Yuri's Tops"…). Una escucha va en una carpeta o en ninguna.
+--   · listening_genres: lista cerrada de géneros en dos niveles
+--     (género → subgénero). Solo el profesor la cambia.
+--   · listening_item_genres: los géneros de cada escucha (varios).
+--   · listening_items.artist: lo rellena la app (Spotify/YouTube).
+--     '' = ya se buscó y no hay uno solo (playlist de varios artistas).
+--  Los alumnos ven las carpetas y géneros de sus escuchas.
+-- =====================================================================
+create table if not exists public.listening_folders (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null check (char_length(btrim(name)) between 1 and 60),
+  position   integer not null default 0,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists listening_folders_name_key on public.listening_folders (lower(btrim(name)));
+
+create table if not exists public.listening_genres (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null check (char_length(btrim(name)) between 1 and 60),
+  parent_id  uuid references public.listening_genres(id) on delete cascade,
+  position   integer not null default 0,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists listening_genres_name_key
+  on public.listening_genres (coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(btrim(name)));
+
+create table if not exists public.listening_item_genres (
+  item_id  uuid not null references public.listening_items(id) on delete cascade,
+  genre_id uuid not null references public.listening_genres(id) on delete cascade,
+  primary key (item_id, genre_id)
+);
+create index if not exists listening_item_genres_genre_idx on public.listening_item_genres (genre_id);
+
+alter table public.listening_items add column if not exists folder_id uuid references public.listening_folders(id) on delete set null;
+alter table public.listening_items add column if not exists artist text check (artist is null or char_length(artist) <= 200);
+create index if not exists listening_items_folder_idx on public.listening_items (folder_id);
+
+-- Solo dos niveles: un subgénero no puede tener subgéneros, ni colgar de sí mismo
+create or replace function public.listening_genres_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.parent_id is not null then
+    if new.parent_id = new.id
+       or exists (select 1 from public.listening_genres g where g.id = new.parent_id and g.parent_id is not null)
+       or exists (select 1 from public.listening_genres g where g.parent_id = new.id) then
+      raise exception 'Los géneros solo tienen dos niveles (género y subgénero)';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.listening_genres_guard() from public, anon, authenticated;
+drop trigger if exists listening_genres_guard_trg on public.listening_genres;
+create trigger listening_genres_guard_trg before insert or update of parent_id on public.listening_genres
+  for each row execute function public.listening_genres_guard();
+
+grant select, insert, update, delete on public.listening_folders, public.listening_genres, public.listening_item_genres to authenticated;
+revoke all on public.listening_folders, public.listening_genres, public.listening_item_genres from anon;
+alter table public.listening_folders     enable row level security;
+alter table public.listening_genres      enable row level security;
+alter table public.listening_item_genres enable row level security;
+
+drop policy if exists listening_folders_select on public.listening_folders;
+create policy listening_folders_select on public.listening_folders for select to authenticated
+  using (public.is_teacher()
+         or (public.is_approved() and exists (
+              select 1 from public.listening_items i join public.listening_assignments a on a.item_id = i.id
+              where i.folder_id = listening_folders.id and a.student_id = (select auth.uid()))));
+drop policy if exists listening_folders_all_teacher on public.listening_folders;
+create policy listening_folders_all_teacher on public.listening_folders for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+
+drop policy if exists listening_genres_select on public.listening_genres;
+create policy listening_genres_select on public.listening_genres for select to authenticated
+  using (public.is_approved());
+drop policy if exists listening_genres_all_teacher on public.listening_genres;
+create policy listening_genres_all_teacher on public.listening_genres for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+
+drop policy if exists listening_item_genres_select on public.listening_item_genres;
+create policy listening_item_genres_select on public.listening_item_genres for select to authenticated
+  using (public.is_teacher()
+         or (public.is_approved() and exists (
+              select 1 from public.listening_assignments a
+              where a.item_id = listening_item_genres.item_id and a.student_id = (select auth.uid()))));
+drop policy if exists listening_item_genres_all_teacher on public.listening_item_genres;
+create policy listening_item_genres_all_teacher on public.listening_item_genres for all to authenticated
+  using (public.is_teacher()) with check (public.is_teacher());
+
+do $$
+declare t text;
+begin
+  foreach t in array array['listening_folders', 'listening_genres', 'listening_item_genres'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;

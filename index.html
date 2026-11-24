@@ -326,7 +326,7 @@ label.check input{margin-top:3px;width:auto;flex:none;accent-color:var(--accent)
 .btn.ghost:hover{color:var(--strong);border-color:var(--line-strong);background:var(--hover)}
 
 /* ---------- Campos ---------- */
-input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],select,textarea{
   width:100%;font:inherit;color:var(--strong);background:var(--field);
   border:1px solid var(--line);border-radius:11px;padding:10px 12px;outline:none;
   transition:border-color .15s,box-shadow .15s;
@@ -660,6 +660,42 @@ label.f>.emo-wrap{margin-top:6px}
   .track,.tracklist.teacher .track{grid-template-columns:48px minmax(0,1fr) 36px;gap:12px;padding:8px}
   .track .tnum,.track .tans{display:none}
 }
+/* Escucha analítica: buscador, filtros, carpetas y géneros */
+.catbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}
+.catbar input[type=search]{flex:1 1 260px;min-width:0;font:inherit;font-size:14px;color:var(--text);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+.catbar input[type=search]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
+.catbar select{width:auto;flex:0 1 auto;max-width:210px;font-size:13.5px;padding:7px 10px;margin:0}
+.catcount{margin:0 0 8px 4px}
+.fold{margin:0 0 12px}
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:6px 6px 8px;font-weight:700;color:var(--strong);user-select:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:'▸';color:var(--faint);transition:transform .15s;display:inline-block}
+.fold[open]>summary::before{transform:rotate(90deg)}
+.fold-name{display:inline-flex;align-items:center;gap:8px}
+.fold-name svg{width:17px;height:17px;color:var(--accent-hi)}
+.fold>summary .n{font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 9px}
+.tart{flex:none;color:var(--muted);font-size:12.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.tsub .tart:has(+ *)::after{content:'·';margin-left:6px;color:var(--faint)}
+.gchip,.fchip{flex:none;font-size:11.5px;font-weight:600;color:var(--accent-hi);background:rgba(var(--accent-rgb),.10);border:1px solid rgba(var(--accent-rgb),.28);border-radius:999px;padding:0 8px;line-height:18px}
+.fchip{display:inline-flex;align-items:center;gap:4px;color:var(--muted);background:var(--panel2);border-color:var(--line)}
+.fchip svg{width:12px;height:12px}
+.imeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.tstat-m{display:none;margin-top:4px}
+.tstat-m .btn{padding:3px 10px}
+@media (max-width:560px){ .tstat-m{display:block} .catbar select{flex:1 1 140px;max-width:none} }
+.libedit{display:grid;gap:6px;margin:0 0 14px}
+.librow{display:grid;grid-template-columns:minmax(0,1fr) 32px auto auto auto;gap:6px;align-items:center}
+.librow.g{grid-template-columns:minmax(0,1fr) 32px auto}
+.librow.child{padding-left:26px;position:relative}
+.librow.child::before{content:'└';position:absolute;left:8px;color:var(--faint)}
+.librow input{margin:0}
+.librow>.sub{text-align:center}
+.libadd{display:flex;gap:8px;flex-wrap:wrap}
+.libadd input{flex:1 1 200px;margin:0}.libadd select{flex:0 1 200px;margin:0}
+.gpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 16px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:6px 0 14px;max-height:min(320px,42vh);overflow:auto}
+.gpick-grp{display:grid;gap:4px;align-content:start}
+.gpick-grp .chk{font-size:13.5px}
+.gpick-main{font-weight:700;color:var(--strong)}
 
 /* ---------- Nombres y fotos pulsables, ficha pública ---------- */
 .wholink{cursor:pointer;display:inline-flex;align-items:center;gap:8px;border-radius:999px}
@@ -875,6 +911,8 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-payments" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.6A4 4 0 1 0 15.5 15.4M7 10.6h6M7 13.4h6"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3"/></symbol>
   <symbol id="i-clock"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/></symbol>
 </svg>
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="modalRoot"></div>
@@ -917,7 +955,7 @@ const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null
 
 const S = {
   user: null, profile: null,
-  items: [], assigns: [], students: [],
+  items: [], assigns: [], students: [], folders: [], genres: [], itemGenres: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
   dms: [], dmRx: [], ansRx: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
@@ -1640,10 +1678,12 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
    La base de datos avisa al momento de cada cambio, respetando las mismas reglas RLS:
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
 const RT_TABLES = ['dm_reactions', 'listening_answer_reactions', 'feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
-  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks', 'classmates', 'goals_items', 'goals_done'];
-const RT_LIST = { board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework', goals_items: 'goalItems', goals_done: 'goalDone' };
+  'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks', 'classmates', 'goals_items', 'goals_done',
+  'listening_folders', 'listening_genres', 'listening_item_genres'];
+const RT_LIST = { listening_folders: 'folders', listening_genres: 'genres', listening_item_genres: 'itemGenres', board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework', goals_items: 'goalItems', goals_done: 'goalDone' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
-  : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id : r.id;
+  : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id
+  : table === 'listening_item_genres' ? r.item_id + '|' + r.genre_id : r.id;
 function addUnique(list, row, table) { // añade sin duplicar (lo local y lo que llega en directo pueden cruzarse)
   const k = rowKey(table, row);
   if (list.some(x => rowKey(table, x) === k)) return false;
@@ -1831,7 +1871,7 @@ async function rtHandle(t, p) {
       if (ex) { Object.assign(ex, row); updateAnsRead(row.id); }
       else {
         const { data } = await sb.from('listening_assignments').select('*, item:listening_items(*)').eq('id', row.id).maybeSingle();
-        if (data && data.item) S.assigns.push(data);
+        if (data && data.item) { S.assigns.push(data); try { await loadLibrary(); } catch { } } // su carpeta y sus géneros
       }
       return softRender();
     }
@@ -2158,6 +2198,7 @@ async function loadData(quiet = false) {
     try { await loadLessons(); } catch (e) { console.warn('Agenda:', e.message || e); S.lessons = []; }
     try { const { data, error } = await sb.from('listening_answer_reactions').select('*'); if (error) throw error; S.ansRx = data || []; }
     catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
+    try { await loadLibrary(); } catch (e) { console.warn('Carpetas y géneros:', e.message || e); S.folders = []; S.genres = []; S.itemGenres = []; }
     try { await loadGoals(); } catch (e) { console.warn('Objetivos:', e.message || e); S.goalStages = []; S.goalItems = []; S.goalDone = []; }
     return true;
   } catch (e) {
@@ -2168,6 +2209,12 @@ async function loadData(quiet = false) {
       : 'Error cargando los datos: ' + m);
     return false;
   }
+}
+// Carpetas, géneros y géneros de cada escucha (Escucha analítica). El alumno solo recibe lo de sus escuchas (RLS).
+async function loadLibrary() {
+  const r = await Promise.all([sb.from('listening_folders').select('*'), sb.from('listening_genres').select('*'), sb.from('listening_item_genres').select('*')]);
+  const err = r.map(x => x.error).find(Boolean); if (err) throw err;
+  S.folders = r[0].data || []; S.genres = r[1].data || []; S.itemGenres = r[2].data || [];
 }
 async function loadDirectory() {
   const { data } = await sb.rpc('get_directory');
@@ -2766,27 +2813,36 @@ function ytId(url) {
   return m ? m[1] : null;
 }
 const linkService = url => /spotify\.com/i.test(url) ? 'sp' : /youtu\.?be/i.test(url) ? 'yt' : '';
-// Título y portada de un enlace de Spotify o YouTube (oEmbed público, sin claves). { title, thumb } o nulos.
+// Título y portada de un enlace de Spotify o YouTube (oEmbed público, sin claves). { title, thumb, artist } o nulos.
+// artist solo en YouTube (nombre del canal, sin "VEVO", " - Topic", "Official"…); el de Spotify lo da media-info.
 const metaCache = {};
 async function fetchMeta(url) {
   if (typeof window.__META_STUB === 'function') return window.__META_STUB(url); // pruebas: respuesta simulada
-  if (CFG.NO_EXTERNAL) return { title: null, thumb: null }; // pruebas: sin llamadas a internet
+  if (CFG.NO_EXTERNAL) return { title: null, thumb: null, artist: null }; // pruebas: sin llamadas a internet
   if (metaCache[url]) return metaCache[url];
   const yt = /youtu\.?be/i.test(url), sp = /open\.spotify\.com\//i.test(url);
-  if (!yt && !sp) return { title: null, thumb: null };
+  if (!yt && !sp) return { title: null, thumb: null, artist: null };
   const api = sp ? 'https://open.spotify.com/oembed?url=' + encodeURIComponent(url.split('?')[0])
     : 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(url);
-  let title = null, thumb = null;
+  let title = null, thumb = null, artist = null;
   try {
     const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 5000);
     const r = await fetch(api, { signal: ctl.signal });
     clearTimeout(tm);
-    if (r.ok) { const j = await r.json(); title = (j.title || '').trim().slice(0, 200) || null; thumb = safeThumb(j.thumbnail_url); }
+    if (r.ok) { const j = await r.json(); title = (j.title || '').trim().slice(0, 200) || null; thumb = safeThumb(j.thumbnail_url); if (yt) artist = ytArtist(j.author_name); }
   } catch { /* sin conexión o enlace privado */ }
   if (!thumb && ytId(url)) thumb = `https://i.ytimg.com/vi/${ytId(url)}/mqdefault.jpg`;
-  return (metaCache[url] = { title, thumb });
+  return (metaCache[url] = { title, thumb, artist });
 }
 const fetchThumb = async url => (await fetchMeta(url)).thumb;
+const ytArtist = n => String(n || '').replace(/\s*-\s*Topic$/i, '').replace(/VEVO$/i, '').replace(/\s+(official|oficial)(\s+(channel|youtube|music))?$/i, '').trim().slice(0, 200) || null;
+// Artista de un enlace: YouTube → canal (oEmbed); Spotify → media-info ("" = playlist de muchos artistas). null = no se sabe.
+async function fetchArtist(url) {
+  const sv = linkService(url);
+  if (sv === 'yt') return (await fetchMeta(url)).artist ?? null;
+  if (sv === 'sp') return (await fetchDuration(url)).artist ?? null;
+  return null;
+}
 // Tipo según la dirección: Spotify /album/ /track/ /playlist/ · YouTube con "list=" → playlist; otro vídeo → canción
 function guessKind(url) {
   if (/spotify\.com\/(intl-[a-z]+\/)?album\//i.test(url)) return 'album';
@@ -2815,8 +2871,18 @@ async function backfillThumbs() {
     const { error } = await sb.from('listening_items').update(row).eq('id', it.id);
     if (!error) { Object.assign(it, row); S.assigns.forEach(a => { if (a.item && a.item.id === it.id) Object.assign(a.item, row); }); }
   }
+  // Artistas que falten (null = sin buscar; "" = ya se buscó y no hay uno solo). Una vez por sesión.
+  for (const it of S.items.filter(i => i.artist == null && !artistTried.has(i.id)).slice(0, 40)) {
+    artistTried.add(it.id);
+    if (linkService(it.url) === 'sp') await new Promise(ok => setTimeout(ok, 600));
+    const artist = await fetchArtist(it.url);
+    if (artist == null) continue;
+    const { error } = await sb.from('listening_items').update({ artist }).eq('id', it.id);
+    if (!error) { it.artist = artist; S.assigns.forEach(a => { if (a.item && a.item.id === it.id) a.item.artist = artist; }); }
+  }
   if (S.section === 'listening') softRender();
 }
+const artistTried = new Set();
 // Miniatura con el icono del tipo debajo: si la imagen no carga, se queda el icono
 function coverHtml(it, size = 48) {
   const th = safeThumb(it.thumb_url);
@@ -2851,7 +2917,7 @@ function parseDur(v) {
 // Duración con la Edge Function "media-info" (Spotify/YouTube no la dan al navegador). { duration_sec, track_count, partial }
 const durCache = {};
 async function fetchDuration(url) {
-  const none = { duration_sec: null, track_count: null, partial: false };
+  const none = { duration_sec: null, track_count: null, partial: false, artist: null };
   if (typeof window.__DUR_STUB === 'function') return window.__DUR_STUB(url); // pruebas
   if (CFG.NO_EXTERNAL || !linkService(url)) return none;
   if (durCache[url]) return durCache[url];
@@ -2859,7 +2925,8 @@ async function fetchDuration(url) {
     const { data, error } = await sb.functions.invoke('media-info', { body: { url } });
     if (error || !data) return none;
     const ok = x => Number.isInteger(x) && x > 0 ? x : null;
-    return (durCache[url] = { duration_sec: ok(data.duration_sec), track_count: ok(data.track_count), partial: !!data.partial });
+    return (durCache[url] = { duration_sec: ok(data.duration_sec), track_count: ok(data.track_count), partial: !!data.partial,
+      artist: typeof data.artist === 'string' ? data.artist.trim().slice(0, 200) : null });
   } catch { return none; }
 }
 const kindIcon = k => `<span class="kicon" title="${esc(KIND[k] || k)}" aria-label="${esc(KIND[k] || k)}">${ic(k in KIND ? k : 'song')}</span>`;
@@ -2869,29 +2936,54 @@ function playBtn(url) {
 }
 const answersMeter = n => `<span class="meter" title="${n}/6 respuestas"><i style="width:${Math.round(n / 6 * 100)}%"></i></span><span class="meter-n">${n}/6</span>`;
 
-function studentListening() {
-  const all = S.assigns;
-  const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
-  let list = S.filter === 'pend' ? pend : S.filter === 'done' ? done : all;
+/* Escucha analítica del alumno: pestañas Pendientes / Escuchados / Todos, buscador y filtros por carpeta y género
+   (solo salen si sus escuchas tienen carpetas o géneros). Al escribir solo se repinta la lista (#slList). */
+function slState() { return S.sl || (S.sl = { q: '', folder: '', genre: '' }); }
+function studentListList() {
+  const all = S.assigns, c = slState(), q = amNorm(c.q.trim());
+  let list = S.filter === 'pend' ? all.filter(a => !a.listened) : S.filter === 'done' ? all.filter(a => a.listened) : all;
+  list = list.filter(a => (!q || itemHay(a.item).includes(q))
+    && (!c.folder || (c.folder === NO_FOLDER ? !folderName(a.item.folder_id) : a.item.folder_id === c.folder))
+    && (!c.genre || itemHasGenre(a.item_id, c.genre)));
   list = list.slice().sort(dueSort);
+  if (!list.length) return `<div class="empty">${!all.length ? 'Todavía no tienes nada asignado.' : (q || c.folder || c.genre) ? 'No hay escuchas con esos filtros.' : 'No hay elementos en esta pestaña.'}</div>`;
+  return `<div class="tracklist">
+      <div class="track-head"><span>#</span><span></span><span>Título</span><span>Respuestas</span><span>Fecha</span><span></span></div>
+      ${list.map((a, i) => studentCard(a, i)).join('')}</div>`;
+}
+function studentListening() {
+  const all = S.assigns, c = slState();
+  const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
+  const myFolders = foldersSorted().filter(f => all.some(a => a.item.folder_id === f.id));
+  const myGenres = new Set(S.itemGenres.filter(x => all.some(a => a.item_id === x.item_id)).map(x => x.genre_id));
+  const gOpts = genreTree().filter(({ g, subs }) => myGenres.has(g.id) || subs.some(x => myGenres.has(x.id)))
+    .map(({ g, subs }) => `<option value="${g.id}" ${c.genre === g.id ? 'selected' : ''}>${esc(g.name)}</option>`
+      + subs.filter(x => myGenres.has(x.id)).map(x => `<option value="${x.id}" ${c.genre === x.id ? 'selected' : ''}>   ${esc(x.name)}</option>`).join('')).join('');
   return `<div class="tabs">
       <button class="tab ${S.filter === 'pend' ? 'on' : ''}" data-action="filter" data-f="pend">Pendientes<span class="n">${pend.length}</span></button>
       <button class="tab ${S.filter === 'done' ? 'on' : ''}" data-action="filter" data-f="done">Escuchados<span class="n">${done.length}</span></button>
       <button class="tab ${S.filter === 'all' ? 'on' : ''}" data-action="filter" data-f="all">Todos<span class="n">${all.length}</span></button>
     </div>
-    ${list.length ? `<div class="tracklist">
-        <div class="track-head"><span>#</span><span></span><span>Título</span><span>Respuestas</span><span>Fecha</span><span></span></div>
-        ${list.map((a, i) => studentCard(a, i)).join('')}</div>`
-      : `<div class="empty">${all.length ? 'No hay elementos en esta pestaña.' : 'Todavía no tienes nada asignado.'}</div>`}`;
+    ${all.length > 3 ? `<div class="catbar">
+      <input type="search" id="slQ" data-no-emoji autocomplete="off" placeholder="Buscar por título, artista o género…" aria-label="Buscar en mis escuchas" value="${esc(c.q)}">
+      ${myFolders.length ? `<select data-sl="folder" aria-label="Carpeta"><option value="">Todas las carpetas</option>${myFolders.map(f => `<option value="${f.id}" ${c.folder === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` : ''}
+      ${gOpts ? `<select data-sl="genre" aria-label="Género"><option value="">Todos los géneros</option>${gOpts}</select>` : ''}
+    </div>` : ''}
+    <div id="slList">${studentListList()}</div>`;
 }
 
+// Artista, carpeta y géneros bajo el título (ventana de la escucha)
+function itemMetaHtml(it) {
+  const f = folderName(it.folder_id), g = genreChips(it.id);
+  return it.artist || f || g ? `<div class="imeta">${it.artist ? `<span class="tart">${esc(it.artist)}</span>` : ''}${f ? `<span class="fchip">${ic('folder')}${esc(f)}</span>` : ''}${g}</div>` : '';
+}
 // Fila tipo "tracklist": número, portada, título con icono de tipo, progreso, fecha y botón ▶
 function studentCard(a, i = 0) {
   const it = a.item, d = dueInfo(a), n = answeredCount(a);
   return `<article class="track ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
     <span class="tnum">${a.listened ? `<span class="tdone" title="Escuchado">${ic('check')}</span>` : i + 1}</span>
     ${coverHtml(it)}
-    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${folderName(it.folder_id) ? `<span class="fchip">${ic('folder')}${esc(folderName(it.folder_id))}</span>` : ''}${genreChips(it.id)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
     <span class="tans">${answersMeter(n)}</span>
     <span class="tdue ${d.cls}">${a.due_date ? esc(d.cls ? d.text : fmtDate(a.due_date)) : '—'}</span>
     ${playBtn(it.url)}
@@ -2905,7 +2997,7 @@ function studentModal(id) {
   cur = { id, dirty: false, timer: null, saving: false };
   openModal(`
     <div class="modal-head">
-      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2></div></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2>${itemMetaHtml(it)}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="chips" style="margin-bottom:6px"><span class="chip ${d.cls}">${esc(d.text)}</span></div>
@@ -3106,25 +3198,170 @@ const exportActions = {
 };
 
 /* ============================= PROFESOR ============================= */
+/* ---- Biblioteca de Escucha analítica: carpetas (colecciones), géneros y artista ----
+   S.folders: listening_folders (una carpeta por escucha, o ninguna). S.genres: listening_genres en dos niveles
+   (género → subgénero, lista cerrada que solo cambia el profesor). S.itemGenres: listening_item_genres (varios por escucha).
+   Filtrar por un género incluye sus subgéneros. Los alumnos ven las carpetas y géneros de sus escuchas. */
+const NO_FOLDER = '__none'; // "Sin carpeta" en los filtros
+const folderSort = (a, b) => (a.position - b.position) || a.name.localeCompare(b.name, 'es');
+const genreSort = (a, b) => (a.position - b.position) || a.name.localeCompare(b.name, 'es');
+const foldersSorted = () => S.folders.slice().sort(folderSort);
+const folderName = id => (S.folders.find(f => f.id === id) || {}).name || '';
+function genreTree() { // [{ g, subs: [...] }] en orden
+  return S.genres.filter(g => !g.parent_id).sort(genreSort)
+    .map(g => ({ g, subs: S.genres.filter(x => x.parent_id === g.id).sort(genreSort) }));
+}
+function genresOf(itemId) { // en el orden de la lista: géneros antes que sus subgéneros
+  const mine = new Set(S.itemGenres.filter(x => x.item_id === itemId).map(x => x.genre_id));
+  const out = [];
+  genreTree().forEach(({ g, subs }) => { if (mine.has(g.id)) out.push(g); subs.forEach(s => { if (mine.has(s.id)) out.push(s); }); });
+  return out;
+}
+function itemHasGenre(itemId, gid) {
+  const ids = new Set([gid, ...S.genres.filter(g => g.parent_id === gid).map(g => g.id)]);
+  return S.itemGenres.some(x => x.item_id === itemId && ids.has(x.genre_id));
+}
+// Lo que se busca: título, artista, carpeta y géneros (sin tildes)
+const itemHay = it => amNorm([it.title, it.artist, folderName(it.folder_id), ...genresOf(it.id).map(g => g.name)].join(' · '));
+const genreChips = itemId => genresOf(itemId).map(g => `<span class="gchip">${esc(g.name)}</span>`).join('');
+const artistHtml = it => it.artist ? `<span class="tart">${esc(it.artist)}</span>` : '';
+// Opciones del desplegable de géneros (subgéneros sangrados)
+const genreOptions = sel => genreTree().map(({ g, subs }) => `<option value="${g.id}" ${sel === g.id ? 'selected' : ''}>${esc(g.name)}</option>`
+  + subs.map(s => `<option value="${s.id}" ${sel === s.id ? 'selected' : ''}>   ${esc(s.name)}</option>`).join('')).join('');
+const folderOptions = (sel, none = 'Sin carpeta') => foldersSorted().map(f => `<option value="${f.id}" ${sel === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')
+  + (none ? `<option value="${NO_FOLDER}" ${sel === NO_FOLDER ? 'selected' : ''}>${esc(none)}</option>` : '');
+
+/* Catálogo del profesor: buscador + filtros (carpeta, género, tipo, alumno y su estado), agrupado por carpetas.
+   S.cat guarda los filtros; al escribir o cambiar un filtro solo se repinta la lista (#catList), no el buscador. */
+const CAT_STATUS_STUDENT = { '': 'Todas las suyas', pend: 'Pendientes', done: 'Escuchadas', over: 'Vencidas', none: 'Aún no la tiene' };
+const CAT_STATUS_ALL = { '': 'Cualquier estado', unassigned: 'Sin asignar a nadie' };
+function catState() { return S.cat || (S.cat = { q: '', folder: '', genre: '', kind: '', student: '', status: '' }); }
+const catAssign = (itemId, sid) => S.assigns.find(a => a.item_id === itemId && a.student_id === sid);
+function catFiltered() {
+  const c = catState(), q = amNorm(c.q.trim());
+  return S.items.filter(it => {
+    if (q && !itemHay(it).includes(q)) return false;
+    if (c.folder && (c.folder === NO_FOLDER ? !!folderName(it.folder_id) : it.folder_id !== c.folder)) return false;
+    if (c.genre && !itemHasGenre(it.id, c.genre)) return false;
+    if (c.kind && it.kind !== c.kind) return false;
+    if (c.student) {
+      const a = catAssign(it.id, c.student);
+      if (c.status === 'none') return !a;
+      if (!a) return false;
+      if (c.status === 'pend') return !a.listened;
+      if (c.status === 'done') return a.listened;
+      if (c.status === 'over') return isOverdue(a);
+      return true;
+    }
+    if (c.status === 'unassigned') return !S.assigns.some(a => a.item_id === it.id);
+    return true;
+  });
+}
+const catActive = () => { const c = catState(); return !!(c.q.trim() || c.folder || c.genre || c.kind || c.student || c.status); };
+function catFiltersHtml() {
+  const c = catState(), studs = S.students.filter(s => s.approved);
+  const statuses = c.student ? CAT_STATUS_STUDENT : CAT_STATUS_ALL;
+  const sel = (k, v, cur) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${esc(v)}</option>`;
+  return `<div class="catbar" id="catFilters">
+    <input type="search" id="catQ" data-no-emoji autocomplete="off" placeholder="Buscar por título, artista, género o carpeta…" aria-label="Buscar en el catálogo" value="${esc(c.q)}">
+    <select data-cat="folder" aria-label="Carpeta"><option value="">Todas las carpetas</option>${folderOptions(c.folder)}</select>
+    <select data-cat="genre" aria-label="Género"><option value="">Todos los géneros</option>${genreOptions(c.genre)}</select>
+    <select data-cat="kind" aria-label="Tipo"><option value="">Todos los tipos</option>${Object.entries(KIND).map(([k, v]) => sel(k, v, c.kind)).join('')}</select>
+    <select data-cat="student" aria-label="Alumno"><option value="">Todos los alumnos</option>${studs.map(s => sel(s.id, s.display_name, c.student)).join('')}</select>
+    <select data-cat="status" aria-label="Estado">${Object.entries(statuses).map(([k, v]) => sel(k, v, c.status)).join('')}</select>
+    ${catActive() ? `<button type="button" class="linkbtn" data-action="cat-clear">Quitar filtros</button>` : ''}
+  </div>`;
+}
+function catRow(it, i) {
+  const sid = catState().student;
+  const as = S.assigns.filter(a => a.item_id === it.id);
+  let ans, due;
+  if (sid) { // estado de ESE alumno
+    const a = catAssign(it.id, sid), d = a && dueInfo(a);
+    ans = a ? `<span class="chip ${a.listened ? 'ok' : isOverdue(a) ? 'bad' : ''}">${a.listened ? '✔ Escuchada' : isOverdue(a) ? 'Vencida' : '○ Pendiente'}</span>`
+      : `<button type="button" class="btn sm" data-action="cat-assign" data-id="${it.id}" title="Asignársela a ${esc(studentName(sid))}">+ Asignar</button>`;
+    due = a ? (a.due_date ? `<span class="${d.cls}">${esc(fmtDate(a.due_date))}</span>` : `${answeredCount(a)}/6 respuestas`) : '<span class="sub">No la tiene</span>';
+  } else {
+    const li = as.filter(a => a.listened).length, ov = as.filter(isOverdue).length, n = as.filter(a => answeredCount(a) > 0).length;
+    ans = `<span title="${as.length} asignado${as.length === 1 ? '' : 's'} · ${li} escuchado${li === 1 ? '' : 's'} · ${n} con respuestas">${ic('students')} ${as.length} · ${ic('check')} ${li}</span>`;
+    due = ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : n ? `<span class="chip acc">${n} con respuestas</span>` : '—';
+  }
+  return `<article class="track" data-action="open-item" data-id="${it.id}">
+    <span class="tnum">${i + 1}</span>
+    ${coverHtml(it)}
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}</span>${sid ? `<span class="tstat-m">${ans}</span>` : ''}</div>
+    <span class="tans">${ans}</span>
+    <span class="tdue">${due}</span>
+    ${playBtn(it.url)}
+  </article>`;
+}
+function catalogList() {
+  if (!S.items.length) return `<div class="empty">El catálogo está vacío. Crea tu primer elemento.</div>`;
+  const list = catFiltered(), c = catState(), act = catActive();
+  if (!list.length) return `<div class="empty">No hay escuchas con esos filtros.</div>`;
+  const groups = [...foldersSorted().map(f => ({ id: f.id, name: f.name, items: list.filter(it => it.folder_id === f.id) })),
+    { id: NO_FOLDER, name: S.folders.length ? 'Sin carpeta' : 'Todas', items: list.filter(it => !folderName(it.folder_id)) }]
+    .filter(g => g.items.length);
+  const closed = S.catClosed || (S.catClosed = new Set());
+  const head = `<div class="track-head"><span>#</span><span></span><span>Título</span><span>${c.student ? esc(studentName(c.student)) : 'Alumnos'}</span><span>${c.student ? 'Fecha' : 'Estado'}</span><span></span></div>`;
+  return `<div class="sub catcount">${list.length === S.items.length ? `${list.length} escuchas` : `${list.length} de ${S.items.length} escuchas`}</div>`
+    + groups.map(g => `<details class="fold" data-fold="${g.id}" ${act || !closed.has(g.id) ? 'open' : ''}>
+      <summary><span class="fold-name">${ic('folder')}${esc(g.name)}</span><span class="n">${g.items.length}</span></summary>
+      <div class="tracklist teacher">${head}${g.items.map((it, i) => catRow(it, i)).join('')}</div></details>`).join('');
+}
+function catRefresh() { // repinta la lista y los filtros (el estado depende de si hay alumno elegido) sin perder el cursor del buscador
+  const l = $('#catList'); if (!l) return;
+  l.innerHTML = catalogList();
+  const f = $('#catFilters'); if (!f) return;
+  const q = $('#catQ'), had = document.activeElement === q, pos = q ? q.selectionStart : 0;
+  f.outerHTML = catFiltersHtml();
+  if (had) { const n = $('#catQ'); n.focus(); try { n.setSelectionRange(pos, pos); } catch { } }
+}
 function teacherCatalog() {
   return `<div class="toolbar"><span class="sub" style="color:var(--muted)">Pulsa una fila para ver respuestas y asignar alumnos.</span>
-      <div class="chips">${S.items.length ? `<button class="btn" data-action="assign-many">${ic('students')} Asignar varias</button>` : ''}
+      <div class="chips">
+      <button class="btn" data-action="folders-edit">${ic('folder')} Carpetas</button>
+      <button class="btn" data-action="genres-edit">${ic('tag')} Géneros</button>
+      ${S.items.length ? `<button class="btn" data-action="assign-many">${ic('students')} Asignar varias</button>` : ''}
       <button class="btn primary" data-action="new-item">+ Nuevo elemento</button></div></div>
-    ${S.items.length ? `<div class="tracklist teacher">
-      <div class="track-head"><span>#</span><span></span><span>Título</span><span>Alumnos</span><span>Estado</span><span></span></div>
-      ${S.items.map((it, i) => {
-      const as = S.assigns.filter(a => a.item_id === it.id);
-      const li = as.filter(a => a.listened).length, ov = as.filter(isOverdue).length;
-      const ans = as.filter(a => answeredCount(a) > 0).length;
-      return `<article class="track" data-action="open-item" data-id="${it.id}">
-        <span class="tnum">${i + 1}</span>
-        ${coverHtml(it)}
-        <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
-        <span class="tans" title="${as.length} asignado${as.length === 1 ? '' : 's'} · ${li} escuchado${li === 1 ? '' : 's'} · ${ans} con respuestas">${ic('students')} ${as.length} · ${ic('check')} ${li}</span>
-        <span class="tdue">${ov ? `<span class="chip bad">${ov} vencido${ov > 1 ? 's' : ''}</span>` : ans ? `<span class="chip acc">${ans} con respuestas</span>` : '—'}</span>
-        ${playBtn(it.url)}
-      </article>`;
-    }).join('')}</div>` : `<div class="empty">El catálogo está vacío. Crea tu primer elemento.</div>`}`;
+    ${S.items.length ? catFiltersHtml() : ''}
+    <div id="catList">${catalogList()}</div>`;
+}
+
+/* ---- Editar carpetas y géneros (solo el profesor). Los nombres se guardan al salir del campo. ---- */
+function foldersModal() {
+  const fs = foldersSorted();
+  openModal(`<div class="modal-head"><h2>Carpetas</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <p class="sub" style="margin:0 0 12px">Colecciones para ordenar el catálogo, como las de Spotify. Los alumnos ven la carpeta de sus escuchas. Al borrar una carpeta, sus escuchas pasan a "Sin carpeta" (no se borra ninguna). Los nombres se guardan al salir del campo.</p>
+    <div class="libedit">${fs.length ? fs.map((f, i) => `<div class="librow">
+      <input type="text" data-no-emoji maxlength="60" value="${esc(f.name)}" data-lib-rename="folder" data-id="${f.id}" aria-label="Nombre de la carpeta">
+      <span class="sub" title="Escuchas en esta carpeta">${S.items.filter(it => it.folder_id === f.id).length}</span>
+      <button type="button" class="btn sm ghost" data-action="folder-move" data-id="${f.id}" data-d="-1" ${i ? '' : 'disabled'} aria-label="Subir">↑</button>
+      <button type="button" class="btn sm ghost" data-action="folder-move" data-id="${f.id}" data-d="1" ${i < fs.length - 1 ? '' : 'disabled'} aria-label="Bajar">↓</button>
+      <button type="button" class="btn sm danger" data-action="folder-del" data-id="${f.id}">Borrar</button></div>`).join('') : '<div class="empty small">Aún no hay carpetas.</div>'}</div>
+    <form id="folderForm" class="libadd"><input type="text" name="name" data-no-emoji maxlength="60" required placeholder="Nueva carpeta (p. ej. Essentials)"><button class="btn" type="submit">Añadir</button></form>`, libClosed);
+}
+const libClosed = () => { if (S.section === 'listening') render(); }; // al cerrar Carpetas o Géneros, el catálogo se repinta
+function genresModal() {
+  const tree = genreTree();
+  const row = (g, sub) => `<div class="librow g ${sub ? 'child' : ''}">
+      <input type="text" data-no-emoji maxlength="60" value="${esc(g.name)}" data-lib-rename="genre" data-id="${g.id}" aria-label="Nombre del género">
+      <span class="sub" title="Escuchas con este género">${S.itemGenres.filter(x => x.genre_id === g.id).length}</span>
+      <button type="button" class="btn sm danger" data-action="genre-del" data-id="${g.id}">Borrar</button></div>`;
+  openModal(`<div class="modal-head"><h2>Géneros</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <p class="sub" style="margin:0 0 12px">Lista cerrada en dos niveles: género y subgénero. Al etiquetar una escucha solo se elige de aquí, así no salen repetidos. Filtrar por un género incluye sus subgéneros. Los nombres se guardan al salir del campo.</p>
+    <div class="libedit">${tree.length ? tree.map(({ g, subs }) => row(g, false) + subs.map(s => row(s, true)).join('')).join('') : '<div class="empty small">Aún no hay géneros.</div>'}</div>
+    <form id="genreForm" class="libadd"><input type="text" name="name" data-no-emoji maxlength="60" required placeholder="Nuevo género o subgénero">
+      <select name="parent" aria-label="Dónde va"><option value="">Género principal</option>${tree.map(({ g }) => `<option value="${g.id}">Dentro de ${esc(g.name)}</option>`).join('')}</select>
+      <button class="btn" type="submit">Añadir</button></form>`, libClosed);
+}
+// Selector de géneros del formulario de una escucha: casillas agrupadas por género
+function genrePicker(itemId) {
+  const mine = new Set(itemId ? S.itemGenres.filter(x => x.item_id === itemId).map(x => x.genre_id) : []);
+  const box = g => `<label class="chk"><input type="checkbox" name="genre" value="${g.id}" ${mine.has(g.id) ? 'checked' : ''}> ${esc(g.name)}</label>`;
+  const tree = genreTree();
+  return tree.length ? `<div class="gpick">${tree.map(({ g, subs }) => `<div class="gpick-grp">${box(g).replace('class="chk"', 'class="chk gpick-main"')}${subs.map(box).join('')}</div>`).join('')}</div>`
+    : `<div class="sub" style="margin:4px 0 14px">Aún no hay géneros. Créalos con el botón "Géneros" del catálogo.</div>`;
 }
 
 function teacherStudents() {
@@ -3250,9 +3487,14 @@ function itemFormModal(id) {
         <label class="f">Duración <span class="sub">(opcional: se rellena sola)</span><input type="text" name="duration" maxlength="20" value="${esc(it && it.duration_sec ? fmtSecs(it.duration_sec, true) : '')}" placeholder="Ej.: 3:33 · 42 min · 1 h 12 min"></label>
         <label class="f">Temas <span class="sub">(álbum o playlist)</span><input type="number" name="tracks" min="1" max="100000" value="${esc(it && it.track_count ? String(it.track_count) : '')}" placeholder="Auto"></label>
       </div>
-      <label class="f">Tipo<select name="kind">
-        ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
-      </select></label>
+      <label class="f">Artista <span class="sub">(opcional: se rellena solo; en playlists de muchos artistas se queda vacío)</span><input type="text" name="artist" data-no-emoji maxlength="200" value="${esc(it && it.artist ? it.artist : '')}" placeholder="Se rellenará solo"></label>
+      <div class="grid2">
+        <label class="f">Tipo<select name="kind">
+          ${Object.entries(KIND).map(([k, v]) => `<option value="${k}" ${it && it.kind === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select></label>
+        <label class="f">Carpeta<select name="folder"><option value="">Sin carpeta</option>${folderOptions(it ? it.folder_id || '' : (catState().folder !== NO_FOLDER ? catState().folder : ''), '')}</select></label>
+      </div>
+      <div class="f">Géneros <span class="sub">(los que quieras; se eligen de la lista de "Géneros")</span>${genrePicker(it ? it.id : null)}</div>
       <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" ${it && itemReturn ? `data-action="open-item" data-keep="1" data-id="${it.id}"` : 'data-action="close"'}>Cancelar</button></div>
     </form>`);
@@ -3295,7 +3537,7 @@ function itemModal(id) {
   openModal(`
     ${back ? `<div style="margin:0 0 8px"><button class="btn sm ghost" data-action="item-back">← Volver a la ficha de ${esc(studentName(itemReturn))}</button></div>` : ''}
     <div class="modal-head">
-      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2></div></div>
+      <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2>${itemMetaHtml(it)}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="actions" style="margin:0 0 6px">
@@ -3910,6 +4152,49 @@ const actions = {
   },
   'new-item'() { itemFormModal(null); },
   'assign-many'() { assignManyModal(); },
+  'folders-edit'() { foldersModal(); },
+  'genres-edit'() { genresModal(); },
+  'cat-clear'() { S.cat = null; catRefresh(); },
+  async 'cat-assign'(el) { // asignar una escucha al alumno del filtro, sin abrirla
+    const sid = catState().student; if (!sid) return;
+    el.disabled = true;
+    const { data, error } = await sb.from('listening_assignments').insert({ item_id: el.dataset.id, student_id: sid }).select();
+    if (error) { el.disabled = false; return toast('Error: ' + errEs(error), 'bad'); }
+    (data || []).forEach(r => addUnique(S.assigns, r, 'listening_assignments'));
+    catRefresh(); toast(`Asignada a ${studentName(sid)}`, 'ok');
+  },
+  async 'folder-move'(el) { // intercambia la posición con la de al lado y guarda el orden de todas
+    const fs = foldersSorted(), i = fs.findIndex(f => f.id === el.dataset.id), j = i + Number(el.dataset.d);
+    if (i < 0 || j < 0 || j >= fs.length) return;
+    [fs[i], fs[j]] = [fs[j], fs[i]];
+    const changed = fs.map((f, k) => ({ f, k })).filter(({ f, k }) => f.position !== k);
+    changed.forEach(({ f, k }) => { f.position = k; });
+    foldersModal();
+    const errs = (await Promise.all(changed.map(({ f, k }) => sb.from('listening_folders').update({ position: k }).eq('id', f.id)))).map(r => r.error).filter(Boolean);
+    if (errs.length) { toast('No se pudo guardar el orden: ' + errEs(errs[0]), 'bad'); await loadLibrary(); foldersModal(); }
+  },
+  async 'folder-del'(el) {
+    const f = S.folders.find(x => x.id === el.dataset.id); if (!f) return;
+    const n = S.items.filter(it => it.folder_id === f.id).length;
+    if (!confirm(`¿Borrar la carpeta "${f.name}"?${n ? `\n\nSus ${n} escucha${n > 1 ? 's' : ''} pasan a "Sin carpeta". No se borra ninguna escucha.` : ''}`)) return;
+    const { error } = await sb.from('listening_folders').delete().eq('id', f.id);
+    if (error) return toast('Error: ' + errEs(error), 'bad');
+    S.folders = S.folders.filter(x => x.id !== f.id);
+    S.items.forEach(it => { if (it.folder_id === f.id) it.folder_id = null; });
+    if (catState().folder === f.id) catState().folder = '';
+    foldersModal(); toast('Carpeta borrada', 'ok');
+  },
+  async 'genre-del'(el) {
+    const g = S.genres.find(x => x.id === el.dataset.id); if (!g) return;
+    const subs = S.genres.filter(x => x.parent_id === g.id), ids = [g.id, ...subs.map(x => x.id)];
+    const n = new Set(S.itemGenres.filter(x => ids.includes(x.genre_id)).map(x => x.item_id)).size;
+    if (!confirm(`¿Borrar el género "${g.name}"?${subs.length ? `\n\nTambién sus ${subs.length} subgéneros.` : ''}${n ? `\n\nSe quitará de ${n} escucha${n > 1 ? 's' : ''} (las escuchas no se borran).` : ''}`)) return;
+    const { error } = await sb.from('listening_genres').delete().eq('id', g.id);
+    if (error) return toast('Error: ' + errEs(error), 'bad');
+    S.genres = S.genres.filter(x => !ids.includes(x.id)); S.itemGenres = S.itemGenres.filter(x => !ids.includes(x.genre_id));
+    if (ids.includes(catState().genre)) catState().genre = '';
+    genresModal(); toast('Género borrado', 'ok');
+  },
   'am-all'() { const boxes = $$('#assignManyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   'open-item'(el) { if (!el.dataset.keep) itemReturn = null; itemModal(el.dataset.id); },
   'sdm-item'(el) { itemReturn = el.dataset.sid; itemModal(el.dataset.id); }, // desde la ficha del alumno
@@ -4165,11 +4450,30 @@ document.addEventListener('input', e => {
   if (cur && e.target.matches('[data-q]')) markDirty();
   if (e.target.matches('#dmForm textarea')) { const t = e.target; t.style.height = ''; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } // crece al escribir
   if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
+  if (e.target.id === 'catQ') { catState().q = e.target.value; const l = $('#catList'); if (l) l.innerHTML = catalogList(); }
+  if (e.target.id === 'slQ') { slState().q = e.target.value; const l = $('#slList'); if (l) l.innerHTML = studentListList(); }
   if (e.target.id === 'amFilter') { // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
     const q = amNorm(e.target.value.trim());
     $$('#assignManyForm .am-items .chk').forEach(l => { l.hidden = !!q && !l.querySelector('input').checked && !amNorm(l.dataset.amTitle).includes(q); });
   }
 });
+// Carpetas plegadas del catálogo (se recuerdan mientras dura la sesión). 'toggle' no burbujea: se escucha en captura.
+document.addEventListener('toggle', e => {
+  const d = e.target; if (!d.matches || !d.matches('details.fold[data-fold]') || catActive()) return;
+  const set = S.catClosed || (S.catClosed = new Set());
+  if (d.open) set.delete(d.dataset.fold); else set.add(d.dataset.fold);
+}, true);
+// Renombrar una carpeta o un género (al salir del campo)
+async function libRename(inp) {
+  const kind = inp.dataset.libRename, table = kind === 'folder' ? 'listening_folders' : 'listening_genres';
+  const list = kind === 'folder' ? S.folders : S.genres, row = list.find(x => x.id === inp.dataset.id); if (!row) return;
+  const name = inp.value.trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!name) { inp.value = row.name; return toast('El nombre no puede quedar vacío', 'bad'); }
+  if (name === row.name) return;
+  const { error } = await sb.from(table).update({ name }).eq('id', row.id);
+  if (error) { inp.value = row.name; return toast(error.code === '23505' ? 'Ya hay otro con ese nombre' : 'Error: ' + errEs(error), 'bad'); }
+  row.name = name; inp.value = name; toast('Nombre guardado', 'ok');
+}
 const amNorm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 // Mensajes: Enter envía, Mayúsculas+Enter hace salto de línea (en móvil, el botón Enviar)
 document.addEventListener('keydown', e => {
@@ -4183,6 +4487,13 @@ document.addEventListener('change', e => {
   if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); }
   if (e.target.id === 'avatarFile') { const f0 = e.target.files[0]; e.target.value = ''; processAvatar(f0); }
   if (e.target.matches('#assignManyForm input[name=item]')) amCount();
+  if (e.target.matches('[data-cat]')) { // filtros del catálogo
+    const c = catState(), k = e.target.dataset.cat; c[k] = e.target.value;
+    if (k === 'student') c.status = ''; // los estados posibles cambian con o sin alumno
+    catRefresh();
+  }
+  if (e.target.matches('[data-sl]')) { slState()[e.target.dataset.sl] = e.target.value; const l = $('#slList'); if (l) l.innerHTML = studentListList(); }
+  if (e.target.matches('[data-lib-rename]')) libRename(e.target);
   if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }
   if (e.target.id === 'familyDm') setFamilyDm(e.target.dataset.id, e.target.checked);
@@ -4296,6 +4607,19 @@ document.addEventListener('submit', async e => {
     const { error } = await sb.auth.updateUser({ password: p1 });
     if (error) return toast('Error: ' + errEs(error), 'bad');
     f.reset(); toast('Contraseña cambiada', 'ok');
+  } else if (f.id === 'folderForm' || f.id === 'genreForm') {
+    e.preventDefault();
+    const name = f.name.value.trim().replace(/\s+/g, ' ').slice(0, 60); if (!name) return;
+    const folder = f.id === 'folderForm', parent = folder ? null : (f.parent.value || null);
+    const sibl = folder ? S.folders : S.genres.filter(g => (g.parent_id || null) === parent);
+    const row = { name, position: sibl.reduce((m, x) => Math.max(m, x.position), -1) + 1 };
+    if (!folder) row.parent_id = parent;
+    const { data, error } = await sb.from(folder ? 'listening_folders' : 'listening_genres').insert(row).select();
+    if (error) return toast(error.code === '23505' ? 'Ya hay otro con ese nombre' : 'Error: ' + errEs(error), 'bad');
+    (data || []).forEach(r => (folder ? S.folders : S.genres).push(r));
+    folder ? foldersModal() : genresModal();
+    const inp = $(folder ? '#folderForm [name=name]' : '#genreForm [name=name]'); if (inp) inp.focus();
+    if (!folder && parent) { const sel = $('#genreForm [name=parent]'); if (sel) sel.value = parent; } // para añadir varios subgéneros seguidos
   } else if (f.id === 'itemForm') {
     e.preventDefault();
     let url = f.url.value.trim();
@@ -4308,23 +4632,42 @@ document.addEventListener('submit', async e => {
     btn.disabled = false; btn.textContent = 'Guardar';
     const title = f.title.value.trim() || meta.title; // vacío → el título de Spotify/YouTube
     if (!title) return toast('No he podido sacar el título de ese enlace. Escríbelo tú', 'bad');
-    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null };
+    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null, folder_id: f.folder.value || null };
+    const genreIds = $$('input[name=genre]:checked', f).map(x => x.value);
     if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = meta.thumb; // portada de Spotify/YouTube
     // Duración: lo escrito a mano manda; si está vacío, se saca de Spotify/YouTube
     const dur = parseDur(f.duration.value), tracks = f.tracks.value.trim() ? Math.round(Number(f.tracks.value)) : null;
     if (Number.isNaN(dur) || dur > 1000000) return toast('No entiendo esa duración. Escríbela como 3:33, 42 min o 1 h 12 min', 'bad');
     if (tracks !== null && !(tracks >= 1 && tracks <= 100000)) return toast('El número de temas no es válido', 'bad');
+    let durInfo = null; // si se pide la duración a Spotify, de paso trae el artista
     const manual = prev && dur === prev.duration_sec && tracks === prev.track_count ? null : { dur, tracks };
     if (manual && (dur || tracks)) Object.assign(row, { duration_sec: dur, track_count: tracks, duration_partial: false });
     else if (!manual && prev && prev.url === url && prev.duration_sec) { /* sin cambios */ }
     else {
       btn.disabled = true; btn.textContent = 'Buscando duración…';
-      const d = await fetchDuration(url);
+      const d = durInfo = await fetchDuration(url);
       btn.disabled = false; btn.textContent = 'Guardar';
       Object.assign(row, { duration_sec: d.duration_sec, track_count: d.track_count, duration_partial: d.partial });
     }
-    const { error } = id ? await sb.from('listening_items').update(row).eq('id', id) : await sb.from('listening_items').insert(row);
-    if (error) return toast('Error: ' + errEs(error), 'bad');
+    // Artista: lo escrito manda. Vacío → se busca solo con un enlace nuevo (las escuchas antiguas las rellena backfillThumbs).
+    // Vaciarlo a mano en una escucha que ya lo tenía lo deja vacío ("" = sin artista).
+    const artistIn = f.artist.value.trim();
+    if (artistIn) row.artist = artistIn.slice(0, 200);
+    else if (!prev || prev.url !== url) {
+      btn.disabled = true; btn.textContent = 'Buscando artista…';
+      row.artist = (durInfo && linkService(url) === 'sp' ? durInfo.artist : await fetchArtist(url)) ?? null;
+      btn.disabled = false; btn.textContent = 'Guardar';
+    } else if (prev.artist) row.artist = '';
+    const res = id ? await sb.from('listening_items').update(row).eq('id', id).select('id') : await sb.from('listening_items').insert(row).select('id');
+    if (res.error) return toast('Error: ' + errEs(res.error), 'bad');
+    const itemId = id || (res.data && res.data[0] && res.data[0].id);
+    if (itemId) { // géneros: se quitan los desmarcados y se añaden los nuevos
+      const had = S.itemGenres.filter(x => x.item_id === itemId).map(x => x.genre_id);
+      const off = had.filter(g => !genreIds.includes(g)), add = genreIds.filter(g => !had.includes(g));
+      const e1 = off.length ? (await sb.from('listening_item_genres').delete().eq('item_id', itemId).in('genre_id', off)).error : null;
+      const e2 = add.length ? (await sb.from('listening_item_genres').insert(add.map(genre_id => ({ item_id: itemId, genre_id })))).error : null;
+      if (e1 || e2) toast('La escucha se guardó, pero no los géneros: ' + errEs(e1 || e2), 'bad');
+    }
     await loadData();
     if (id && itemReturn) { render(); itemModal(id); } // vino de la ficha del alumno: vuelve a la escucha
     else { await closeModal(); render(); }
@@ -4616,7 +4959,7 @@ async function downloadBackup(btn) { // solo profesor: todo lo que él puede lee
   try {
     const tables = {
       profiles: 'id, display_name, nickname, email, role, approved, archived_at, created_at, birth_date, family_dm_ok, bio, instrument, level, favorites, gear, app_installed_at',
-      listening_items: '*', listening_assignments: '*', listening_comments: '*', listening_answer_reactions: '*',
+      listening_items: '*', listening_folders: '*', listening_genres: '*', listening_item_genres: '*', listening_assignments: '*', listening_comments: '*', listening_answer_reactions: '*',
       board_posts: '*', board_recipients: '*', board_reads: '*',
       feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*',
       homework_tasks: '*', payments_plans: '*', payments_records: '*', lessons: '*', lessons_students: '*',

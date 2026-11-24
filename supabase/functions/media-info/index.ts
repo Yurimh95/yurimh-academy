@@ -1,6 +1,8 @@
 // Yurimh Music Academy · Edge Function "media-info"
 // La llama la app del profesor con { url } al guardar un elemento de Escucha analítica.
-// Devuelve la duración: { duration_sec, track_count, partial } (cualquiera puede ser null).
+// Devuelve la duración: { duration_sec, track_count, partial } (cualquiera puede ser null)
+// y, en Spotify, el artista: { artist } ("" si es una playlist de muchos artistas; null si no se sabe).
+// El artista de YouTube lo saca la propia app (oEmbed: nombre del canal).
 // Spotify y YouTube no dejan leer esto desde el navegador (CORS), por eso se hace aquí.
 //
 // Cómo:
@@ -20,7 +22,7 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-type Info = { duration_sec: number | null; track_count: number | null; partial: boolean };
+type Info = { duration_sec: number | null; track_count: number | null; partial: boolean; artist?: string | null };
 const EMPTY: Info = { duration_sec: null, track_count: null, partial: false };
 
 // Si el servicio dice "demasiadas peticiones" (429) o falla (5xx), espera y reintenta hasta 2 veces.
@@ -45,6 +47,15 @@ async function get(url: string, label = url): Promise<string | null> {
   return null;
 }
 
+// Artista de una lista: el que firma al menos el 60 % de los temas (primer nombre de cada tema); si no, "".
+function mainArtist(list: { subtitle?: string }[]): string {
+  const n: Record<string, number> = {};
+  for (const t of list) { const a = String(t.subtitle ?? "").split(",")[0].trim(); if (a) n[a] = (n[a] ?? 0) + 1; }
+  const top = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+  return top && top[1] >= list.length * 0.6 ? top[0] : "";
+}
+const cut = (x: unknown) => String(x ?? "").trim().slice(0, 200) || null;
+
 async function spotify(type: string, id: string): Promise<Info> {
   const html = await get(`https://open.spotify.com/embed/${type}/${id}`);
   const m = html?.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
@@ -53,12 +64,16 @@ async function spotify(type: string, id: string): Promise<Info> {
     const e = JSON.parse(m[1])?.props?.pageProps?.state?.data?.entity;
     if (!e) { console.log(`media-info: Spotify ${type}/${id} sin "entity"`); return EMPTY; }
     if (type === "track" || type === "episode") {
-      return { duration_sec: e.duration > 0 ? Math.round(e.duration / 1000) : null, track_count: null, partial: false };
+      return { duration_sec: e.duration > 0 ? Math.round(e.duration / 1000) : null, track_count: null, partial: false, artist: cut(e.subtitle) };
     }
-    const list: { duration?: number }[] = Array.isArray(e.trackList) ? e.trackList : [];
+    const list: { duration?: number; subtitle?: string }[] = Array.isArray(e.trackList) ? e.trackList : [];
+    // Página de artista: solo el nombre (sus "temas populares" no dicen nada de la duración de lo que se pide escuchar)
+    if (type === "artist") return { ...EMPTY, artist: cut(e.name) };
     const ms = list.reduce((s, t) => s + (Number(t.duration) || 0), 0);
     if (!ms) console.log(`media-info: Spotify ${type}/${id} con ${list.length} temas pero sin duraciones`);
-    return { duration_sec: ms > 0 ? Math.round(ms / 1000) : null, track_count: list.length || null, partial: list.length >= 100 };
+    // Álbum: el artista que firma el disco. Playlist: el dueño no sirve (sería Yuri); se mira quién toca los temas.
+    const artist = type === "album" ? cut(e.subtitle) : list.length ? mainArtist(list) : null;
+    return { duration_sec: ms > 0 ? Math.round(ms / 1000) : null, track_count: list.length || null, partial: list.length >= 100, artist };
   } catch { return EMPTY; }
 }
 
@@ -140,7 +155,7 @@ Deno.serve(async (req) => {
   let url = "";
   try { url = String((await req.json())?.url ?? "").slice(0, 500); } catch { /* cuerpo vacío */ }
   let info = EMPTY;
-  const sp = url.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(?:embed\/)?(track|album|playlist|episode)\/([A-Za-z0-9]{22})/);
+  const sp = url.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(?:embed\/)?(track|album|playlist|episode|artist)\/([A-Za-z0-9]{22})/);
   const yv = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([A-Za-z0-9_-]{11})/);
   const yl = /youtu\.?be/.test(url) ? url.match(/[?&]list=([A-Za-z0-9_-]{10,64})/) : null;
   if (sp) info = await spotify(sp[1], sp[2]);

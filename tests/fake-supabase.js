@@ -21,6 +21,9 @@
   // ---- Compañeros y quién ve a quién: misma lógica que has_public_activity / can_see_profile / can_request_classmate ----
   DB.classmates = DB.classmates || [];
   DB.listening_answer_reactions = DB.listening_answer_reactions || [];
+  DB.listening_folders = DB.listening_folders || []; DB.listening_genres = DB.listening_genres || []; DB.listening_item_genres = DB.listening_item_genres || [];
+  // Carpetas: el alumno solo ve las de sus escuchas (listening_folders_select)
+  const folderMine = fid => DB.listening_items.some(i=>i.folder_id===fid && assigned(i.id));
   const hasActivity = u => DB.feed_posts.some(r=>r.author_id===u) || DB.feed_comments.some(r=>r.author_id===u)
     || DB.listening_comments.some(r=>r.author_id===u) || DB.reactions.some(r=>r.user_id===u);
   const mateBetween = (a,b) => DB.classmates.some(c=>(c.requester_id===a&&c.addressee_id===b)||(c.requester_id===b&&c.addressee_id===a));
@@ -38,6 +41,9 @@
     profiles: r => r.id===me || isTeacher(),
     listening_items: r => isTeacher() || (isApproved() && assigned(r.id)),
     listening_assignments: r => isTeacher() || (r.student_id===me && isApproved()),
+    listening_folders: r => isTeacher() || (isApproved() && folderMine(r.id)),
+    listening_genres: () => isApproved(),
+    listening_item_genres: r => isTeacher() || (isApproved() && assigned(r.item_id)),
     board_posts: r => postVisibleToMe(r),
     board_recipients: r => isTeacher() || (r.student_id===me && isApproved()),
     board_reads: r => isTeacher() || r.student_id===me,
@@ -73,6 +79,7 @@
   const canWriteRow = { // update/delete
     profiles: (op,r) => op==='update' && (isTeacher() || r.id===me),
     listening_items: () => isTeacher(),
+    listening_folders: () => isTeacher(), listening_genres: () => isTeacher(), listening_item_genres: () => isTeacher(),
     listening_assignments: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
     board_posts: () => isTeacher(),
     board_recipients: () => isTeacher(),
@@ -101,6 +108,7 @@
   const canInsert = {
     profiles: () => false,
     listening_items: () => isTeacher(),
+    listening_folders: () => isTeacher(), listening_genres: () => isTeacher(), listening_item_genres: () => isTeacher(),
     listening_assignments: () => isTeacher(),
     board_posts: () => isTeacher(),
     board_recipients: () => isTeacher(),
@@ -136,10 +144,15 @@
     payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
     payments_plans: r => ['monthly','per_class','free'].includes(r.mode) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
     listening_answer_reactions: r => ['highlights','likes','dislikes','learned','would_use','would_never_use'].includes(r.question) && r.emoji && r.emoji.length<=32 && DB.listening_assignments.some(a=>a.id===r.assignment_id),
+    listening_folders: r => r.name && String(r.name).trim().length>=1 && String(r.name).length<=60 && !DB.listening_folders.some(f=>f.id!==r.id && f.name.trim().toLowerCase()===String(r.name).trim().toLowerCase()),
+    listening_genres: r => r.name && String(r.name).trim().length>=1 && String(r.name).length<=60
+      && !DB.listening_genres.some(g=>g.id!==r.id && (g.parent_id||null)===(r.parent_id||null) && g.name.trim().toLowerCase()===String(r.name).trim().toLowerCase())
+      && (!r.parent_id || DB.listening_genres.some(g=>g.id===r.parent_id && !g.parent_id)), // listening_genres_guard: dos niveles
+    listening_items: r => r.artist==null || String(r.artist).length<=200,
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
   const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], dm_reactions:['message_id','user_id'], listening_answer_reactions:['assignment_id','question','user_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
+  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], dm_reactions:['message_id','user_id'], listening_answer_reactions:['assignment_id','question','user_id'], listening_item_genres:['item_id','genre_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){
@@ -215,6 +228,9 @@
   function cascade(table, rows){
     const ids=new Set(rows.map(r=>r.id));
     if(table==='feed_posts'){ const cs=removeRows('feed_comments',c=>ids.has(c.post_id)); cleanup('feed_comments',cs); }
+    if(table==='listening_folders') DB.listening_items.filter(i=>ids.has(i.folder_id)).forEach(i=>{ i.folder_id=null; emit('listening_items','UPDATE',i); }); // on delete set null
+    if(table==='listening_genres'){ const subs=removeRows('listening_genres',g=>ids.has(g.parent_id)); const all=new Set([...ids,...subs.map(g=>g.id)]); removeRows('listening_item_genres',x=>all.has(x.genre_id)); }
+    if(table==='listening_items') removeRows('listening_item_genres',x=>ids.has(x.item_id));
     if(table==='listening_items'){ const cs=removeRows('listening_comments',c=>ids.has(c.item_id)); cleanup('listening_comments',cs); const as=removeRows('listening_assignments',a=>ids.has(a.item_id)); cascade('listening_assignments',as); }
     if(table==='goals_items') removeRows('goals_done',d=>ids.has(d.goal_id));
     if(table==='listening_assignments') removeRows('listening_answer_reactions',x=>ids.has(x.assignment_id));
@@ -254,6 +270,7 @@
       if (nw.requester_id!==old.requester_id||nw.addressee_id!==old.addressee_id||old.status!=='pending'||nw.status!=='accepted') throw new Error('Solo se puede aceptar una solicitud pendiente');
       nw.accepted_at=new Date().toISOString();
     }
+    if ((table==='listening_folders'||table==='listening_genres'||table==='listening_items') && !checks[table](nw)) throw new Error('duplicate key value violates unique constraint (o check)');
     if (table==='homework_tasks' && !isTeacher() && (nw.title!==old.title||nw.details!==old.details||nw.due_date!==old.due_date||nw.student_id!==old.student_id)) throw new Error('Solo puedes marcar tus deberes como practicados');
   }
   function q(table){
