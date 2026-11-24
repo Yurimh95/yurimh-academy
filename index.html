@@ -2936,39 +2936,61 @@ function playBtn(url) {
 }
 const answersMeter = n => `<span class="meter" title="${n}/6 respuestas"><i style="width:${Math.round(n / 6 * 100)}%"></i></span><span class="meter-n">${n}/6</span>`;
 
-/* Escucha analítica del alumno: pestañas Pendientes / Escuchados / Todos, buscador y filtros por carpeta y género
-   (solo salen si sus escuchas tienen carpetas o géneros). Al escribir solo se repinta la lista (#slList). */
-function slState() { return S.sl || (S.sl = { q: '', folder: '', genre: '' }); }
+/* Escucha analítica del alumno: como el catálogo del profesor, pero con lo suyo. Pestañas Pendientes / Escuchados / Todos,
+   buscador y filtros (carpeta, género, tipo; solo los que tienen sus escuchas) y la lista agrupada por carpetas plegables
+   (S.slClosed). Al escribir o filtrar solo se repinta #slList. */
+function slState() { return S.sl || (S.sl = { q: '', folder: '', genre: '', kind: '' }); }
+const slActive = () => { const c = slState(); return !!(c.q.trim() || c.folder || c.genre || c.kind); };
 function studentListList() {
-  const all = S.assigns, c = slState(), q = amNorm(c.q.trim());
-  let list = S.filter === 'pend' ? all.filter(a => !a.listened) : S.filter === 'done' ? all.filter(a => a.listened) : all;
-  list = list.filter(a => (!q || itemHay(a.item).includes(q))
+  const all = S.assigns, c = slState(), q = amNorm(c.q.trim()), act = slActive();
+  const tab = S.filter === 'pend' ? all.filter(a => !a.listened) : S.filter === 'done' ? all.filter(a => a.listened) : all;
+  const list = tab.filter(a => (!q || itemHay(a.item).includes(q))
     && (!c.folder || (c.folder === NO_FOLDER ? !folderName(a.item.folder_id) : a.item.folder_id === c.folder))
-    && (!c.genre || itemHasGenre(a.item_id, c.genre)));
-  list = list.slice().sort(dueSort);
-  if (!list.length) return `<div class="empty">${!all.length ? 'Todavía no tienes nada asignado.' : (q || c.folder || c.genre) ? 'No hay escuchas con esos filtros.' : 'No hay elementos en esta pestaña.'}</div>`;
-  return `<div class="tracklist">
-      <div class="track-head"><span>#</span><span></span><span>Título</span><span>Respuestas</span><span>Fecha</span><span></span></div>
-      ${list.map((a, i) => studentCard(a, i)).join('')}</div>`;
+    && (!c.genre || itemHasGenre(a.item_id, c.genre))
+    && (!c.kind || a.item.kind === c.kind)).sort(dueSort);
+  if (!list.length) return `<div class="empty">${!all.length ? 'Todavía no tienes nada asignado.' : act ? 'No hay escuchas con esos filtros.' : 'No hay elementos en esta pestaña.'}</div>`;
+  const groups = [...foldersSorted().map(f => ({ id: f.id, name: f.name, rows: list.filter(a => a.item.folder_id === f.id) })),
+    { id: NO_FOLDER, name: S.folders.length ? 'Sin carpeta' : 'Todas', rows: list.filter(a => !folderName(a.item.folder_id)) }].filter(g => g.rows.length);
+  const closed = S.slClosed || (S.slClosed = new Set());
+  const head = `<div class="track-head"><span>#</span><span></span><span>Título</span><span>Respuestas</span><span>Fecha</span><span></span></div>`;
+  return `<div class="sub catcount">${list.length === tab.length ? `${list.length} escucha${list.length === 1 ? '' : 's'}` : `${list.length} de ${tab.length} escuchas`}</div>`
+    + groups.map(g => `<details class="fold" data-fold="${g.id}" data-fold-scope="sl" ${act || !closed.has(g.id) ? 'open' : ''}>
+      <summary><span class="fold-name">${ic('folder')}${esc(g.name)}</span><span class="n">${g.rows.length}</span></summary>
+      <div class="tracklist">${head}${g.rows.map((a, i) => studentCard(a, i)).join('')}</div></details>`).join('');
 }
-function studentListening() {
+function slFiltersHtml() {
   const all = S.assigns, c = slState();
-  const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
   const myFolders = foldersSorted().filter(f => all.some(a => a.item.folder_id === f.id));
   const myGenres = new Set(S.itemGenres.filter(x => all.some(a => a.item_id === x.item_id)).map(x => x.genre_id));
+  const myKinds = Object.entries(KIND).filter(([k]) => all.some(a => a.item.kind === k));
+  const opt = (v, t, cur, pad = '') => `<option value="${v}" ${cur === v ? 'selected' : ''}>${pad}${esc(t)}</option>`;
   const gOpts = genreTree().filter(({ g, subs }) => myGenres.has(g.id) || subs.some(x => myGenres.has(x.id)))
-    .map(({ g, subs }) => `<option value="${g.id}" ${c.genre === g.id ? 'selected' : ''}>${esc(g.name)}</option>`
-      + subs.filter(x => myGenres.has(x.id)).map(x => `<option value="${x.id}" ${c.genre === x.id ? 'selected' : ''}>   ${esc(x.name)}</option>`).join('')).join('');
+    .map(({ g, subs }) => opt(g.id, g.name, c.genre) + subs.filter(x => myGenres.has(x.id)).map(x => opt(x.id, x.name, c.genre, '   ')).join('')).join('');
+  return `<div class="catbar" id="slFilters">
+      <input type="search" id="slQ" data-no-emoji autocomplete="off" placeholder="Buscar por título, artista, género o carpeta…" aria-label="Buscar en mis escuchas" value="${esc(c.q)}">
+      ${myFolders.length ? `<select data-sl="folder" aria-label="Carpeta"><option value="">Todas las carpetas</option>${myFolders.map(f => opt(f.id, f.name, c.folder)).join('')}</select>` : ''}
+      ${gOpts ? `<select data-sl="genre" aria-label="Género"><option value="">Todos los géneros</option>${gOpts}</select>` : ''}
+      ${myKinds.length > 1 ? `<select data-sl="kind" aria-label="Tipo"><option value="">Todos los tipos</option>${myKinds.map(([k, v]) => opt(k, v, c.kind)).join('')}</select>` : ''}
+      ${slActive() ? `<button type="button" class="linkbtn" data-action="sl-clear">Quitar filtros</button>` : ''}
+    </div>`;
+}
+function slRefresh() { // repinta la lista y los filtros (por el botón "Quitar filtros") sin perder el cursor del buscador
+  const l = $('#slList'); if (!l) return;
+  l.innerHTML = studentListList();
+  const f = $('#slFilters'); if (!f) return;
+  const q = $('#slQ'), had = document.activeElement === q, pos = q ? q.selectionStart : 0;
+  f.outerHTML = slFiltersHtml();
+  if (had) { const n = $('#slQ'); n.focus(); try { n.setSelectionRange(pos, pos); } catch { } }
+}
+function studentListening() {
+  const all = S.assigns;
+  const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
   return `<div class="tabs">
       <button class="tab ${S.filter === 'pend' ? 'on' : ''}" data-action="filter" data-f="pend">Pendientes<span class="n">${pend.length}</span></button>
       <button class="tab ${S.filter === 'done' ? 'on' : ''}" data-action="filter" data-f="done">Escuchados<span class="n">${done.length}</span></button>
       <button class="tab ${S.filter === 'all' ? 'on' : ''}" data-action="filter" data-f="all">Todos<span class="n">${all.length}</span></button>
     </div>
-    ${all.length > 3 ? `<div class="catbar">
-      <input type="search" id="slQ" data-no-emoji autocomplete="off" placeholder="Buscar por título, artista o género…" aria-label="Buscar en mis escuchas" value="${esc(c.q)}">
-      ${myFolders.length ? `<select data-sl="folder" aria-label="Carpeta"><option value="">Todas las carpetas</option>${myFolders.map(f => `<option value="${f.id}" ${c.folder === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` : ''}
-      ${gOpts ? `<select data-sl="genre" aria-label="Género"><option value="">Todos los géneros</option>${gOpts}</select>` : ''}
-    </div>` : ''}
+    ${all.length ? slFiltersHtml() : ''}
     <div id="slList">${studentListList()}</div>`;
 }
 
@@ -2983,7 +3005,7 @@ function studentCard(a, i = 0) {
   return `<article class="track ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
     <span class="tnum">${a.listened ? `<span class="tdone" title="Escuchado">${ic('check')}</span>` : i + 1}</span>
     ${coverHtml(it)}
-    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${folderName(it.folder_id) ? `<span class="fchip">${ic('folder')}${esc(folderName(it.folder_id))}</span>` : ''}${genreChips(it.id)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
     <span class="tans">${answersMeter(n)}</span>
     <span class="tdue ${d.cls}">${a.due_date ? esc(d.cls ? d.text : fmtDate(a.due_date)) : '—'}</span>
     ${playBtn(it.url)}
@@ -4155,6 +4177,7 @@ const actions = {
   'folders-edit'() { foldersModal(); },
   'genres-edit'() { genresModal(); },
   'cat-clear'() { S.cat = null; catRefresh(); },
+  'sl-clear'() { S.sl = null; slRefresh(); },
   async 'cat-assign'(el) { // asignar una escucha al alumno del filtro, sin abrirla
     const sid = catState().student; if (!sid) return;
     el.disabled = true;
@@ -4451,7 +4474,7 @@ document.addEventListener('input', e => {
   if (e.target.matches('#dmForm textarea')) { const t = e.target; t.style.height = ''; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } // crece al escribir
   if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
   if (e.target.id === 'catQ') { catState().q = e.target.value; const l = $('#catList'); if (l) l.innerHTML = catalogList(); }
-  if (e.target.id === 'slQ') { slState().q = e.target.value; const l = $('#slList'); if (l) l.innerHTML = studentListList(); }
+  if (e.target.id === 'slQ') { const had = slActive(); slState().q = e.target.value; if (had !== slActive()) slRefresh(); else { const l = $('#slList'); if (l) l.innerHTML = studentListList(); } }
   if (e.target.id === 'amFilter') { // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
     const q = amNorm(e.target.value.trim());
     $$('#assignManyForm .am-items .chk').forEach(l => { l.hidden = !!q && !l.querySelector('input').checked && !amNorm(l.dataset.amTitle).includes(q); });
@@ -4459,8 +4482,9 @@ document.addEventListener('input', e => {
 });
 // Carpetas plegadas del catálogo (se recuerdan mientras dura la sesión). 'toggle' no burbujea: se escucha en captura.
 document.addEventListener('toggle', e => {
-  const d = e.target; if (!d.matches || !d.matches('details.fold[data-fold]') || catActive()) return;
-  const set = S.catClosed || (S.catClosed = new Set());
+  const d = e.target; if (!d.matches || !d.matches('details.fold[data-fold]')) return;
+  const sl = d.dataset.foldScope === 'sl'; if (sl ? slActive() : catActive()) return; // con filtros, todo se abre y no cuenta
+  const set = sl ? (S.slClosed || (S.slClosed = new Set())) : (S.catClosed || (S.catClosed = new Set()));
   if (d.open) set.delete(d.dataset.fold); else set.add(d.dataset.fold);
 }, true);
 // Renombrar una carpeta o un género (al salir del campo)
@@ -4492,7 +4516,7 @@ document.addEventListener('change', e => {
     if (k === 'student') c.status = ''; // los estados posibles cambian con o sin alumno
     catRefresh();
   }
-  if (e.target.matches('[data-sl]')) { slState()[e.target.dataset.sl] = e.target.value; const l = $('#slList'); if (l) l.innerHTML = studentListList(); }
+  if (e.target.matches('[data-sl]')) { slState()[e.target.dataset.sl] = e.target.value; slRefresh(); }
   if (e.target.matches('[data-lib-rename]')) libRename(e.target);
   if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }

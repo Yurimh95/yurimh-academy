@@ -152,19 +152,39 @@ const path = require('path');
   ok(await s.evaluate(() => S.folders.map(f => f.id).join()) === 'fo1', 'El alumno solo recibe las carpetas de sus escuchas');
   ok(await s.evaluate(() => S.itemGenres.every(x => ['i1', 'i2'].includes(x.item_id))), 'Y solo los géneros de sus escuchas');
   ok((await s.textContent('#slList')).includes('Essentials') && (await s.textContent('#slList')).includes('Jazz'), 'En su lista ve la carpeta y los géneros');
-  // Le asignan 2 más para que salga el buscador (más de 3)
+  ok(await s.locator('#slQ').count() === 1, 'El buscador sale siempre');
+  // Le asignan 2 más
   await s.evaluate(async () => {
     __DB.listening_assignments.push({ id: 'a8', item_id: 'i3', student_id: 's2', note: null, due_date: null, assigned_at: '2026-11-03', listened: false, listened_at: null, answers: {}, updated_at: '2026-11-03T10:00:00Z' },
       { id: 'a9', item_id: 'i4', student_id: 's2', note: null, due_date: null, assigned_at: '2026-11-03', listened: false, listened_at: null, answers: {}, updated_at: '2026-11-03T10:00:00Z' });
     await loadData(); render();
   });
   await s.waitForTimeout(150);
-  ok(await s.locator('#slQ').count() === 1 && await s.locator('[data-sl=folder]').count() === 1 && await s.locator('[data-sl=genre]').count() === 1, 'Con más de 3 escuchas salen el buscador y los filtros');
+  ok(await s.locator('[data-sl=folder]').count() === 1 && await s.locator('[data-sl=genre]').count() === 1 && await s.locator('[data-sl=kind]').count() === 1, 'Filtros de carpeta, género y tipo');
+  const sgroups = () => s.$$eval('#slList details.fold summary .fold-name', els => els.map(e => e.textContent.trim()));
+  ok(JSON.stringify(await sgroups()) === JSON.stringify(['Essentials', 'Yuri Nichos', 'Sin carpeta']), 'Su lista sale agrupada por carpetas, como la del profesor');
+  ok(await s.locator('#slList .fchip').count() === 0, 'Sin etiqueta de carpeta repetida en cada fila (ya va agrupado)');
+  await s.click('[data-action=filter][data-f=pend]'); await s.waitForTimeout(100);
+  ok(JSON.stringify(await sgroups()) === JSON.stringify(['Essentials', 'Yuri Nichos', 'Sin carpeta']) && !(await srows()).includes('Kind of Blue'), 'Las pestañas siguen funcionando dentro de las carpetas');
+  await s.click('[data-action=filter][data-f=all]'); await s.waitForTimeout(100);
+  await s.click('#slList details.fold[data-fold=fo1] summary'); await s.waitForTimeout(80);
+  await s.evaluate(() => render()); await s.waitForTimeout(80);
+  ok(!(await s.$eval('#slList details.fold[data-fold=fo1]', d => d.open)), 'Una carpeta plegada sigue plegada');
   await s.fill('#slQ', 'judas'); await s.waitForTimeout(80);
-  ok(JSON.stringify(await srows()) === '["Judas Priest Essentials"]', 'El buscador del alumno funciona');
+  ok(JSON.stringify(await srows()) === '["Judas Priest Essentials"]', 'El buscador del alumno funciona (y abre las carpetas plegadas)');
+  ok(await s.evaluate(() => document.activeElement && document.activeElement.id === 'slQ') && await s.locator('[data-action=sl-clear]').count() === 1, 'No pierde el cursor y sale "Quitar filtros"');
   await s.fill('#slQ', ''); await s.selectOption('[data-sl=genre]', 'g1'); await s.waitForTimeout(80);
   ok(JSON.stringify((await srows()).sort()) === JSON.stringify(['Catchy Ultimate', 'Judas Priest Essentials']), 'Filtro por género (con subgéneros) en la lista del alumno');
+  await s.selectOption('[data-sl=kind]', 'song'); await s.waitForTimeout(80);
+  ok(await s.locator('#slList .empty').count() === 1, 'Filtro por tipo (ninguna canción de Metal)');
+  await s.click('[data-action=sl-clear]'); await s.waitForTimeout(80);
+  ok((await srows()).length === 4 && await s.locator('[data-action=sl-clear]').count() === 0, '"Quitar filtros" lo deja todo como al principio');
+  await s.click('#slList details.fold[data-fold=fo1] summary'); await s.waitForTimeout(80);
   await s.screenshot({ path: path.join(__dirname, 'shots', 'biblioteca-alumno.png'), fullPage: true });
+  const sm = await start('s2', 390);
+  await sm.click('[data-action=filter][data-f=all]'); await sm.waitForTimeout(100);
+  ok(await sm.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Alumno en el móvil: sin scroll horizontal');
+  await sm.screenshot({ path: path.join(__dirname, 'shots', 'biblioteca-alumno-movil.png'), fullPage: true });
   // No puede tocar carpetas ni géneros
   const w = await s.evaluate(async () => [(await sb.from('listening_folders').insert({ name: 'Hack', position: 9 })).error, (await sb.from('listening_item_genres').insert({ item_id: 'i1', genre_id: 'g3' })).error]);
   ok(w.every(Boolean), 'El alumno no puede crear carpetas ni etiquetar escuchas');
