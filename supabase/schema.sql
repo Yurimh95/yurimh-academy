@@ -2609,3 +2609,496 @@ grant  execute on function public.media_orphans(int) to service_role;
 select cron.schedule('media-cleanup', '15 4 * * *',
   $cron$select net.http_post(url := 'https://gyzwevayeloishhldumd.supabase.co/functions/v1/media-cleanup',
     body := '{}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb)$cron$);
+
+-- =====================================================================
+--  STORIES Y VÍDEOS EN EL INICIO (2026-11-25)
+--  · Stories: un vídeo de hasta 60 s arriba del Inicio que caduca SIEMPRE a las 24 h.
+--    Quien la ve puede reaccionar (cualquier emoji) y responder por privado; quien la
+--    sube ve quién la ha visto. Las vistas y reacciones solo las ve quien la subió.
+--  · Posts con vídeo: un vídeo por post (sin fotos), que caduca a 1, 3 o 7 días (lo elige
+--    quien publica). Al caducar se borra el vídeo y queda el texto; sin texto, el post entero.
+--  · Calidad: la app los pasa a 720p (~20 MB por minuto) antes de subirlos.
+--  · Archivos: el vídeo va al almacén PRIVADO "video" (<tipo>/<autor>/<id>/<clave>.mp4) y
+--    su portada al de fotos, "media" (<clave>_t.jpg). tipo: story | fvideo.
+--    Ver = poder ver la story o el post, y que no haya caducado (media_visible).
+--  · Caducar: media_expire() cada hora borra lo caducado de la base de datos y
+--    media-cleanup (también cada hora) borra sus archivos. Lo denunciado y sin revisar
+--    se conserva para el profesor hasta que lo resuelva.
+--  · Fusible: el plan gratis da ~5 GB de descargas al mes. Cada reproducción apunta lo que
+--    pesa el vídeo (video_plays) y, si este mes se pasa de video_budget(), no se pueden
+--    subir vídeos hasta el día 1. Al pasar del 70 % se avisa al profesor.
+-- =====================================================================
+
+-- Lo que se gasta en vídeo cada mes como mucho (el resto del plan queda para fotos y datos)
+create or replace function public.video_budget()
+returns bigint language sql immutable set search_path = public as $$ select 3::bigint * 1024 * 1024 * 1024 $$;
+
+-- {k: clave, w: ancho, h: alto, d: segundos}
+create or replace function public.video_ok(v jsonb)
+returns boolean language sql immutable set search_path = public as $$
+  select case when v is null then true
+    when jsonb_typeof(v) <> 'object' then false
+    when (select count(*) from jsonb_object_keys(v)) <> 4 then false
+    when coalesce(v->>'k', '') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then false
+    when coalesce(v->>'w', '') !~ '^[1-9][0-9]{0,3}$' or coalesce(v->>'h', '') !~ '^[1-9][0-9]{0,3}$' then false
+    when coalesce(v->>'d', '') !~ '^[0-9]{1,2}(\.[0-9]{1,3})?$' then false
+    else (v->>'d')::numeric between 0.3 and 61 end
+$$;
+
+-- ¿Hay una denuncia sin resolver sobre esto? (lo denunciado no caduca hasta que el profesor lo revise)
+-- Solo responde al profesor y a las tareas automáticas (sin sesión): un alumno no puede averiguar si le han denunciado.
+create or replace function public.has_open_report(t text, i uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select (auth.uid() is null or public.is_teacher())
+     and exists (select 1 from public.moderation_reports where target_type = t and target_id = i and not resolved)
+$$;
+revoke execute on function public.has_open_report(text, uuid) from public, anon;
+grant  execute on function public.has_open_report(text, uuid) to authenticated;
+
+-- ---------- Stories ----------
+create table if not exists public.stories (
+  id         uuid primary key default gen_random_uuid(),
+  author_id  uuid not null references public.profiles(id) on delete cascade,
+  video      jsonb not null check (public.video_ok(video)),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '24 hours'
+);
+create index if not exists stories_author_idx on public.stories (author_id);
+create index if not exists stories_expires_idx on public.stories (expires_at);
+
+create table if not exists public.story_views (
+  story_id  uuid not null references public.stories(id) on delete cascade,
+  user_id   uuid not null references public.profiles(id) on delete cascade,
+  viewed_at timestamptz not null default now(),
+  primary key (story_id, user_id)
+);
+create index if not exists story_views_user_idx on public.story_views (user_id);
+
+create table if not exists public.story_reactions (
+  story_id   uuid not null references public.stories(id) on delete cascade,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  emoji      text not null check (char_length(emoji) between 1 and 32),
+  created_at timestamptz not null default now(),
+  primary key (story_id, user_id)
+);
+create index if not exists story_reactions_user_idx on public.story_reactions (user_id);
+
+grant select, insert, delete on public.stories to authenticated;
+grant select, insert on public.story_views to authenticated;
+grant select, insert, update, delete on public.story_reactions to authenticated;
+revoke all on public.stories, public.story_views, public.story_reactions from anon;
+alter table public.stories enable row level security;
+alter table public.story_views enable row level security;
+alter table public.story_reactions enable row level security;
+
+-- La hora la pone la base de datos: 24 h exactas, sin trampas desde el navegador
+create or replace function public.stories_ins()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.created_at := now();
+  new.expires_at := now() + interval '24 hours';
+  return new;
+end;
+$$;
+revoke execute on function public.stories_ins() from public, anon, authenticated;
+drop trigger if exists stories_ins_trg on public.stories;
+create trigger stories_ins_trg before insert on public.stories for each row execute function public.stories_ins();
+
+drop policy if exists stories_select on public.stories;
+create policy stories_select on public.stories for select to authenticated
+  using (public.is_approved() and not public.is_archived(author_id)
+         and (expires_at > now() or (public.is_teacher() and public.has_open_report('story', id))));
+drop policy if exists stories_insert on public.stories;
+create policy stories_insert on public.stories for insert to authenticated
+  with check (author_id = (select auth.uid()) and public.is_approved());
+drop policy if exists stories_delete on public.stories;
+create policy stories_delete on public.stories for delete to authenticated
+  using (author_id = (select auth.uid()) or public.is_teacher());
+
+-- Vistas: cada cual apunta las suyas; solo las lee quien subió la story
+drop policy if exists story_views_select on public.story_views;
+create policy story_views_select on public.story_views for select to authenticated
+  using (user_id = (select auth.uid())
+         or exists (select 1 from public.stories s where s.id = story_id and s.author_id = (select auth.uid())));
+drop policy if exists story_views_insert on public.story_views;
+create policy story_views_insert on public.story_views for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_approved()
+              and exists (select 1 from public.stories s where s.id = story_id and s.author_id <> (select auth.uid())));
+
+-- Reacciones: una por persona y story, cualquier emoji; solo las ven quien reacciona y quien la subió
+drop policy if exists story_reactions_select on public.story_reactions;
+create policy story_reactions_select on public.story_reactions for select to authenticated
+  using (user_id = (select auth.uid())
+         or exists (select 1 from public.stories s where s.id = story_id and s.author_id = (select auth.uid())));
+drop policy if exists story_reactions_insert on public.story_reactions;
+create policy story_reactions_insert on public.story_reactions for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_approved()
+              and exists (select 1 from public.stories s where s.id = story_id and s.author_id <> (select auth.uid())));
+drop policy if exists story_reactions_update on public.story_reactions;
+create policy story_reactions_update on public.story_reactions for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()) and public.is_approved()
+              and exists (select 1 from public.stories s where s.id = story_id and s.author_id <> (select auth.uid())));
+drop policy if exists story_reactions_delete on public.story_reactions;
+create policy story_reactions_delete on public.story_reactions for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+create or replace function public.story_reactions_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and new.emoji = old.emoji then return null; end if;
+  perform public.notify((select author_id from public.stories where id = new.story_id),
+                        'story_reaction', new.user_id, new.story_id, new.emoji);
+  return null;
+end;
+$$;
+revoke execute on function public.story_reactions_notify() from public, anon, authenticated;
+drop trigger if exists story_reactions_notify_trg on public.story_reactions;
+create trigger story_reactions_notify_trg after insert or update on public.story_reactions
+  for each row execute function public.story_reactions_notify();
+
+-- Borrar una story limpia sus denuncias (como el resto del contenido)
+drop trigger if exists cleanup_stories on public.stories;
+create trigger cleanup_stories after delete on public.stories
+  for each row execute function public.cleanup_target_links('story');
+
+-- ---------- Responder a una story por privado ----------
+alter table public.dm_messages add column if not exists story_id uuid; -- sin FK: la respuesta se queda aunque la story caduque
+
+create or replace function public.dm_messages_story_check()
+returns trigger language plpgsql set search_path = public as $$
+begin -- invoker: las RLS deciden si quien escribe puede ver esa story
+  if new.story_id is not null and not exists
+     (select 1 from public.stories s where s.id = new.story_id and s.author_id = new.recipient_id) then
+    raise exception 'Esa story ya no está disponible';
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.dm_messages_story_check() from public, anon, authenticated;
+drop trigger if exists dm_messages_story_trg on public.dm_messages;
+create trigger dm_messages_story_trg before insert on public.dm_messages
+  for each row execute function public.dm_messages_story_check();
+
+create or replace function public.dm_messages_guard()
+returns trigger
+language plpgsql set search_path = public
+as $$
+begin
+  if new.id is distinct from old.id or new.sender_id is distinct from old.sender_id
+     or new.recipient_id is distinct from old.recipient_id or new.body is distinct from old.body
+     or new.photos is distinct from old.photos or new.story_id is distinct from old.story_id
+     or new.created_at is distinct from old.created_at then
+    raise exception 'Solo se puede marcar como leído';
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------- Posts del Inicio con vídeo ----------
+alter table public.feed_posts add column if not exists video jsonb;
+alter table public.feed_posts add column if not exists video_expires_at timestamptz;
+alter table public.feed_posts drop constraint if exists feed_posts_video_check;
+alter table public.feed_posts add constraint feed_posts_video_check
+  check (public.video_ok(video) and (video is null or (video_expires_at is not null and jsonb_array_length(photos) = 0)));
+alter table public.feed_posts drop constraint if exists feed_posts_body_check;
+alter table public.feed_posts add constraint feed_posts_body_check
+  check (char_length(body) <= 2000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1 or video is not null));
+
+-- Caducidad: 1, 3 o 7 días desde que se publica (la base de datos pone la hora exacta)
+create or replace function public.feed_posts_video_ins()
+returns trigger language plpgsql set search_path = public as $$
+declare d int;
+begin
+  if new.video is null then new.video_expires_at := null; return new; end if;
+  d := round(extract(epoch from (coalesce(new.video_expires_at, now()) - now())) / 86400.0);
+  if d not in (1, 3, 7) then d := 1; end if;
+  new.video_expires_at := now() + make_interval(days => d);
+  return new;
+end;
+$$;
+revoke execute on function public.feed_posts_video_ins() from public, anon, authenticated;
+drop trigger if exists feed_posts_video_ins_trg on public.feed_posts;
+create trigger feed_posts_video_ins_trg before insert on public.feed_posts
+  for each row execute function public.feed_posts_video_ins();
+
+-- Al editar: el vídeo y su caducidad no se cambian (solo se puede quitar el vídeo)
+create or replace function public.feed_posts_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.id := old.id;
+  new.author_id := old.author_id;
+  new.created_at := old.created_at;
+  new.video_expires_at := old.video_expires_at;
+  if new.video is not null then new.video := old.video; end if;
+  if new.body is distinct from old.body or new.link_url is distinct from old.link_url
+     or new.photos is distinct from old.photos then
+    new.edited_at := now();
+  else
+    new.edited_at := old.edited_at;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.feed_posts_guard() from public, anon, authenticated;
+
+-- ---------- Quién se ve: subir una story cuenta como participar ----------
+create or replace function public.has_public_activity(u uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.feed_posts where author_id = u)
+      or exists (select 1 from public.feed_comments where author_id = u)
+      or exists (select 1 from public.listening_comments where author_id = u)
+      or exists (select 1 from public.reactions where user_id = u)
+      or exists (select 1 from public.stories where author_id = u and expires_at > now());
+$$;
+
+-- Quien ve tu story o reacciona a ella pasa a verse para ti (como cuando os escribís)
+create or replace function public.can_see_profile(u uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select auth.uid() is not null and public.is_approved()
+    and exists (select 1 from public.profiles p where p.id = u and p.approved)
+    and (
+      u = auth.uid()
+      or public.is_teacher()
+      or exists (select 1 from public.profiles p where p.id = u and p.role = 'teacher')
+      or public.has_public_activity(u)
+      or exists (select 1 from public.classmates c
+                 where (c.requester_id = u and c.addressee_id = auth.uid())
+                    or (c.requester_id = auth.uid() and c.addressee_id = u))
+      or exists (select 1 from public.dm_messages m
+                 where (m.sender_id = u and m.recipient_id = auth.uid())
+                    or (m.sender_id = auth.uid() and m.recipient_id = u))
+      or exists (select 1 from public.story_views v join public.stories s on s.id = v.story_id
+                 where v.user_id = u and s.author_id = auth.uid())
+      or exists (select 1 from public.story_reactions r join public.stories s on s.id = r.story_id
+                 where r.user_id = u and s.author_id = auth.uid())
+    );
+$$;
+
+-- ---------- Denuncias y avisos ----------
+alter table public.moderation_reports drop constraint if exists moderation_reports_target_type_check;
+alter table public.moderation_reports add constraint moderation_reports_target_type_check
+  check (target_type in ('feed_post', 'feed_comment', 'listening_comment', 'dm_message', 'profile', 'story'));
+
+create or replace function public.can_see_target(t text, i uuid)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select case t
+    when 'board_post'        then exists (select 1 from public.board_posts        where id = i)
+    when 'feed_post'         then exists (select 1 from public.feed_posts         where id = i)
+    when 'feed_comment'      then exists (select 1 from public.feed_comments      where id = i)
+    when 'listening_comment' then exists (select 1 from public.listening_comments where id = i)
+    when 'listening_item'    then exists (select 1 from public.listening_items    where id = i)
+    when 'dm_message'        then exists (select 1 from public.dm_messages        where id = i and recipient_id = auth.uid())
+    when 'profile'           then i <> auth.uid() and public.can_see_profile(i)
+                                  and exists (select 1 from public.profiles where id = i and role = 'student')
+    when 'story'             then exists (select 1 from public.stories where id = i and author_id <> auth.uid())
+    else false
+  end;
+$$;
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
+                  'story_reaction', 'video_quota'));
+
+-- ---------- Almacén de vídeos ----------
+-- Privado, solo MP4 y como mucho 35 MB por archivo (la app los deja en ~20 MB por minuto)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('video', 'video', false, 36700160, array['video/mp4'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Nombres válidos: fotos <tipo>/<autor>/<fila>/<clave>(_t).jpg; vídeos story|fvideo: <clave>.mp4 y su portada <clave>_t.jpg
+create or replace function public.media_parse(p_name text)
+returns text[] language sql immutable set search_path = public as $$
+  select case
+    when m is null then null
+    when m[1] in ('story', 'fvideo') and m[5] in ('_t.jpg', '.mp4') then m
+    when m[1] not in ('story', 'fvideo') and m[5] in ('_t.jpg', '.jpg') then m
+    else null end
+  from (select regexp_match(p_name, '^(feed|board|fcomment|lcomment|dm|story|fvideo)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t\.jpg|\.jpg|\.mp4)$') as m) x
+$$;
+revoke execute on function public.media_parse(text) from public, anon;
+grant  execute on function public.media_parse(text) to authenticated, service_role;
+
+-- ¿Puede quien llama ver este archivo? (invoker: las RLS de cada tabla deciden)
+create or replace function public.media_visible(p_name text)
+returns boolean language plpgsql stable set search_path = public as $$
+declare
+  m text[] := public.media_parse(p_name);
+  own uuid; rid uuid; ph jsonb;
+begin
+  if m is null or auth.uid() is null then return false; end if;
+  own := m[2]::uuid; rid := m[3]::uuid;
+  if own = auth.uid() then return true; end if; -- lo tuyo, siempre (también recién subido)
+  ph := jsonb_build_array(jsonb_build_object('k', m[4]));
+  return case m[1]
+    when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'board'    then exists (select 1 from public.board_posts        t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = rid and t.sender_id = own and t.photos @> ph)
+    when 'story'    then exists (select 1 from public.stories            t where t.id = rid and t.author_id = own and t.video->>'k' = m[4])
+    when 'fvideo'   then exists (select 1 from public.feed_posts         t where t.id = rid and t.author_id = own and t.video->>'k' = m[4]
+                                  and (t.video_expires_at > now() or (public.is_teacher() and public.has_open_report('feed_post', t.id))))
+    else false end;
+end;
+$$;
+revoke execute on function public.media_visible(text) from public, anon;
+grant  execute on function public.media_visible(text) to authenticated;
+
+-- Lo gastado en vídeo este mes (estimado: cada persona que reproduce un vídeo cuenta su tamaño una vez al día)
+create table if not exists public.video_plays (
+  video_key uuid not null,
+  user_id   uuid not null references public.profiles(id) on delete cascade,
+  played_on date not null default current_date,
+  bytes     bigint not null check (bytes > 0),
+  primary key (video_key, user_id, played_on)
+);
+create index if not exists video_plays_day_idx on public.video_plays (played_on);
+alter table public.video_plays enable row level security; -- sin políticas: solo las funciones de abajo
+revoke all on public.video_plays from anon, authenticated;
+
+create or replace function public.video_used()
+returns bigint language sql stable security definer set search_path = public as $$
+  select coalesce(sum(bytes), 0)::bigint from public.video_plays where played_on >= date_trunc('month', now())::date
+$$;
+revoke execute on function public.video_used() from public, anon, authenticated;
+
+-- Para la app: cuánto se ha gastado este mes y si se puede subir (solo totales, nada de quién)
+create or replace function public.video_quota()
+returns jsonb language sql stable security definer set search_path = public as $$
+  select case when public.is_approved() then
+    jsonb_build_object('used', u, 'limit', public.video_budget(), 'paused', u >= public.video_budget())
+  else null end
+  from (select public.video_used() as u) x
+$$;
+revoke execute on function public.video_quota() from public, anon;
+grant  execute on function public.video_quota() to authenticated;
+
+-- La app la llama al empezar a reproducir un vídeo
+create or replace function public.video_play(p_kind text, p_row uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare own uuid; v jsonb; sz bigint; used bigint; lim bigint := public.video_budget(); t uuid;
+begin
+  if auth.uid() is null or not public.is_approved() then return; end if;
+  if p_kind = 'story' then
+    select author_id, video into own, v from public.stories where id = p_row and not public.is_archived(author_id)
+      and (expires_at > now() or public.is_teacher());
+  elsif p_kind = 'fvideo' then
+    select author_id, video into own, v from public.feed_posts where id = p_row and not public.is_archived(author_id)
+      and (video_expires_at > now() or public.is_teacher());
+  else return; end if;
+  if v is null then return; end if;
+  select coalesce((metadata->>'size')::bigint, 0) into sz from storage.objects
+    where bucket_id = 'video' and name = p_kind || '/' || own || '/' || p_row || '/' || (v->>'k') || '.mp4';
+  if coalesce(sz, 0) = 0 then return; end if;
+  insert into public.video_plays (video_key, user_id, bytes) values ((v->>'k')::uuid, auth.uid(), sz)
+    on conflict do nothing;
+  if not found then return; end if;
+  used := public.video_used();
+  if used >= lim * 0.7 and used - sz < lim * 0.7 then -- se acaba de pasar del 70 %: aviso al profesor
+    for t in select id from public.profiles where role = 'teacher' loop
+      perform public.notify(t, 'video_quota', null, null, '70');
+    end loop;
+  elsif used >= lim and used - sz < lim then
+    for t in select id from public.profiles where role = 'teacher' loop
+      perform public.notify(t, 'video_quota', null, null, '100');
+    end loop;
+  end if;
+end;
+$$;
+revoke execute on function public.video_play(text, uuid) from public, anon;
+grant  execute on function public.video_play(text, uuid) to authenticated;
+
+-- Subir: solo a tu carpeta, con cuenta aprobada; en avisos, solo el profesor; vídeos, si queda presupuesto este mes
+create or replace function public.media_can_upload(p_name text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((public.media_parse(p_name))[2] = auth.uid()::text, false)
+     and public.is_approved()
+     and (p_name not like 'board/%' or public.is_teacher())
+     and (p_name not like '%.mp4' or public.video_used() < public.video_budget())
+$$;
+revoke execute on function public.media_can_upload(text) from public, anon;
+grant  execute on function public.media_can_upload(text) to authenticated;
+
+drop policy if exists media_insert on storage.objects;
+create policy media_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and name like '%.jpg' and public.media_can_upload(name));
+
+drop policy if exists video_select on storage.objects;
+create policy video_select on storage.objects for select to authenticated
+  using (bucket_id = 'video' and public.media_visible(name));
+drop policy if exists video_insert on storage.objects;
+create policy video_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'video' and name like '%.mp4' and public.media_can_upload(name));
+drop policy if exists video_delete on storage.objects;
+create policy video_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'video' and split_part(name, '/', 2) = auth.uid()::text);
+
+-- ---------- Caducar y limpiar ----------
+-- Cada hora: fuera las stories y los vídeos caducados (salvo lo denunciado sin revisar)
+create or replace function public.media_expire()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.stories s where s.expires_at <= now() and not public.has_open_report('story', s.id);
+  delete from public.feed_posts p where p.video is not null and p.video_expires_at <= now()
+    and char_length(p.body) = 0 and jsonb_array_length(p.photos) = 0 and not public.has_open_report('feed_post', p.id);
+  update public.feed_posts p set video = null where p.video is not null and p.video_expires_at <= now()
+    and not public.has_open_report('feed_post', p.id);
+  delete from public.video_plays where played_on < (date_trunc('month', now()) - interval '3 months')::date;
+end;
+$$;
+revoke execute on function public.media_expire() from public, anon, authenticated;
+
+-- Archivos sin fila que los use, de los dos almacenes (fotos: más de 1 día; vídeos: más de 2 horas)
+create or replace function public.storage_orphans(p_limit int default 500)
+returns table (bucket text, name text) language sql stable security definer set search_path = public as $$
+  select o.bucket_id, o.name
+  from storage.objects o
+  cross join lateral (select public.media_parse(o.name) as m) x
+  where o.bucket_id in ('media', 'video')
+    and o.created_at < now() - case when x.m[1] in ('story', 'fvideo') then interval '2 hours' else interval '1 day' end
+    and not coalesce(
+      (o.bucket_id = 'video') = (x.m[5] = '.mp4') and case x.m[1]
+      when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'board'    then exists (select 1 from public.board_posts        t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = x.m[3]::uuid and t.sender_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'story'    then exists (select 1 from public.stories            t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.video->>'k' = x.m[4])
+      when 'fvideo'   then exists (select 1 from public.feed_posts         t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.video->>'k' = x.m[4])
+      else false end, false)
+  order by o.created_at
+  limit greatest(1, least(coalesce(p_limit, 500), 1000));
+$$;
+revoke execute on function public.storage_orphans(int) from public, anon, authenticated;
+grant  execute on function public.storage_orphans(int) to service_role;
+
+select cron.schedule('media-expire', '5 * * * *', $cron$select public.media_expire()$cron$);
+-- La limpieza de archivos pasa a ser cada hora (antes, cada noche)
+select cron.schedule('media-cleanup', '20 * * * *',
+  $cron$select net.http_post(url := 'https://gyzwevayeloishhldumd.supabase.co/functions/v1/media-cleanup',
+    body := '{}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb)$cron$);
+
+-- ---------- Tiempo real ----------
+do $$
+declare t text;
+begin
+  foreach t in array array['stories', 'story_views', 'story_reactions'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;

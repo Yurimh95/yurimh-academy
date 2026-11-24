@@ -26,17 +26,24 @@
   const dmReported = id => DB.moderation_reports.some(x=>x.target_type==='dm_message'&&x.target_id===id);
   // ---- Compañeros y quién ve a quién: misma lógica que has_public_activity / can_see_profile / can_request_classmate ----
   DB.classmates = DB.classmates || [];
+  DB.stories = DB.stories || []; DB.story_views = DB.story_views || []; DB.story_reactions = DB.story_reactions || []; DB.video_plays = DB.video_plays || [];
+  // Stories (2026-11-25): vivas 24 h; el profesor ve también las caducadas con denuncia sin resolver
+  const openReport = (t, id) => DB.moderation_reports.some(r => r.target_type === t && r.target_id === id && !r.resolved);
+  const storyAlive = r => new Date(r.expires_at) > Date.now();
+  const storyVisible = r => !!r && isApproved() && !isArchived(r.author_id) && (storyAlive(r) || (isTeacher() && openReport('story', r.id)));
+  const storyOf = id => DB.stories.find(s => s.id === id && storyVisible(s));
   DB.listening_answer_reactions = DB.listening_answer_reactions || [];
   DB.listening_folders = DB.listening_folders || []; DB.listening_genres = DB.listening_genres || []; DB.listening_item_genres = DB.listening_item_genres || [];
   // Carpetas: el alumno solo ve las de sus escuchas (listening_folders_select)
   const folderMine = fid => DB.listening_items.some(i=>i.folder_id===fid && assigned(i.id));
   const hasActivity = u => DB.feed_posts.some(r=>r.author_id===u) || DB.feed_comments.some(r=>r.author_id===u)
-    || DB.listening_comments.some(r=>r.author_id===u) || DB.reactions.some(r=>r.user_id===u);
+    || DB.listening_comments.some(r=>r.author_id===u) || DB.reactions.some(r=>r.user_id===u) || DB.stories.some(r=>r.author_id===u && storyAlive(r));
+  const storyTouched = (u, owner) => [...DB.story_views, ...DB.story_reactions].some(v => v.user_id===u && DB.stories.some(s => s.id===v.story_id && s.author_id===owner));
   const mateBetween = (a,b) => DB.classmates.some(c=>(c.requester_id===a&&c.addressee_id===b)||(c.requester_id===b&&c.addressee_id===a));
   const dmBetween = (a,b) => DB.dm_messages.some(m=>(m.sender_id===a&&m.recipient_id===b)||(m.sender_id===b&&m.recipient_id===a));
   const blockedEither = (a,b) => DB.user_blocks.some(x=>(x.blocker_id===a&&x.blocked_id===b)||(x.blocker_id===b&&x.blocked_id===a));
   const canSeeProfile = u => { const p=prof(u); if(!p||!p.approved||!isApproved()) return false;
-    return u===me || isTeacher() || p.role==='teacher' || hasActivity(u) || mateBetween(me,u) || dmBetween(me,u); };
+    return u===me || isTeacher() || p.role==='teacher' || hasActivity(u) || mateBetween(me,u) || dmBetween(me,u) || storyTouched(u, me); };
   const canRequestMate = u => { const pm=P(), pu=prof(u);
     return u!==me && !!pm && pm.approved && pm.role==='student' && !!pu && pu.approved && pu.role==='student'
       && !blockedEither(me,u) && (hasActivity(u) || dmBetween(me,u)); };
@@ -73,11 +80,16 @@
     goals_stages: () => isApproved(),
     goals_items: r => isTeacher() || (isApproved() && (!r.student_id || r.student_id===me)),
     goals_done: r => isTeacher() || (r.student_id===me && isApproved()),
-    blocked_emails: () => isTeacher()
+    blocked_emails: () => isTeacher(),
+    stories: r => storyVisible(r),
+    story_views: r => r.user_id===me || DB.stories.some(s => s.id===r.story_id && s.author_id===me),
+    story_reactions: r => r.user_id===me || DB.stories.some(s => s.id===r.story_id && s.author_id===me),
+    video_plays: () => false
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
     if(type==='profile') return id!==me && canSeeProfile(id) && (prof(id)||{}).role==='student';
+    if(type==='story') return DB.stories.some(r=>r.id===id && r.author_id!==me && storyVisible(r));
     const T={board_post:['board_posts'],feed_post:['feed_posts'],feed_comment:['feed_comments'],listening_comment:['listening_comments'],listening_item:['listening_items']}[type];
     if(!T) return false;
     return DB[T[0]].some(r=>r.id===id && canRead[T[0]](r));
@@ -111,7 +123,11 @@
     goals_stages: () => isTeacher(),
     goals_items: () => isTeacher(),
     goals_done: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
-    blocked_emails: () => isTeacher()
+    blocked_emails: () => isTeacher(),
+    stories: (op,r) => op==='delete' && (r.author_id===me || isTeacher()),
+    story_views: () => false,
+    story_reactions: (op,r) => r.user_id===me && (op==='delete' || (isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me)),
+    video_plays: () => false
   };
   const canInsert = {
     profiles: () => false,
@@ -125,8 +141,8 @@
     feed_comments: r => r.author_id===me && isApproved() && DB.feed_posts.some(p=>p.id===r.post_id),
     listening_comments: r => r.author_id===me && (isTeacher() || (isApproved() && assigned(r.item_id))),
     reactions: r => r.user_id===me && isApproved() && canSee(r.target_type,r.target_id),
-    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message','profile'].includes(r.target_type) && canSee(r.target_type,r.target_id),
-    dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id),
+    moderation_reports: r => r.reporter_id===me && isApproved() && ['feed_post','feed_comment','listening_comment','dm_message','profile','story'].includes(r.target_type) && canSee(r.target_type,r.target_id),
+    dm_messages: r => r.sender_id===me && isApproved() && canDm(me, r.recipient_id) && (!r.story_id || DB.stories.some(s => s.id===r.story_id && s.author_id===r.recipient_id && storyVisible(s))), // dm_messages_story_check
     dm_reactions: r => r.user_id===me && isApproved() && (()=>{const m=DB.dm_messages.find(x=>x.id===r.message_id);return !!m&&(m.sender_id===me||m.recipient_id===me);})(),
     user_blocks: r => r.blocker_id===me && isApproved() && r.blocker_id!==r.blocked_id,
     listening_answer_reactions: r => isTeacher() && r.user_id===me,
@@ -141,16 +157,25 @@
     goals_stages: () => isTeacher(),
     goals_items: () => isTeacher(),
     goals_done: r => isTeacher() && DB.goals_items.some(g=>g.id===r.goal_id && (!g.student_id || g.student_id===r.student_id)), // goals_done_guard
-    blocked_emails: () => isTeacher()
+    blocked_emails: () => isTeacher(),
+    stories: r => r.author_id===me && isApproved(),
+    story_views: r => r.user_id===me && isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me,
+    story_reactions: r => r.user_id===me && isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me,
+    video_plays: () => false
   };
   // Fotos (photos_ok del SQL): [{k: uuid, w, h}], sin repetir, hasta maxn. Con fotos, el texto es opcional.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const photosOk = (p, maxn) => Array.isArray(p) && p.length<=maxn && new Set(p.map(x=>x&&x.k)).size===p.length
     && p.every(x=>x && typeof x==='object' && !Array.isArray(x) && Object.keys(x).length===3 && UUID_RE.test(String(x.k)) && /^[1-9][0-9]{0,4}$/.test(String(x.w)) && /^[1-9][0-9]{0,4}$/.test(String(x.h)));
   const bodyOk = (r, max) => String(r.body??'').length<=max && (String(r.body??'').length>=1 || (Array.isArray(r.photos) && r.photos.length>=1));
+  // video_ok del SQL: {k, w, h, d}
+  const videoOk = v => v==null || (typeof v==='object' && !Array.isArray(v) && Object.keys(v).length===4 && UUID_RE.test(String(v.k)) && /^[1-9][0-9]{0,3}$/.test(String(v.w)) && /^[1-9][0-9]{0,3}$/.test(String(v.h)) && /^[0-9]{1,2}(\.[0-9]{1,3})?$/.test(String(v.d)) && +v.d>=0.3 && +v.d<=61);
   const PHOTO_MAX = { feed_posts:10, board_posts:10, dm_messages:10, feed_comments:1, listening_comments:1 };
   const checks = {
-    feed_posts: r => bodyOk(r,2000) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
+    feed_posts: r => (bodyOk(r,2000) || (r.video && String(r.body??'').length<=2000)) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500))
+      && videoOk(r.video) && (!r.video || (r.video_expires_at && !(r.photos||[]).length)),
+    stories: r => !!r.video && videoOk(r.video),
+    story_reactions: r => r.emoji && String(r.emoji).length>=1 && String(r.emoji).length<=32,
     board_posts: r => r.title && String(r.title).length<=150 && bodyOk(r,5000) && photosOk(r.photos??[],10),
     feed_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
     listening_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
@@ -168,8 +193,8 @@
     listening_items: r => r.artist==null || String(r.artist).length<=200,
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
-  const typeOf = {board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
-  const pk = { board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], dm_reactions:['message_id','user_id'], listening_answer_reactions:['assignment_id','question','user_id'], listening_item_genres:['item_id','genre_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
+  const typeOf = {stories:'story',board_posts:'board_post',feed_posts:'feed_post',feed_comments:'feed_comment',listening_comments:'listening_comment',listening_items:'listening_item'};
+  const pk = { story_views:['story_id','user_id'], story_reactions:['story_id','user_id'], board_reads:['post_id','student_id'], board_recipients:['post_id','student_id'], reactions:['target_type','target_id','user_id','emoji'], user_blocks:['blocker_id','blocked_id'], dm_reactions:['message_id','user_id'], listening_answer_reactions:['assignment_id','question','user_id'], listening_item_genres:['item_id','genre_id'], payments_plans:['student_id'], lessons_students:['student_id'], goals_stages:['stage'] };
 
   // ---- Notificaciones: imitan los triggers notify_trg del SQL ----
   function notify(user, kind, actor, target, extra){
@@ -198,6 +223,7 @@
     if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));
+    if(table==='story_reactions'){ const st=DB.stories.find(x=>x.id===row.story_id)||{}; notify(st.author_id,'story_reaction',row.user_id,row.story_id,row.emoji); }
     if(table==='homework_tasks') notify(row.student_id,'homework',row.created_by,row.id,row.title);
     if(table==='classmates') notify(row.addressee_id,'classmate_request',row.requester_id,row.requester_id,null);
     // Al bloquear, la relación de compañeros se borra (trigger user_blocks_classmates_trg)
@@ -249,6 +275,7 @@
     if(table==='listening_genres'){ const subs=removeRows('listening_genres',g=>ids.has(g.parent_id)); const all=new Set([...ids,...subs.map(g=>g.id)]); removeRows('listening_item_genres',x=>all.has(x.genre_id)); }
     if(table==='listening_items') removeRows('listening_item_genres',x=>ids.has(x.item_id));
     if(table==='listening_items'){ const cs=removeRows('listening_comments',c=>ids.has(c.item_id)); cleanup('listening_comments',cs); const as=removeRows('listening_assignments',a=>ids.has(a.item_id)); cascade('listening_assignments',as); }
+    if(table==='stories'){ removeRows('story_views',v=>ids.has(v.story_id)); removeRows('story_reactions',v=>ids.has(v.story_id)); }
     if(table==='goals_items') removeRows('goals_done',d=>ids.has(d.goal_id));
     if(table==='listening_assignments') removeRows('listening_answer_reactions',x=>ids.has(x.assignment_id));
     if(table==='board_posts'){ removeRows('board_recipients',r=>ids.has(r.post_id)); removeRows('board_reads',r=>ids.has(r.post_id)); }
@@ -262,7 +289,7 @@
     }
     if (table==='profiles' && nw.archived_at) nw.approved=false; // profiles_archive_guard
     if (table==='goals_done' && !isTeacher() && (nw.goal_id!==old.goal_id||nw.student_id!==old.student_id||nw.done_at!==old.done_at)) throw new Error('Solo tu profesor marca los objetivos');
-    if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id||JSON.stringify(nw.photos||[])!==JSON.stringify(old.photos||[]))) throw new Error('Solo se puede marcar como leído');
+    if (table==='dm_messages' && ((nw.story_id||null)!==(old.story_id||null)||nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id||JSON.stringify(nw.photos||[])!==JSON.stringify(old.photos||[]))) throw new Error('Solo se puede marcar como leído');
     if (table==='notifications' && (nw.kind!==old.kind||nw.user_id!==old.user_id||nw.extra!==old.extra)) throw new Error('Solo se puede marcar como leída');
     if (table==='profiles'){
       nw.display_name=String(nw.display_name).trim(); if(nw.display_name.length<1||nw.display_name.length>60) throw new Error('El nombre debe tener entre 1 y 60 caracteres');
@@ -280,6 +307,7 @@
     if (table==='board_posts'){ nw.updated_at=new Date().toISOString(); if(!checks.board_posts(nw)) throw new Error('new row for relation "board_posts" violates check constraint'); }
     if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
       nw.id=old.id; nw.author_id=old.author_id; nw.created_at=old.created_at;
+      nw.video_expires_at=old.video_expires_at??null; if(nw.video!=null) nw.video=old.video??null; // el vídeo solo se puede quitar
       nw.edited_at=(nw.body!==old.body||nw.link_url!==old.link_url||JSON.stringify(nw.photos||[])!==JSON.stringify(old.photos||[]))?new Date().toISOString():(old.edited_at||null);
       if(!checks.feed_posts(nw)) throw new Error('new row for relation "feed_posts" violates check constraint');
     }
@@ -352,13 +380,16 @@
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
+          if(table==='stories'){ row.created_at=new Date().toISOString(); row.expires_at=new Date(Date.now()+86400000).toISOString(); } // stories_ins
+          if(table==='feed_posts'){ if(!row.video){ row.video=null; row.video_expires_at=null; } else { let d=Math.round((new Date(row.video_expires_at||Date.now())-Date.now())/86400000); if(![1,3,7].includes(d)) d=1; row.video_expires_at=new Date(Date.now()+d*86400000).toISOString(); } } // feed_posts_video_ins
+          if(table==='dm_messages' && row.story_id===undefined) row.story_id=null;
           if(PHOTO_MAX[table] && row.photos===undefined) row.photos=[]; // default '[]' de la columna
           if(pk[table]) delete row.id;
           if(table!=='listening_assignments'){ delete row.assigned_at; delete row.listened; delete row.answers; }
           if(checks[table] && !checks[table](row)) return finish([], 'new row for relation "'+table+'" violates check constraint');
           if(!canInsert[table](row)) return finish([], 'new row violates row-level security policy for table "'+table+'"');
           if(pk[table] && DB[table].some(e=>pk[table].every(k=>e[k]===row[k]))){ if(st.op==='upsert'&&st.opts.ignoreDuplicates) continue;
-            if(st.op==='upsert'){ const e=DB[table].find(e=>pk[table].every(k=>e[k]===row[k])); const changed=e.emoji!==x.emoji; Object.assign(e,x); made.push(e); emit(table,'UPDATE',e); if(table==='listening_answer_reactions'&&changed) feedbackNotify(e.assignment_id,e.user_id); continue; }
+            if(st.op==='upsert'){ const e=DB[table].find(e=>pk[table].every(k=>e[k]===row[k])); const changed=e.emoji!==x.emoji; if(table==='story_reactions'&&!canWriteRow[table]('update',e)) return finish([],'new row violates row-level security policy'); if(table==='story_reactions'&&changed){ Object.assign(e,x); made.push(e); emit(table,'UPDATE',e); notifyFor(table,e); continue; } Object.assign(e,x); made.push(e); emit(table,'UPDATE',e); if(table==='listening_answer_reactions'&&changed) feedbackNotify(e.assignment_id,e.user_id); continue; }
             return finish([],'duplicate key value violates unique constraint'); }
           if(table==='moderation_reports' && DB[table].some(e=>e.reporter_id===row.reporter_id&&e.target_type===row.target_type&&e.target_id===row.target_id)) return finish([],'duplicate key value violates unique constraint');
           if(table==='listening_assignments' && DB[table].some(e=>e.item_id===row.item_id&&e.student_id===row.student_id)) return finish([],'duplicate key value');
@@ -386,6 +417,11 @@
       if(!isTeacher()) return {data:[],error:null};
       const c={}; (DB.push_subscriptions||[]).forEach(x=>{ c[x.user_id]=(c[x.user_id]||0)+1; });
       return {data:Object.keys(c).map(k=>({user_id:k,devices:c[k],last_at:null})),error:null}; }
+    if(name==='video_quota'){ if(!isApproved()) return {data:null,error:null}; const lim=window.__VIDEO_BUDGET||3*1073741824; const m=new Date().toISOString().slice(0,7);
+      const used=DB.video_plays.filter(x=>x.played_on.slice(0,7)===m).reduce((a,x)=>a+x.bytes,0); return {data:{used,limit:lim,paused:used>=lim},error:null}; }
+    if(name==='video_play'){ if(!isApproved()) return {data:null,error:null}; const t=args.p_kind==='story'?DB.stories.find(x=>x.id===args.p_row&&(storyAlive(x)||isTeacher())):DB.feed_posts.find(x=>x.id===args.p_row&&x.video&&(new Date(x.video_expires_at)>Date.now()||isTeacher()));
+      if(!t||!t.video) return {data:null,error:null}; const f=STORE[args.p_kind+'/'+t.author_id+'/'+t.id+'/'+t.video.k+'.mp4']; if(!f) return {data:null,error:null};
+      const day=new Date().toISOString().slice(0,10); if(!DB.video_plays.some(x=>x.video_key===t.video.k&&x.user_id===me&&x.played_on===day)) DB.video_plays.push({video_key:t.video.k,user_id:me,played_on:day,bytes:f.size}); return {data:null,error:null}; }
     if(name==='dm_ok') return {data:null, error:{message:'permission denied for function dm_ok'}};
     if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()||!canSeeProfile(p.id)) return {data:[],error:null};
       return {data:[{id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role,bio:p.bio||null,instrument:p.instrument||null,level:p.level||null,favorites:p.favorites||null,learning:p.learning||null,gear:p.gear||null,can_message:canDm(me,p.id)}],error:null}; }
@@ -399,32 +435,37 @@
   // ---- Almacén de fotos "media" (imita las políticas de storage.objects del SQL) ----
   // Ruta: <tipo>/<autor>/<fila>/<clave>(_t).jpg. En las pruebas los ids son cortos (s1, f1…), no uuid.
   const STORE = window.__STORAGE = {}; // ruta -> { blob, owner, created_at }
-  const PH_RE = /^(feed|board|fcomment|lcomment|dm)\/([0-9a-z_-]+)\/([0-9a-z_-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t)?\.jpg$/;
+  const PH_RE = /^(feed|board|fcomment|lcomment|dm|story|fvideo)\/([0-9a-z_-]+)\/([0-9a-z_-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t\.jpg|\.jpg|\.mp4)$/;
+  const phParse = name => { const m=String(name).match(PH_RE); if(!m) return null; const vid=m[1]==='story'||m[1]==='fvideo'; return (vid ? ['_t.jpg','.mp4'] : ['_t.jpg','.jpg']).includes(m[5]) ? m : null; }; // media_parse
   const PH_T = { feed:['feed_posts','author_id'], board:['board_posts','author_id'], fcomment:['feed_comments','author_id'], lcomment:['listening_comments','author_id'], dm:['dm_messages','sender_id'] };
   function mediaVisible(name){ // media_visible: lo tuyo siempre; lo demás, si puedes ver la fila y la fila tiene esa foto
-    const m=String(name).match(PH_RE); if(!m||!me) return false;
+    const m=phParse(name); if(!m||!me) return false;
     if(m[2]===me) return true;
+    if(m[1]==='story') return DB.stories.some(r=>r.id===m[3] && r.author_id===m[2] && storyVisible(r) && r.video.k===m[4]);
+    if(m[1]==='fvideo') return DB.feed_posts.some(r=>r.id===m[3] && r.author_id===m[2] && canRead.feed_posts(r) && r.video && r.video.k===m[4] && (new Date(r.video_expires_at)>Date.now() || (isTeacher() && openReport('feed_post', r.id))));
     const [t,f]=PH_T[m[1]];
     return DB[t].some(r=>r.id===m[3] && r[f]===m[2] && canRead[t](r) && (r.photos||[]).some(p=>p.k===m[4]));
   }
-  const mediaCanUpload = name => { const m=String(name).match(PH_RE); return !!m && m[2]===me && isApproved() && (m[1]!=='board' || isTeacher()); };
+  const videoUsed = () => { const m=new Date().toISOString().slice(0,7); return DB.video_plays.filter(x=>x.played_on.slice(0,7)===m).reduce((a,x)=>a+x.bytes,0); };
+  const mediaCanUpload = name => { const m=phParse(name); return !!m && m[2]===me && isApproved() && (m[1]!=='board' || isTeacher()) && (m[5]!=='.mp4' || videoUsed() < (window.__VIDEO_BUDGET||3*1073741824)); };
   window.__mediaVisible = mediaVisible;
   // Para las pruebas de privacidad: ¿qué vería otra persona? (cambia la sesión solo durante fn)
   window.__asUser = (id, fn) => { const prev = me; me = id; try { return fn(); } finally { me = prev; } };
   const storage = { from(bucket){ return {
     upload: async (path, blob, opts={}) => {
       if(!me) return {data:null,error:{message:'No autenticado',statusCode:'401'}};
-      if(bucket!=='media') return {data:null,error:{message:'Bucket not found',statusCode:'404'}};
-      if(!mediaCanUpload(path)) return {data:null,error:{message:'new row violates row-level security policy',statusCode:'403'}};
-      if(opts.contentType!=='image/jpeg') return {data:null,error:{message:'mime type not supported',statusCode:'415'}};
-      if(!blob || blob.size>2097152) return {data:null,error:{message:'The object exceeded the maximum allowed size',statusCode:'413'}};
+      if(bucket!=='media' && bucket!=='video') return {data:null,error:{message:'Bucket not found',statusCode:'404'}};
+      if(!mediaCanUpload(path) || !String(path).endsWith(bucket==='video'?'.mp4':'.jpg')) return {data:null,error:{message:'new row violates row-level security policy',statusCode:'403'}};
+      if(opts.contentType!==(bucket==='video'?'video/mp4':'image/jpeg')) return {data:null,error:{message:'mime type not supported',statusCode:'415'}};
+      if(!blob || blob.size>(bucket==='video'?36700160:2097152)) return {data:null,error:{message:'The object exceeded the maximum allowed size',statusCode:'413'}};
       if(STORE[path] && !opts.upsert) return {data:null,error:{message:'The resource already exists',statusCode:'409'}};
-      STORE[path]={blob,owner:me,created_at:new Date().toISOString(),size:blob.size};
+      STORE[path]={blob,owner:me,bucket,created_at:new Date().toISOString(),size:blob.size};
       return {data:{path},error:null};
     },
-    download: async path => (STORE[path] && bucket==='media' && mediaVisible(path)) ? {data:STORE[path].blob,error:null} : {data:null,error:{message:'Object not found',statusCode:'404'}},
+    createSignedUrl: async (path, secs) => (STORE[path] && STORE[path].bucket===bucket && mediaVisible(path)) ? {data:{signedUrl:URL.createObjectURL(STORE[path].blob)},error:null} : {data:null,error:{message:'Object not found',statusCode:'404'}},
+    download: async path => (STORE[path] && STORE[path].bucket===bucket && bucket==='media' && mediaVisible(path)) ? {data:STORE[path].blob,error:null} : {data:null,error:{message:'Object not found',statusCode:'404'}},
     remove: async paths => { // media_delete: cada cual lo suyo
-      const gone=[]; (paths||[]).forEach(p=>{ if(STORE[p] && p.split('/')[1]===me && mediaVisible(p)){ delete STORE[p]; gone.push({name:p}); } });
+      const gone=[]; (paths||[]).forEach(p=>{ if(STORE[p] && STORE[p].bucket===bucket && p.split('/')[1]===me){ delete STORE[p]; gone.push({name:p}); } });
       return {data:gone,error:null};
     }
   }; } };

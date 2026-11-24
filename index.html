@@ -903,6 +903,106 @@ label.f>.emo-wrap{margin-top:6px}
 .f>.ph-strip{margin:8px 0}
 .ph-row{margin-top:6px}
 .cm>.ph-strip,.cm .ph-strip{margin-top:10px}
+/* Vídeos: posts del Inicio y stories (2026-11-25) */
+.composer .ph-add{margin-right:0}
+.composer .actions [data-action=vd-add]{margin-right:auto}
+[data-vd-draft]:empty{display:none}
+.vd-chip{position:relative;display:flex;align-items:center;gap:10px;padding:6px 40px 6px 6px;border:1px solid var(--line);border-radius:12px;background:var(--field);min-height:60px}
+.vd-chip img{width:48px;height:48px;object-fit:cover;border-radius:8px;flex:none}
+.vd-chip .vd-dur{position:static;background:rgba(var(--accent-rgb),.18);color:var(--strong)}
+.vd-chip .ph-x{top:50%;right:8px;transform:translateY(-50%)}
+.vd-chip.busy{flex-direction:column;align-items:stretch;gap:6px;padding:10px 40px 10px 12px}
+.vd-prog{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.vd-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--neon));transition:width .2s}
+.vd-ptext{font-size:13px;color:var(--muted)}
+.vd-days{display:none;flex-direction:column;gap:4px;font-size:14px}
+.composer.has-vd .vd-days{display:flex}
+.vd-days select{width:auto;display:inline-block;margin-left:6px;padding:4px 8px;min-height:0}
+.vd-days small,.vd-note{color:var(--muted);font-size:12.5px;line-height:1.4}
+.vd{position:relative;margin:10px auto 4px;border-radius:14px;overflow:hidden;background:#000;max-width:100%}
+.vd img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vd video{position:absolute;inset:0;width:100%;height:100%;background:#000;object-fit:contain}
+.vd-play{position:absolute;inset:0;margin:auto;width:64px;height:64px;border-radius:50%;border:0;background:rgba(2,6,16,.6);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(255,255,255,.5),var(--glow)}
+.vd-play svg{width:30px;height:30px;margin-left:4px}
+.vd-play:hover{background:rgba(var(--accent-rgb),.85)}
+.vd.loading::after{content:'';position:absolute;inset:0;margin:auto;width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:phSpin .8s linear infinite}
+.vd.loading .vd-play{display:none}
+.vd-dur,.vd-exp{position:absolute;bottom:8px;padding:2px 8px;border-radius:99px;background:rgba(2,6,16,.7);color:#fff;font-size:12px;font-weight:600;line-height:18px}
+.vd-dur{right:8px}
+.vd-exp{left:8px}
+.vd-gone{display:flex;align-items:center;gap:8px;margin:10px 0 4px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:14px}
+.vd-gone svg,.msg-story svg{width:18px;height:18px;flex:none}
+.vd-story-box{display:flex;justify-content:center;margin-bottom:10px}
+.vd-story-box:empty{display:none}
+.vd-story-prev{position:relative;width:min(240px,60vw);aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#000}
+.vd-story-prev video{width:100%;height:100%;object-fit:cover}
+.vd-story-box .vd-chip{width:100%}
+/* Fila de stories arriba del Inicio */
+.stories{margin:0 0 14px;overflow:hidden}
+.st-row{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none}
+.st-row::-webkit-scrollbar{display:none}
+.st-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;flex:none;border:0;background:none;padding:0;color:var(--text);cursor:pointer;font:inherit}
+.st-ring{display:flex;padding:3px;border-radius:50%;background:var(--line);border:0;cursor:pointer}
+.st-ring .av{border:2px solid var(--bg);box-sizing:content-box}
+.st-ring.new{background:conic-gradient(from 200deg,var(--neon),var(--accent),var(--violet),var(--neon));box-shadow:var(--glow)}
+.st-ring.own{background:linear-gradient(135deg,var(--accent),var(--neon))}
+.st-ring.add{background:transparent;padding:3px}
+.st-plus{position:absolute;top:44px;right:4px;width:22px;height:22px;border-radius:50%;border:2px solid var(--bg);background:var(--accent);color:#fff;font-size:16px;font-weight:700;line-height:17px;padding:0;cursor:pointer}
+.st-name{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}
+/* Visor de stories */
+body.story-open .ebox{z-index:95}
+.lightbox.story{cursor:default;padding:0;gap:0;background:rgba(2,6,16,.96)}
+.sv-frame{position:relative;width:min(100vw,calc(100dvh * 9 / 16),460px);height:min(100dvh,820px);display:flex;flex-direction:column;background:#000;overflow:hidden}
+@media (min-width:600px){.sv-frame{border-radius:16px;height:min(94dvh,820px);width:min(calc(94dvh * 9 / 16),460px)}}
+.sv-bars{position:absolute;top:8px;left:8px;right:8px;z-index:3;display:flex;gap:4px}
+.sv-bars i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden}
+.sv-bars i b{display:block;height:100%;width:0;background:#fff}
+.sv-bars i.done b{width:100%}
+.sv-head{position:absolute;top:18px;left:10px;right:6px;z-index:3;display:flex;align-items:center;gap:8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.sv-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.sv-who b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-who span{font-size:12px;opacity:.8}
+.sv-btn{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#fff;font-size:20px;line-height:1;cursor:pointer;flex:none}
+.sv-btn:hover{background:rgba(255,255,255,.15)}
+.sv-stage{position:relative;flex:1;min-height:0}
+.sv-stage video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.sv-tap{position:absolute;top:70px;bottom:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:1}
+.sv-tap.prev{left:0;width:33%}
+.sv-tap.next{right:0;width:67%}
+.sv-big{position:absolute;inset:0;margin:auto;width:76px;height:76px;border-radius:50%;border:0;background:rgba(2,6,16,.6);color:#fff;z-index:2;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sv-big[hidden],.sv-spin[hidden]{display:none}
+.sv-big svg{width:36px;height:36px;margin-left:5px}
+.sv-spin{position:absolute;inset:0;margin:auto;width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:phSpin .8s linear infinite;z-index:2;pointer-events:none}
+.sv-foot{position:relative;z-index:3;padding:8px 10px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.sv-foot:empty{display:none}
+.sv-quick{display:flex;justify-content:center;gap:4px}
+.sv-quick button{width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.1);font-size:22px;line-height:1;cursor:pointer}
+.sv-quick button:hover{background:rgba(255,255,255,.22)}
+.sv-quick button.mine{background:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 2px var(--neon)}
+.sv-quick .more{color:#fff;font-size:20px}
+.sv-reply{display:flex;gap:8px}
+.sv-reply input{flex:1;min-width:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:99px;padding:9px 14px}
+.sv-reply input::placeholder{color:rgba(255,255,255,.7)}
+.sv-views{align-self:flex-start;border:0;border-radius:99px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;padding:7px 14px;cursor:pointer}
+.sv-viewers{max-height:40vh;overflow:auto;background:var(--panel);color:var(--text);border-radius:12px;padding:8px}
+.sv-viewers[hidden]{display:none}
+.sv-vrow{display:flex;align-items:center;gap:10px;padding:6px 4px}
+.sv-vrow .sv-vname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-vrow b{font-size:18px}
+.sv-menu{position:absolute;top:58px;right:10px;z-index:4}
+.sv-float{position:absolute;left:50%;bottom:20px;font-size:56px;transform:translateX(-50%);animation:svFloat 1.2s ease-out forwards;pointer-events:none;z-index:4}
+@keyframes svFloat{to{transform:translate(-50%,-220px) scale(1.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){.sv-float{animation:none;opacity:0}.sv-spin,.vd.loading::after{animation:none}}
+/* Respuesta a una story en un mensaje privado */
+.msg-story{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.12);color:inherit;font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
+.msg-story img{width:34px;height:56px;object-fit:cover;border-radius:6px;background:#000;flex:none}
+.msg-story.off{cursor:default;opacity:.75;padding:6px 10px}
+.msg-row.mine .msg-story{border-color:rgba(255,255,255,.35)}
+/* Lo gastado en vídeo este mes (Ajustes del profesor) */
+.vq-bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.vq-bar i{display:block;height:100%;background:var(--ok)}
+.vq-bar i.warn{background:var(--warn)}
+.vq-bar i.bad{background:var(--bad)}
 .cm-new .ph-add.icon{width:40px;height:40px}
 .dm-ph .ph-strip{padding:10px 12px 0}
 .sdm-head h2{overflow-wrap:anywhere}
@@ -1036,6 +1136,7 @@ const S = {
   items: [], assigns: [], students: [], folders: [], genres: [], itemGenres: [],
   posts: [], recipients: [], reads: [],
   fposts: [], fcomments: [], lcomments: [], reactions: [], reports: [], dir: {},
+  stories: [], storyViews: [], storyRx: [],
   dms: [], dmRx: [], ansRx: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
   homework: [], payPlans: [], payRecords: [], payMonth: null,
   goalStages: [], goalItems: [], goalDone: [], goalPending: false,
@@ -1490,8 +1591,8 @@ const REACTIONS = [
   { k: 'like', e: '👍🏼' }, { k: 'love', e: '❤️' }, { k: 'laugh', e: '😂' },
   { k: 'wow', e: '😮' }, { k: 'sad', e: '😢' }, { k: 'angry', e: '😡' }
 ];
-const TARGET_TABLE = { feed_post: 'feed_posts', feed_comment: 'feed_comments', listening_comment: 'listening_comments', dm_message: 'dm_messages' };
-const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha', dm_message: 'Mensaje privado', profile: 'Persona' };
+const TARGET_TABLE = { feed_post: 'feed_posts', feed_comment: 'feed_comments', listening_comment: 'listening_comments', dm_message: 'dm_messages', story: 'stories' };
+const TARGET_LABEL = { feed_post: 'Publicación del feed', feed_comment: 'Comentario del feed', listening_comment: 'Comentario de escucha', dm_message: 'Mensaje privado', profile: 'Persona', story: 'Story' };
 const CM = {
   feed: { table: 'feed_comments', key: 'post_id', type: 'feed_comment' },
   listening: { table: 'listening_comments', key: 'item_id', type: 'listening_comment' }
@@ -1738,7 +1839,7 @@ function linkCard(url) {
 
 /* ---- Moderación (profesor) ---- */
 function targetOf(type, id) {
-  const x = ({ feed_post: S.fposts, feed_comment: S.fcomments, listening_comment: S.lcomments, dm_message: S.dms }[type] || []).find(y => y.id === id) || null;
+  const x = ({ feed_post: S.fposts, feed_comment: S.fcomments, listening_comment: S.lcomments, dm_message: S.dms, story: S.stories }[type] || []).find(y => y.id === id) || null;
   return x && type === 'dm_message' ? { ...x, author_id: x.sender_id } : x; // en los mensajes, el "autor" es quien lo envía
 }
 function reportRow(r) {
@@ -1748,6 +1849,12 @@ function reportRow(r) {
       ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
     <div class="actions" style="margin:0"><button class="btn sm" data-action="open-student" data-id="${r.target_id}">Ver ficha</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
   const x = targetOf(r.target_type, r.target_id);
+  if (r.target_type === 'story') return `<div class="row rep"><div style="min-width:0;flex:1">
+      <div class="sub">Story · denunciada por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
+      ${x ? `<div style="margin-top:6px"><button type="button" class="msg-story" data-action="story-open" data-id="${x.author_id}" data-story="${x.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', x.author_id, x.id, x.video))}_t.jpg" alt=""><span>Ver la story de <b>${esc(whoName(x.author_id))}</b></span></button></div>
+        <div class="sub">${storyLive(x) ? 'Caduca en ' + vdLeft(x.expires_at) : 'Ya ha caducado: se conserva hasta que la revises'}</div>` : '<div class="sub">Contenido no disponible</div>'}
+      ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
+    <div class="actions" style="margin:0"><button class="btn sm danger" data-action="mod-delete" data-id="${r.id}">Borrar story</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
   return `<div class="row rep"><div style="min-width:0;flex:1">
       <div class="sub">${esc(TARGET_LABEL[r.target_type] || 'Contenido')} · denunciado por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
       ${x ? `<div style="overflow-wrap:anywhere"><strong>${esc(whoName(x.author_id))}</strong>: ${esc(plainText(x.body).slice(0, 200) || (phList(x).length ? '📷 Foto' : ''))}</div>${phOf(r.target_type, x, 'cm')}` : '<div class="sub">Contenido no disponible</div>'}
@@ -1760,6 +1867,7 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
   if (type === 'feed_comment') S.fcomments = S.fcomments.filter(x => x.id !== id);
   if (type === 'listening_comment') S.lcomments = S.lcomments.filter(x => x.id !== id);
   if (type === 'dm_message') S.dms = S.dms.filter(x => x.id !== id);
+  if (type === 'story') { S.stories = S.stories.filter(x => x.id !== id); S.storyViews = S.storyViews.filter(v => v.story_id !== id); S.storyRx = S.storyRx.filter(v => v.story_id !== id); }
   S.reactions = S.reactions.filter(r => !(r.target_type === type && r.target_id === id));
   S.reports = S.reports.filter(r => !(r.target_type === type && r.target_id === id));
 }
@@ -1769,11 +1877,12 @@ function dropTargetLocal(type, id) { // limpia en memoria lo que la base de dato
    nadie recibe en directo lo que no podría ver. Los borrados solo traen la clave. */
 const RT_TABLES = ['dm_reactions', 'listening_answer_reactions', 'feed_posts', 'feed_comments', 'listening_comments', 'reactions', 'board_posts', 'board_recipients',
   'board_reads', 'listening_items', 'listening_assignments', 'profiles', 'moderation_reports', 'dm_messages', 'notifications', 'homework_tasks', 'classmates', 'goals_items', 'goals_done',
-  'listening_folders', 'listening_genres', 'listening_item_genres'];
+  'listening_folders', 'listening_genres', 'listening_item_genres', 'stories', 'story_views', 'story_reactions'];
 const RT_LIST = { listening_folders: 'folders', listening_genres: 'genres', listening_item_genres: 'itemGenres', board_posts: 'posts', board_recipients: 'recipients', board_reads: 'reads', listening_items: 'items', listening_assignments: 'assigns', moderation_reports: 'reports', homework_tasks: 'homework', goals_items: 'goalItems', goals_done: 'goalDone' };
 const rowKey = (table, r) => table === 'reactions' ? [r.target_type, r.target_id, r.user_id, r.emoji].join('|')
   : (table === 'board_reads' || table === 'board_recipients') ? r.post_id + '|' + r.student_id
-  : table === 'listening_item_genres' ? r.item_id + '|' + r.genre_id : r.id;
+  : table === 'listening_item_genres' ? r.item_id + '|' + r.genre_id
+  : (table === 'story_views' || table === 'story_reactions') ? r.story_id + '|' + r.user_id : r.id;
 function addUnique(list, row, table) { // añade sin duplicar (lo local y lo que llega en directo pueden cruzarse)
   const k = rowKey(table, row);
   if (list.some(x => rowKey(table, x) === k)) return false;
@@ -1811,7 +1920,7 @@ function uiBusy() {
   if ($('#modalRoot').firstChild) return true;
   const a = document.activeElement;
   if (a && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) && a.closest('#app')) return true;
-  return $$('#app textarea').some(x => x.value.trim()) || $$('#feedForm input[type=text]').some(x => x.value.trim()) || phPending();
+  return $$('#app textarea').some(x => x.value.trim()) || $$('#feedForm input[type=text]').some(x => x.value.trim()) || phPending() || vdPending();
 }
 function refreshChrome() {
   const secs = sections();
@@ -1864,6 +1973,20 @@ async function rtHandle(t, p) {
       const el = $(`[data-fpost="${row.id}"]`); if (el) el.outerHTML = feedCard(p);
       return;
     }
+    return;
+  }
+  if (t === 'stories') {
+    S.stories = rtApply(S.stories, t, ev, row, old);
+    if (ev === 'DELETE') { S.storyViews = S.storyViews.filter(v => v.story_id !== old.id); S.storyRx = S.storyRx.filter(r => r.story_id !== old.id); if (SV && SV.cur && SV.cur.id === old.id) svShow(); }
+    if (!SV) updateStoriesBar();
+    if (S.section === 'mod' && ev === 'DELETE') softRender();
+    return;
+  }
+  if (t === 'story_views' || t === 'story_reactions') { // solo llegan las mías y las de mis stories
+    if (ev !== 'DELETE' && row.user_id && !S.dir[row.user_id]) await loadDirectory();
+    const L = t === 'story_views' ? 'storyViews' : 'storyRx';
+    S[L] = rtApply(S[L], t, ev, row, old);
+    if (SV && SV.cur && SV.cur.author_id === me) { const open = SV.lb.querySelector('.sv-viewers:not([hidden])'); svFoot(); if (open) svViewers(); }
     return;
   }
   if (t === 'feed_comments' || t === 'listening_comments') {
@@ -2056,7 +2179,7 @@ async function avatarZoom(id) {
 }
 function lbClose(fromHistory = false) {
   const el = $('#lightbox'); if (!el) return false;
-  el.remove();
+  el.remove(); if (el._onClose) el._onClose(); // el visor de stories para el vídeo
   if (!fromHistory && history.state && history.state.lb) { histSkip++; history.back(); }
   return true;
 }
@@ -2280,6 +2403,480 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') { e.preventDefault(); lb._go(1); }
 });
 
+/* ========================= VÍDEOS: STORIES Y POSTS =========================
+   Stories (arriba del Inicio, caducan SIEMPRE a las 24 h) y posts del Inicio con un vídeo
+   que caduca a 1, 3 o 7 días (lo elige quien publica; al caducar queda el texto). Yuri, 2026-11-25.
+   · Antes de subirlo se pasa aquí a MP4 de 720p (~20 MB por minuto, audio AAC 128 kbps) con
+     Mediabunny (WebCodecs, de jsDelivr, solo se carga al elegir un vídeo). Lo de más de 60 s se recorta.
+     Sin WebCodecs, un MP4 que ya sea pequeño se sube tal cual.
+   · Archivos: el vídeo en el almacén PRIVADO "video" (<tipo>/<autor>/<id>/<clave>.mp4) y su portada en
+     el de fotos, "media" (<clave>_t.jpg). tipo: story | fvideo. La fila guarda video = {k, w, h, d}.
+   · Se ven con un enlace firmado que caduca en 1 hora (permite empezar a verlo sin descargarlo entero).
+     Al empezar, video_play apunta lo que pesa para el fusible del mes (video_quota, en schema.sql).
+   · Lo caducado lo borra la base de datos cada hora (media_expire) y sus archivos media-cleanup.
+   · Pruebas: window.__VID_STUB sustituye a la compresión (tests/test-videos.js). */
+const VD_BUCKET = 'video', VD_MAX_SEC = 60, VD_SHORT = 720, VD_VBR = 2200000, VD_ABR = 128000, VD_LIMIT = 36700160;
+const VD_DAYS = [1, 3, 7];
+const VD_LIB = 'https://cdn.jsdelivr.net/npm/mediabunny@1.66.4/dist/bundles/mediabunny.min.mjs';
+const VD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M15.5 10.5l6-3.5v10l-6-3.5z"/></svg>';
+const vdBase = (kind, owner, rowId, v) => `${kind}/${owner}/${rowId}/${v.k}`;
+const vdErr = m => Object.assign(new Error(m), { vd: true });
+const durShort = s => { s = Math.max(0, Math.round(+s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+function vdLeft(iso) { // "5 h", "3 días"…
+  const ms = new Date(iso) - Date.now(), h = ms / 3600000;
+  if (h < 1) return `${Math.max(1, Math.round(ms / 60000))} min`;
+  if (h < 36) return `${Math.round(h)} h`;
+  const d = Math.round(h / 24); return `${d} día${d === 1 ? '' : 's'}`;
+}
+
+// ---- Preparar (comprimir) ----
+let vdLib = null;
+const vdLoadLib = () => vdLib || (vdLib = import(VD_LIB).catch(e => { vdLib = null; throw e; }));
+// Tamaño, duración y portada (un fotograma en JPEG de 480 px por el lado corto) de un vídeo que el navegador sabe abrir
+function vdMeta(blob) {
+  return new Promise((res, rej) => {
+    const v = document.createElement('video'), url = URL.createObjectURL(blob); let done = false;
+    const end = (err, val) => { if (done) return; done = true; URL.revokeObjectURL(url); err ? rej(err) : res(val); };
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onerror = () => end(new Error('vdMeta'));
+    setTimeout(() => end(new Error('vdMeta: tiempo')), 20000);
+    v.onloadedmetadata = () => { v.currentTime = Math.min(0.5, (isFinite(v.duration) ? v.duration : 1) / 3); };
+    v.onseeked = async () => {
+      try {
+        const w = v.videoWidth, h = v.videoHeight, k = Math.min(1, 480 / Math.max(1, Math.min(w, h)));
+        const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        const thumb = await phBlob(c, 0.75);
+        if (!thumb || !w || !h) throw new Error('vdMeta: portada');
+        end(null, { w, h, d: v.duration, thumb });
+      } catch (e) { end(e); }
+    };
+    v.src = url;
+  });
+}
+async function vdPrepare(file, onProg) {
+  if (window.__VID_STUB) return window.__VID_STUB(file, onProg);
+  if (!file || (file.type && !/^video\//.test(file.type))) throw vdErr('Ese archivo no es un vídeo');
+  let out = null, trimmed = false;
+  if (typeof VideoEncoder !== 'undefined' && typeof VideoDecoder !== 'undefined') {
+    try {
+      const MB = await vdLoadLib();
+      const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+      const vt = await input.getPrimaryVideoTrack();
+      if (!vt) throw vdErr('No se encuentra la imagen del vídeo');
+      const dur = await input.computeDuration();
+      trimmed = dur > VD_MAX_SEC + 0.5;
+      const sw = vt.displayWidth, sh = vt.displayHeight, k = Math.min(1, VD_SHORT / Math.min(sw, sh));
+      const W = Math.max(2, Math.round(sw * k / 2) * 2), H = Math.max(2, Math.round(sh * k / 2) * 2);
+      let fps = 0; try { fps = (await vt.computePacketStats(60)).averagePacketRate; } catch (e) { }
+      const aac = await MB.canEncodeAudio('aac', { bitrate: VD_ABR }).catch(() => false);
+      const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new MB.BufferTarget() });
+      const conv = await MB.Conversion.init({
+        input, output, showWarnings: false,
+        video: { width: W, height: H, fit: 'fill', codec: 'avc', bitrate: VD_VBR, forceTranscode: true, ...(fps > 31 ? { frameRate: 30 } : {}) },
+        audio: aac ? { codec: 'aac', bitrate: VD_ABR } : { codec: 'aac' }, // sin codificador AAC, se copia el sonido si ya lo es
+        trim: { start: 0, end: Math.min(dur, VD_MAX_SEC) }
+      });
+      if (!conv.isValid) throw new Error('conversión no válida');
+      const noSound = conv.discardedTracks.some(t => t.track.isAudioTrack() && t.reason !== 'discarded_by_user');
+      conv.onProgress = p => onProg && onProg(Math.max(0, Math.min(1, p)));
+      await conv.execute();
+      out = new Blob([output.target.buffer], { type: 'video/mp4' });
+      if (noSound) toast('Este navegador no ha podido conservar el sonido del vídeo', 'bad');
+    } catch (e) { if (e && e.vd) throw e; console.warn('Vídeo:', e); out = null; }
+  }
+  if (!out) { // sin WebCodecs (o falló): un MP4 que ya sea pequeño se sube tal cual
+    if (file.type === 'video/mp4' && file.size <= VD_LIMIT) out = file;
+    else throw vdErr('Tu navegador no puede preparar este vídeo. Prueba con Chrome o Safari actualizados');
+  }
+  if (out.size > VD_LIMIT) throw vdErr('El vídeo pesa demasiado incluso comprimido');
+  const m = await vdMeta(out).catch(() => null);
+  if (!m) throw vdErr('No se pudo leer el vídeo');
+  if (out === file && m.d > VD_MAX_SEC + 0.5) throw vdErr('El vídeo dura más de 60 segundos. Recórtalo en el móvil y vuelve a probar');
+  const d = Math.round(Math.max(0.3, Math.min(isFinite(m.d) ? m.d : VD_MAX_SEC, 61)) * 100) / 100;
+  return { k: phUuid(), w: m.w, h: m.h, d, blob: out, thumb: m.thumb, url: URL.createObjectURL(m.thumb), trimmed };
+}
+
+// ---- Borradores: el vídeo elegido (claves: feed-new y story) ----
+const VD_DRAFT = {}, VD_BUSY = {};
+const vdPending = () => Object.keys(VD_DRAFT).length > 0 || Object.keys(VD_BUSY).length > 0;
+const vdHas = key => !!(VD_DRAFT[key] || VD_BUSY[key]);
+function vdClear(key) {
+  const x = VD_DRAFT[key]; if (x && x.url) URL.revokeObjectURL(x.url);
+  delete VD_DRAFT[key]; delete VD_BUSY[key];
+  vdDraftRefresh(key);
+}
+function vdDraftInner(key) {
+  const b = VD_BUSY[key], x = VD_DRAFT[key];
+  if (b) return `<div class="vd-chip busy" role="status"><div class="vd-prog"><i style="width:${Math.round(b.p * 100)}%"></i></div>
+      <span class="vd-ptext">Preparando el vídeo… <b data-vd-pct>${Math.round(b.p * 100)} %</b></span>
+      <button type="button" class="ph-x" data-action="vd-del" data-vd="${esc(key)}" aria-label="Cancelar" title="Cancelar">×</button></div>`;
+  if (!x) return '';
+  if (key === 'story') return `<div class="vd-story-prev"><video src="${esc(x.vurl || (x.vurl = URL.createObjectURL(x.blob)))}" muted loop autoplay playsinline></video>
+      <span class="vd-dur">${durShort(x.d)}</span><button type="button" class="ph-x" data-action="vd-del" data-vd="story" aria-label="Quitar el vídeo" title="Quitar">×</button></div>`;
+  return `<div class="vd-chip"><img src="${esc(x.url)}" alt=""><span class="vd-dur">${durShort(x.d)}</span><span class="sub">Vídeo listo</span>
+      <button type="button" class="ph-x" data-action="vd-del" data-vd="${esc(key)}" aria-label="Quitar el vídeo" title="Quitar">×</button></div>`;
+}
+function vdDraftRefresh(key) {
+  $$('[data-vd-draft]').filter(n => n.dataset.vdDraft === key).forEach(n => { n.innerHTML = vdDraftInner(key); });
+  if (key === 'feed-new') { const f = $('#feedForm'); if (f) f.classList.toggle('has-vd', vdHas(key)); }
+  if (key === 'story') { const b = $('[data-action="story-publish"]'); if (b) b.disabled = !VD_DRAFT.story; }
+}
+function vdProgRefresh(key) {
+  const b = VD_BUSY[key]; if (!b) return;
+  $$('[data-vd-draft]').filter(n => n.dataset.vdDraft === key).forEach(n => {
+    const i = n.querySelector('.vd-prog i'), t = n.querySelector('[data-vd-pct]');
+    if (i) i.style.width = Math.round(b.p * 100) + '%'; if (t) t.textContent = Math.round(b.p * 100) + ' %';
+  });
+}
+let vdInput = null;
+function vdChoose(key) {
+  if (!vdInput) {
+    vdInput = document.createElement('input');
+    vdInput.type = 'file'; vdInput.accept = 'video/*'; vdInput.hidden = true; vdInput.id = 'vdFile';
+    vdInput.addEventListener('change', () => { const f = vdInput.files[0]; vdInput.value = ''; if (f) vdAddFile(vdInput.dataset.key, f); });
+    document.body.appendChild(vdInput);
+  }
+  vdInput.dataset.key = key; vdInput.click();
+}
+async function vdAddFile(key, file) {
+  if (key === 'feed-new' && (phDraft('feed-new').length || phBusy('feed-new'))) return toast('Un post lleva fotos o un vídeo, no las dos cosas. Quita las fotos para añadir el vídeo', 'bad');
+  vdClear(key);
+  const tok = {}; VD_BUSY[key] = { p: 0, tok }; vdDraftRefresh(key);
+  let last = 0;
+  try {
+    const x = await vdPrepare(file, p => {
+      const b = VD_BUSY[key]; if (!b || b.tok !== tok) return;
+      b.p = p; const n = Date.now(); if (n - last > 120) { last = n; vdProgRefresh(key); }
+    });
+    if (!VD_BUSY[key] || VD_BUSY[key].tok !== tok) { URL.revokeObjectURL(x.url); return; } // cancelado mientras tanto
+    delete VD_BUSY[key]; VD_DRAFT[key] = x; vdDraftRefresh(key);
+    if (x.trimmed) toast('El vídeo duraba más de 60 segundos: se queda el primer minuto');
+  } catch (e) {
+    if (VD_BUSY[key] && VD_BUSY[key].tok === tok) { delete VD_BUSY[key]; vdDraftRefresh(key); }
+    console.warn('Vídeo:', e);
+    toast(e && e.vd ? e.message : 'No se pudo preparar el vídeo', 'bad');
+  }
+}
+
+// ---- Subir y borrar ----
+async function vdUpload(kind, rowId, x, btn) {
+  const base = `${kind}/${S.user.id}/${rowId}/${x.k}`, done = [], label = btn ? btn.textContent : '';
+  try {
+    const q = await sb.rpc('video_quota');
+    if (q && !q.error && q.data && q.data.paused) throw vdErr('Este mes ya se ha gastado el presupuesto de vídeo del plan gratis. Se podrán subir otra vez el día 1');
+    if (btn) btn.textContent = 'Subiendo vídeo…';
+    const a = await sb.storage.from(PH_BUCKET).upload(base + '_t.jpg', x.thumb, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+    if (a.error) throw a.error; done.push([PH_BUCKET, base + '_t.jpg']);
+    const b = await sb.storage.from(VD_BUCKET).upload(base + '.mp4', x.blob, { contentType: 'video/mp4', cacheControl: '31536000', upsert: false });
+    if (b.error) throw b.error; done.push([VD_BUCKET, base + '.mp4']);
+    return { video: { k: x.k, w: x.w, h: x.h, d: x.d }, done };
+  } catch (e) {
+    vdRemove(done);
+    toast(e && e.vd ? e.message : 'No se pudo subir el vídeo: ' + errEs(e), 'bad');
+    return null;
+  } finally { if (btn) btn.textContent = label; }
+}
+// Publicado: se ve al momento con lo que ya está en el navegador
+function vdCommit(key, kind, rowId) {
+  const x = VD_DRAFT[key]; if (!x) return;
+  const base = `${kind}/${S.user.id}/${rowId}/${x.k}`;
+  phCache.set(base + '_t.jpg', Promise.resolve(x.url));
+  vdSrcCache.set(base + '.mp4', { p: Promise.resolve(x.vurl || URL.createObjectURL(x.blob)), until: Infinity, local: true });
+  delete VD_DRAFT[key]; delete VD_BUSY[key];
+  vdDraftRefresh(key);
+}
+function vdRemove(list) { list.forEach(([b, p]) => sb.storage.from(b).remove([p]).then(() => { }, () => { })); }
+// Al borrar algo tuyo, fuera también su vídeo (lo de otros lo limpia media-cleanup)
+function vdDropRow(kind, owner, rowId, v) {
+  if (!v || owner !== S.user.id) return;
+  const base = `${kind}/${owner}/${rowId}/${v.k}`;
+  vdRemove([[PH_BUCKET, base + '_t.jpg'], [VD_BUCKET, base + '.mp4']]);
+}
+
+// ---- Ver ----
+const vdSrcCache = new Map(); // ruta -> { p: Promise<url|null>, until, local }
+function vdSrc(path) {
+  const c = vdSrcCache.get(path);
+  if (c && c.until > Date.now()) return c.p;
+  const p = sb.storage.from(VD_BUCKET).createSignedUrl(path, 3600)
+    .then(({ data, error }) => (data && !error ? data.signedUrl : null), () => null);
+  vdSrcCache.set(path, { p, until: Date.now() + 50 * 60000 });
+  p.then(u => { if (!u && (vdSrcCache.get(path) || {}).p === p) vdSrcCache.delete(path); });
+  return p;
+}
+const vdPlayed = new Set();
+function vdCount(kind, rowId, path) { // una vez por vídeo y sesión; lo recién subido desde aquí no se descarga
+  const c = vdSrcCache.get(path); if ((c && c.local) || vdPlayed.has(rowId)) return;
+  vdPlayed.add(rowId);
+  sb.rpc('video_play', { p_kind: kind, p_row: rowId }).then(() => { }, () => { });
+}
+// Portada con ▶; al pulsar se cambia por el reproductor
+function vdBox(kind, owner, rowId, v, chip = '') {
+  const ar = Math.max(0.5625, Math.min(1.78, v.w / v.h)).toFixed(3), base = vdBase(kind, owner, rowId, v);
+  return `<div class="vd" style="aspect-ratio:${ar};width:min(100%, calc(${ar} * min(70vh, 560px)))" data-vd-kind="${kind}" data-vd-row="${esc(rowId)}" data-vd-path="${esc(base)}">
+    <img data-ph-src="${esc(base)}_t.jpg" alt="">
+    <button type="button" class="vd-play" data-action="vd-play" aria-label="Reproducir el vídeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
+    <span class="vd-dur">${durShort(v.d)}</span>${chip ? `<span class="vd-exp">${esc(chip)}</span>` : ''}</div>`;
+}
+async function vdPlay(btn) {
+  const box = btn.closest('.vd'); if (!box || box.classList.contains('on')) return;
+  const path = box.dataset.vdPath + '.mp4';
+  box.classList.add('on', 'loading');
+  const url = await vdSrc(path);
+  box.classList.remove('loading');
+  if (!url) { box.classList.remove('on'); return toast('No se pudo cargar el vídeo. Puede que haya caducado', 'bad'); }
+  const poster = box.querySelector('img'), v = document.createElement('video');
+  v.controls = true; v.playsInline = true; v.autoplay = true; v.preload = 'auto'; v.src = url;
+  if (poster && poster.src) v.poster = poster.src;
+  box.innerHTML = ''; box.appendChild(v);
+  v.play().catch(() => { });
+  vdCount(box.dataset.vdKind, box.dataset.vdRow, path);
+}
+// El vídeo de un post del Inicio (o el aviso de que ha caducado)
+const fvExpired = p => !p.video || (p.video_expires_at && new Date(p.video_expires_at) <= Date.now() && !(isTeacher() && openReport('feed_post', p.id)));
+const openReport = (type, id) => S.reports.some(r => r.target_type === type && r.target_id === id && !r.resolved);
+function feedVideo(p) {
+  if (!p.video_expires_at) return '';
+  if (fvExpired(p)) return `<div class="vd-gone">${VD_ICON}<span>El vídeo ha caducado y se ha borrado</span></div>`;
+  return vdBox('fvideo', p.author_id, p.id, p.video, new Date(p.video_expires_at) > Date.now() ? `Se borra en ${vdLeft(p.video_expires_at)}` : 'Caducado · denunciado');
+}
+
+/* -------------------------------- Stories --------------------------------
+   S.stories (las que puedo ver), S.storyViews y S.storyRx (las mías y las de mis stories). */
+const storyLive = s => new Date(s.expires_at) > Date.now();
+const storySeen = s => s.author_id === S.user.id || S.storyViews.some(v => v.story_id === s.id && v.user_id === S.user.id);
+const storyTime = (a, b) => a.created_at.localeCompare(b.created_at);
+function storyListFor(author) { // en el visor: las vivas y, para el profesor, las caducadas que siguen denunciadas
+  return S.stories.filter(s => s.author_id === author && (storyLive(s) || (isTeacher() && openReport('story', s.id)))).sort(storyTime);
+}
+function storyGroups() { // tú primero; luego las que no has visto y después las vistas, de la más reciente a la más antigua
+  const by = {};
+  S.stories.filter(storyLive).forEach(s => (by[s.author_id] = by[s.author_id] || []).push(s));
+  return Object.entries(by).map(([author, l]) => ({ author, list: l.sort(storyTime), last: l[l.length - 1].created_at, seen: l.every(storySeen) }))
+    .sort((a, b) => (b.author === S.user.id) - (a.author === S.user.id) || a.seen - b.seen || b.last.localeCompare(a.last));
+}
+function storiesBar() {
+  const me = S.user.id, gs = storyGroups(), mine = gs.find(g => g.author === me);
+  const others = gs.filter(g => g.author !== me).map(g => `<button type="button" class="st-item" data-action="story-open" data-id="${g.author}" aria-label="Ver la story de ${esc(whoName(g.author))}">
+      <span class="st-ring${g.seen ? '' : ' new'}">${avatarHtml(g.author, 58)}</span><span class="st-name">${esc(whoName(g.author))}</span></button>`).join('');
+  return `<section class="stories" id="storiesBar" aria-label="Stories"><div class="st-row">
+    <div class="st-item st-me">
+      <button type="button" class="st-ring${mine ? ' own' : ' add'}" data-action="${mine ? 'story-open' : 'story-add'}" data-id="${me}" aria-label="${mine ? 'Ver tu story' : 'Subir una story'}">${avatarHtml(me, 58)}</button>
+      <button type="button" class="st-plus" data-action="story-add" aria-label="Subir una story" title="Subir una story">+</button>
+      <span class="st-name">Tu story</span></div>${others}</div></section>`;
+}
+function updateStoriesBar() { const el = $('#storiesBar'); if (el) el.outerHTML = storiesBar(); }
+
+// Subir una story: elegir el vídeo y confirmar en una ventana con la vista previa
+function storyAddModal() {
+  vdClear('story');
+  openModal(`<div class="modal-head"><h2>Nueva story</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="vd-story-box" data-vd-draft="story">${vdDraftInner('story')}</div>
+    <div class="ph-row"><button type="button" class="btn" data-action="vd-add" data-vd="story">${VD_ICON}<span>Elegir otro vídeo</span></button></div>
+    <p class="sub vd-note">Hasta 60 segundos. Las stories se borran solas a las <b>24 horas</b>: por ahora tenemos poco espacio en el plan gratuito, así que los vídeos solo están unos días y luego desaparecen.</p>
+    <div class="actions"><button class="btn primary" type="button" data-action="story-publish" disabled>Publicar story</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>`);
+  $('.modal').classList.add('narrow');
+  vdChoose('story');
+}
+
+// ---- Visor a pantalla completa (reutiliza #lightbox: Atrás, Esc y la × lo cierran) ----
+let SV = null;
+function storyOpen(author, storyId = null, single = false) {
+  if ($('#lightbox')) return;
+  const order = single ? [author] : (() => { const o = storyGroups().map(g => g.author); return o.includes(author) ? o : [author]; })();
+  const list = storyListFor(author);
+  if (!list.length) return toast('Esa story ya no está disponible');
+  const lb = document.createElement('div');
+  lb.id = 'lightbox'; lb.className = 'lightbox story'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Story');
+  lb.innerHTML = `<div class="sv-frame">
+      <div class="sv-bars"></div><div class="sv-head"></div>
+      <div class="sv-stage"><video playsinline preload="auto"></video>
+        <button type="button" class="sv-tap prev" data-sv="prev" aria-label="Anterior"></button><button type="button" class="sv-tap next" data-sv="next" aria-label="Siguiente"></button>
+        <button type="button" class="sv-big" data-sv="play" hidden aria-label="Reproducir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
+        <div class="sv-spin" hidden></div></div>
+      <div class="sv-foot"></div></div>`;
+  document.body.appendChild(lb); document.body.classList.add('story-open');
+  history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
+  const v = lb.querySelector('video');
+  SV = { lb, v, order, ai: order.indexOf(author), si: 0, cur: null, muted: false };
+  const firstNew = list.findIndex(s => !storySeen(s));
+  SV.si = storyId ? Math.max(0, list.findIndex(s => s.id === storyId)) : Math.max(0, firstNew);
+  lb._onClose = () => { v.pause(); v.removeAttribute('src'); try { v.load(); } catch (e) { } SV = null; document.body.classList.remove('story-open'); updateStoriesBar(); };
+  v.addEventListener('timeupdate', () => { const b = lb.querySelector('.sv-bars i.cur b'); if (b && v.duration) b.style.width = Math.min(100, v.currentTime / v.duration * 100) + '%'; });
+  v.addEventListener('ended', () => svGo(1));
+  v.addEventListener('waiting', () => { const s = lb.querySelector('.sv-spin'); if (s) s.hidden = false; });
+  v.addEventListener('playing', () => { const s = lb.querySelector('.sv-spin'); if (s) s.hidden = true; const b = lb.querySelector('.sv-big'); if (b) b.hidden = true; });
+  // Mantener pulsado pausa (como Instagram); un toque corto en un lado pasa a la anterior o la siguiente
+  let downAt = 0, held = false;
+  const stage = lb.querySelector('.sv-stage');
+  stage.addEventListener('pointerdown', e => { if (!e.target.closest('.sv-tap')) return; downAt = Date.now(); held = false; setTimeout(() => { if (downAt && Date.now() - downAt >= 250) { held = true; v.pause(); } }, 260); });
+  const up = () => { if (held && SV && !svPaused()) v.play().catch(() => { }); downAt = 0; };
+  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+  lb.addEventListener('click', e => {
+    const b = e.target.closest('[data-sv]');
+    if (b) { e.stopPropagation(); if (held) { held = false; return; } const a = b.dataset.sv;
+      if (a === 'prev') return svGo(-1); if (a === 'next') return svGo(1);
+      if (a === 'play') { b.hidden = true; return v.play().catch(() => { b.hidden = false; }); }
+      if (a === 'close') return lbClose();
+      if (a === 'mute') { SV.muted = v.muted = !v.muted; return svHead(); }
+      if (a === 'viewers') return svViewers();
+      if (a === 'more') return svMore(b);
+      return; }
+    const pk = e.target.closest('[data-sv-pick]');
+    if (pk && SV && SV.cur) { e.stopPropagation(); return storyReact(SV.cur.id, pk.dataset.svPick); }
+    const mo = e.target.closest('[data-sv-more]');
+    if (mo && SV && SV.cur) { // selector completo de emojis
+      e.stopPropagation(); v.pause(); const id = SV.cur.id;
+      popPush(); setTimeout(() => { ex = { btn: mo, onPick: em => { storyReact(id, em); } }; emojiDraw(); }, 0);
+      return;
+    }
+    if (e.target === lb) lbClose(); // fuera del vídeo (ordenador)
+  });
+  svShow();
+}
+const svPaused = () => !!(SV && (SV.lb.querySelector('.sv-viewers:not([hidden])') || SV.lb.querySelector('.sv-menu') || document.activeElement && SV.lb.contains(document.activeElement) && document.activeElement.matches('input') || $('#emojiBox')));
+function svGo(d) {
+  if (!SV) return;
+  const list = storyListFor(SV.order[SV.ai]);
+  if (d > 0 && SV.si < list.length - 1) SV.si++;
+  else if (d < 0 && SV.si > 0) SV.si--;
+  else if (d > 0) { // siguiente persona
+    let ai = SV.ai + 1; while (ai < SV.order.length && !storyListFor(SV.order[ai]).length) ai++;
+    if (ai >= SV.order.length) return lbClose();
+    SV.ai = ai; const l = storyListFor(SV.order[ai]); SV.si = Math.max(0, l.findIndex(s => !storySeen(s)));
+  } else if (d < 0 && SV.ai > 0) { let ai = SV.ai - 1; while (ai > 0 && !storyListFor(SV.order[ai]).length) ai--; const l = storyListFor(SV.order[ai]); if (!l.length) return; SV.ai = ai; SV.si = l.length - 1; }
+  else { SV.v.currentTime = 0; return; }
+  svShow();
+}
+async function svShow() {
+  if (!SV) return;
+  const author = SV.order[SV.ai], list = storyListFor(author);
+  if (!list.length) return svGo(1);
+  SV.si = Math.min(SV.si, list.length - 1);
+  const s = SV.cur = list[SV.si], me = S.user.id, lb = SV.lb, v = SV.v;
+  lb.querySelector('.sv-bars').innerHTML = list.map((x, i) => `<i class="${i < SV.si ? 'done' : i === SV.si ? 'cur' : ''}"><b></b></i>`).join('');
+  svHead(); svFoot();
+  const base = vdBase('story', s.author_id, s.id, s.video);
+  v.pause(); v.removeAttribute('src'); v.muted = SV.muted;
+  phUrl(base + '_t.jpg').then(u => { if (SV && SV.cur === s && u) v.poster = u; });
+  lb.querySelector('.sv-spin').hidden = false; lb.querySelector('.sv-big').hidden = true;
+  const url = await vdSrc(base + '.mp4');
+  if (!SV || SV.cur !== s) return;
+  if (!url) { lb.querySelector('.sv-spin').hidden = true; toast('No se pudo cargar la story', 'bad'); return; }
+  v.src = url;
+  v.play().catch(() => { if (SV && SV.cur === s) { lb.querySelector('.sv-spin').hidden = true; lb.querySelector('.sv-big').hidden = false; } }); // el móvil pide un toque para el sonido
+  vdCount('story', s.id, base + '.mp4');
+  if (s.author_id !== me && !storySeen(s) && storyLive(s) && !(isTeacher() && openReport('story', s.id))) { // apuntar que la has visto (revisar una denuncia no cuenta)
+    const row = { story_id: s.id, user_id: me, viewed_at: new Date().toISOString() };
+    S.storyViews.push(row);
+    const { error } = await sb.from('story_views').insert({ story_id: s.id, user_id: me });
+    if (error && !/duplicate/i.test(error.message || '')) S.storyViews = S.storyViews.filter(x => x !== row);
+  }
+}
+function svHead() {
+  if (!SV || !SV.cur) return;
+  const s = SV.cur, mine = s.author_id === S.user.id;
+  const canMore = mine || isTeacher() || !isTeacherId(s.author_id);
+  SV.lb.querySelector('.sv-head').innerHTML = `${avatarHtml(s.author_id, 34)}<div class="sv-who"><b>${esc(mine ? 'Tu story' : whoName(s.author_id))}</b><span>${storyLive(s) ? timeAgo(s.created_at) : 'Caducada · denunciada'}</span></div>
+    <button type="button" class="sv-btn" data-sv="mute" aria-label="${SV.muted ? 'Activar el sonido' : 'Silenciar'}" title="${SV.muted ? 'Activar el sonido' : 'Silenciar'}">${SV.muted ? '🔇' : '🔊'}</button>
+    ${canMore ? `<button type="button" class="sv-btn" data-sv="more" aria-label="Opciones" title="Opciones">⋯</button>` : ''}
+    <button type="button" class="sv-btn" data-sv="close" aria-label="Cerrar" title="Cerrar">×</button>`;
+}
+function svMore(btn) {
+  const old = SV.lb.querySelector('.sv-menu'); if (old) { old.remove(); SV.v.play().catch(() => { }); return; }
+  const s = SV.cur, mine = s.author_id === S.user.id;
+  const reported = S.reports.some(r => r.target_type === 'story' && r.target_id === s.id && r.reporter_id === S.user.id);
+  const items = (mine || isTeacher()) ? `<button type="button" class="danger" data-action="story-delete" data-id="${s.id}">🗑️ Borrar story</button>`
+    : reported ? '<div class="off">🚩 Denunciada</div>' : `<button type="button" data-action="report" data-type="story" data-id="${s.id}">🚩 Denunciar</button>`;
+  const m = document.createElement('div'); m.className = 'sv-menu dmmenu'; m.innerHTML = items;
+  SV.lb.querySelector('.sv-frame').appendChild(m); SV.v.pause();
+  m.addEventListener('click', () => setTimeout(() => { if (m.isConnected) m.remove(); }, 0));
+}
+function svFoot() {
+  if (!SV || !SV.cur) return;
+  const s = SV.cur, mine = s.author_id === S.user.id, foot = SV.lb.querySelector('.sv-foot');
+  if (mine) {
+    const n = S.storyViews.filter(v => v.story_id === s.id).length, rx = S.storyRx.filter(r => r.story_id === s.id);
+    foot.innerHTML = `<button type="button" class="sv-views" data-sv="viewers">👁 ${n} ${n === 1 ? 'vista' : 'vistas'}${rx.length ? ` · ${[...new Set(rx.map(r => r.emoji))].slice(0, 5).map(esc).join('')}` : ''}</button>
+      <div class="sv-viewers" hidden></div>`;
+    return;
+  }
+  if (!storyLive(s)) { foot.innerHTML = ''; return; }
+  const myRx = (S.storyRx.find(r => r.story_id === s.id && r.user_id === S.user.id) || {}).emoji;
+  const canReply = S.dmCan[s.author_id] === true;
+  foot.innerHTML = `<div class="sv-quick">${REACTIONS.map(r => `<button type="button" data-sv-pick="${esc(r.e)}" class="${myRx === r.e ? 'mine' : ''}" aria-label="Reaccionar ${esc(r.e)}">${r.e}</button>`).join('')}
+      <button type="button" class="more${myRx && !REACTIONS.some(r => r.e === myRx) ? ' mine' : ''}" data-sv-more aria-label="Más emojis" title="Más emojis">${myRx && !REACTIONS.some(r => r.e === myRx) ? esc(myRx) : '+'}</button></div>
+    ${canReply ? `<form id="svReplyForm" class="sv-reply" data-to="${s.author_id}" data-story="${s.id}"><input type="text" name="body" maxlength="1000" autocomplete="off" data-no-emoji placeholder="Responder a ${esc(whoName(s.author_id))}…" aria-label="Responder por privado"><button class="btn primary sm" type="submit">Enviar</button></form>` : ''}`;
+  const inp = foot.querySelector('input');
+  if (inp) { inp.addEventListener('focus', () => SV && SV.v.pause()); inp.addEventListener('blur', () => setTimeout(() => { if (SV && !svPaused()) SV.v.play().catch(() => { }); }, 150)); }
+}
+function svViewers() {
+  const box = SV.lb.querySelector('.sv-viewers'); if (!box) return;
+  if (!box.hidden) { box.hidden = true; SV.v.play().catch(() => { }); return; }
+  const s = SV.cur, rx = {};
+  S.storyRx.filter(r => r.story_id === s.id).forEach(r => { rx[r.user_id] = r.emoji; });
+  const ids = [...new Set([...S.storyViews.filter(v => v.story_id === s.id).sort((a, b) => (b.viewed_at || '').localeCompare(a.viewed_at || '')).map(v => v.user_id), ...Object.keys(rx)])];
+  box.innerHTML = ids.length ? ids.map(id => `<div class="sv-vrow">${avatarHtml(id, 30)}<span class="sv-vname">${esc(S.dir[id] ? whoName(id) : 'Alguien')}</span>${rx[id] ? `<b>${esc(rx[id])}</b>` : ''}</div>`).join('')
+    : '<div class="sub">Aún no la ha visto nadie.</div>';
+  box.hidden = false; SV.v.pause();
+}
+async function storyReact(id, emoji) {
+  const mine = S.storyRx.find(r => r.story_id === id && r.user_id === S.user.id), prev = S.storyRx.slice();
+  emojiRemember(emoji);
+  if (mine && mine.emoji === emoji) { // la misma: se quita
+    S.storyRx = S.storyRx.filter(r => r !== mine); svFoot();
+    const { error } = await sb.from('story_reactions').delete().eq('story_id', id).eq('user_id', S.user.id);
+    if (error) { S.storyRx = prev; svFoot(); toast(errEs(error), 'bad'); }
+    return;
+  }
+  S.storyRx = [...S.storyRx.filter(r => r !== mine), { story_id: id, user_id: S.user.id, emoji, created_at: new Date().toISOString() }]; svFoot();
+  if (SV) { const f = document.createElement('div'); f.className = 'sv-float'; f.textContent = emoji; SV.lb.querySelector('.sv-stage').appendChild(f); setTimeout(() => f.remove(), 1200); }
+  const { error } = await sb.from('story_reactions').upsert({ story_id: id, user_id: S.user.id, emoji }, { onConflict: 'story_id,user_id' });
+  if (error) { S.storyRx = prev; svFoot(); toast(errEs(error), 'bad'); }
+  if (SV && !svPaused()) SV.v.play().catch(() => { });
+}
+// En un mensaje privado: "Ha respondido a tu story" con su portada mientras exista
+function storyReplyHtml(m) {
+  const s = S.stories.find(x => x.id === m.story_id), toMe = m.recipient_id === S.user.id;
+  const label = toMe ? 'Ha respondido a tu story' : 'Has respondido a su story';
+  if (!s) return `<div class="msg-story off">${VD_ICON}<span>${label} · ya no está disponible</span></div>`;
+  return `<button type="button" class="msg-story" data-action="story-open" data-id="${s.author_id}" data-story="${s.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', s.author_id, s.id, s.video))}_t.jpg" alt=""><span>${label}</span></button>`;
+}
+async function loadStories() {
+  const r = await Promise.all([sb.from('stories').select('*').order('created_at', { ascending: true }), sb.from('story_views').select('*'), sb.from('story_reactions').select('*')]);
+  const err = r.map(x => x.error).find(Boolean); if (err) throw err;
+  S.stories = r[0].data || []; S.storyViews = r[1].data || []; S.storyRx = r[2].data || [];
+}
+// Cada minuto: fuera las stories caducadas y los vídeos de posts que han caducado
+setInterval(() => {
+  if (!S.profile || !S.user) return;
+  const before = S.stories.length;
+  S.stories = S.stories.filter(s => storyLive(s) || (isTeacher() && openReport('story', s.id)));
+  if (S.stories.length !== before) updateStoriesBar();
+  S.fposts.forEach(p => {
+    if (!p.video || !p.video_expires_at || !fvExpired(p)) return;
+    const el = $(`[data-fpost="${p.id}"]`); if (el && el.querySelector('.vd')) el.outerHTML = feedCard(p);
+  });
+  $$('.vd .vd-exp').forEach(c => { const el = c.closest('[data-fpost]'), p = el && S.fposts.find(x => x.id === el.dataset.fpost); if (p && p.video_expires_at && new Date(p.video_expires_at) > Date.now()) c.textContent = `Se borra en ${vdLeft(p.video_expires_at)}`; });
+}, 60000);
+document.addEventListener('keydown', e => {
+  if (!SV || !$('#lightbox.story') || (document.activeElement && document.activeElement.matches('input, textarea'))) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); svGo(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); svGo(1); }
+  if (e.key === ' ') { e.preventDefault(); SV.v.paused ? SV.v.play().catch(() => { }) : SV.v.pause(); }
+});
+// Lo que gasta el vídeo este mes (Ajustes del profesor)
+async function vquotaFill() {
+  const el = $('[data-vquota]'); if (!el) return;
+  const { data, error } = await sb.rpc('video_quota');
+  if (!$('[data-vquota]')) return;
+  if (error || !data) { el.innerHTML = '<span class="sub">No se ha podido consultar.</span>'; return; }
+  const mb = b => (b / 1048576).toFixed(b < 10485760 ? 1 : 0).replace('.', ',') + ' MB', pct = Math.min(100, Math.round(data.used / data.limit * 100));
+  el.innerHTML = `<div class="vq-bar"><i style="width:${pct}%" class="${pct >= 100 ? 'bad' : pct >= 70 ? 'warn' : ''}"></i></div>
+    <p class="sub" style="margin:8px 0 0">${mb(data.used)} de ${(data.limit / 1073741824).toFixed(0)} GB este mes (${pct} %)${data.paused ? ' · <b>subidas de vídeo en pausa hasta el día 1</b>' : ''}. Es una estimación: cada persona que ve un vídeo cuenta lo que pesa. El plan gratis da unos 5 GB de descargas al mes; el resto queda para fotos y datos.</p>`;
+}
+
 /* ------------------------------ Modal ------------------------------- */
 function openModal(html, onClose) {
   if (!$('#modalRoot').firstChild && S.profile) { // para que "Atrás" la cierre
@@ -2295,7 +2892,7 @@ async function closeModal(fromHistory = false) {
   $('#modalRoot').innerHTML = '';
   document.body.classList.remove('noscroll');
   itemReturn = null; // cerrar del todo olvida el "volver a la ficha"
-  phClear('feed-edit'); phClear('board'); // fotos elegidas en un editor que se cierra sin guardar
+  phClear('feed-edit'); phClear('board'); vdClear('story'); // fotos o vídeo elegidos en un editor que se cierra sin guardar
   // Cerrada con la ✕, Esc o al pulsar fuera: quitamos su entrada del historial
   if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
   if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
@@ -2509,6 +3106,7 @@ async function loadData(quiet = false) {
       S.dir = {}; (dr.data || []).forEach(d => { S.dir[d.id] = d; });
     }
     // La Agenda no debe tumbar la app si su parte de la base de datos aún no existe o falla
+    try { await loadStories(); } catch (e) { console.warn('Stories:', e.message || e); S.stories = []; S.storyViews = []; S.storyRx = []; }
     try { await loadLessons(); } catch (e) { console.warn('Agenda:', e.message || e); S.lessons = []; }
     try { const { data, error } = await sb.from('listening_answer_reactions').select('*'); if (error) throw error; S.ansRx = data || []; }
     catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
@@ -2717,12 +3315,15 @@ function homeTeacher() {
 /* ================================= FEED =============================== */
 function feedView() {
   const list = S.fposts.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return `${forYou()}<form id="feedForm" class="panel composer">
+  return `${storiesBar()}${forYou()}<form id="feedForm" class="panel composer${vdHas('feed-new') ? ' has-vd' : ''}">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
         <textarea name="body" maxlength="2000" rows="3" placeholder="¿Qué estás tocando? Comparte un riff, una duda o un enlace de Spotify o YouTube"></textarea>
         ${phStrip('feed-new')}
-        <div class="actions" style="margin-top:2px">${phPicker('feed-new', PH_MAX.feed, 'Foto')}<button class="btn" type="submit">Publicar</button></div>
+        <div data-vd-draft="feed-new">${vdDraftInner('feed-new')}</div>
+        <div class="vd-days"><label>El vídeo se borra a los <select name="vdays" data-no-emoji>${VD_DAYS.map(d => `<option value="${d}">${d} día${d === 1 ? '' : 's'}</option>`).join('')}</select></label>
+          <small>Por ahora tenemos poco espacio en el plan gratuito, así que los vídeos solo se ven unos días y luego se borran solos.</small></div>
+        <div class="actions" style="margin-top:2px">${phPicker('feed-new', PH_MAX.feed, 'Foto')}<button type="button" class="btn ph-add" data-action="vd-add" data-vd="feed-new" title="Añadir un vídeo (hasta 60 s)">${VD_ICON}<span>Vídeo</span></button><button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
@@ -2751,7 +3352,7 @@ function feedCard(p) {
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
     <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
     ${p.body ? `<div class="fbody">${richText(p.body)}</div>` : ''}
-    ${phOf('feed_post', p)}
+    ${phOf('feed_post', p)}${feedVideo(p)}
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
     <div class="factions">
@@ -2770,7 +3371,7 @@ function feedPostModal(id) {
     <div class="modal-head"><div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     ${p.body ? `<div class="fbody">${richText(p.body)}</div>` : ''}
-    ${phOf('feed_post', p)}
+    ${phOf('feed_post', p)}${feedVideo(p)}
     ${p.link_url ? linkCard(p.link_url) : ''}
     <div style="margin:12px 0">${rxBar('feed_post', p.id)}</div>
     <h2 class="h2">Comentarios</h2>
@@ -2994,6 +3595,7 @@ function settingsView() {
           ${blocked.length ? `<div class="blist">${blocked.map(id => `<div class="brow">${avatarHtml(id, 32)}<span>${esc(whoName(id))}</span><button class="btn sm ghost" data-action="unblock" data-id="${id}" data-stay="1">Desbloquear</button></div>`).join('')}</div>`
             : '<p class="sub" style="margin:0">No has bloqueado a nadie. Puedes hacerlo desde una conversación privada; nadie se entera, tampoco tu profesor.</p>'}`}
       </div>
+      ${t ? `<div class="panel"><h2 class="h2" style="margin-top:0">${VD_ICON} Vídeos este mes</h2><div data-vquota><span class="sub">Consultando…</span></div></div>` : ''}${t ? (setTimeout(vquotaFill, 0), '') : ''}
       ${t ? `<div class="panel"><h2 class="h2" style="margin-top:0">${ic('payments')} Copia de seguridad</h2>
         <p class="sub" style="margin:0 0 12px">El plan gratuito de Supabase no guarda copias que puedas recuperar. Descarga una de vez en cuando (por ejemplo, una al mes) y guárdala en tu ordenador o en tu nube: alumnos, escuchas, avisos, Inicio, deberes, pagos y agenda en un solo archivo.</p>
         <button class="btn primary" data-action="backup">Descargar copia de seguridad</button>
@@ -4190,7 +4792,7 @@ function threadInner(id) {
     const mine = m.sender_id === S.user.id, url = firstLink(m.body);
     const can = S.dmCan[id] !== false;
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg-wrap"><div class="msg-line"><div class="msg" data-dmid="${m.id}">
-        ${phOf('dm_message', m, 'dm')}${m.body ? `<div class="msg-body">${listify(linkify(m.body))}</div>` : ''}${url ? linkCard(url) : ''}
+        ${m.story_id ? storyReplyHtml(m) : ''}${phOf('dm_message', m, 'dm')}${m.body ? `<div class="msg-body">${listify(linkify(m.body))}</div>` : ''}${url ? linkCard(url) : ''}
         <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
           ${mine && m.read_at ? `<span class="seen" title="Visto" aria-label="Visto">${SEEN_ICON}</span>` : ''}
         </div>${dmMenuItems(m) ? `<button type="button" class="msg-more" data-dmmenu-open="${m.id}" title="Opciones" aria-label="Opciones del mensaje" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : ''}</div>${can ? `<button type="button" class="msg-rxbtn" data-dmrx-open="${m.id}" title="Reaccionar" aria-label="Reaccionar">${EMOJI_ICON}</button>` : ''}</div>${dmRxChip(m.id)}</div></div>`;
@@ -4423,12 +5025,14 @@ function notifText(n) {
     case 'mention_feed': return `${who} te ha mencionado${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
     case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'story_reaction': return `${who} ha reaccionado ${esc(n.extra || '')} a tu story`;
+    case 'video_quota': return n.extra === '100' ? '🎬 Se ha gastado el presupuesto de vídeo de este mes: no se pueden subir vídeos hasta el día 1' : '🎬 Este mes ya se ha usado el <b>70 %</b> del presupuesto de vídeo';
     case 'classmate_request': return `${who} te ha enviado una solicitud para ser compañeros`;
     case 'classmate_accept': return `${who} ha aceptado tu solicitud. Ya sois compañeros`;
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart' }[kind] || 'bell'; }
 function notifsModal() {
   const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -4468,6 +5072,8 @@ async function openNotif(n) {
     case 'report': S.section = 'mod'; render(); break;
     case 'homework': case 'lesson': S.section = 'homework'; render(); break;
     case 'classmate_request': case 'classmate_accept': render(); await profileModal(n.actor_id); break;
+    case 'story_reaction': S.section = 'feed'; render(); if (S.stories.some(x => x.id === n.target_id)) storyOpen(S.user.id, n.target_id, true); else toast('Esa story ya ha caducado'); break;
+    case 'video_quota': S.section = 'settings'; render(); break;
     default: render();
   }
 }
@@ -4839,7 +5445,39 @@ const actions = {
     toast('Denuncia enviada. Gracias', 'ok');
   },
   // ---- Fotos ----
-  'ph-add'(el) { phChoose(el.dataset.ph, +el.dataset.max || 1); },
+  'ph-add'(el) {
+    if (el.dataset.ph === 'feed-new' && vdHas('feed-new')) return toast('Un post lleva fotos o un vídeo, no las dos cosas. Quita el vídeo para añadir fotos', 'bad');
+    phChoose(el.dataset.ph, +el.dataset.max || 1);
+  },
+  // ---- Vídeos y stories ----
+  'vd-add'(el) { vdChoose(el.dataset.vd); },
+  'vd-del'(el) { vdClear(el.dataset.vd); },
+  'vd-play'(el) { vdPlay(el); },
+  'story-add'() { storyAddModal(); },
+  'story-open'(el) { storyOpen(el.dataset.id, el.dataset.story || null, !!el.dataset.single); },
+  async 'story-publish'(el) {
+    if (VD_BUSY.story) return toast('Espera un momento: el vídeo aún se está preparando', 'bad');
+    const x = VD_DRAFT.story; if (!x) return toast('Elige un vídeo', 'bad');
+    el.disabled = true;
+    const id = phUuid(), up = await vdUpload('story', id, x, el);
+    if (!up) { el.disabled = false; return; }
+    const { data, error } = await sb.from('stories').insert({ id, author_id: S.user.id, video: up.video }).select().single();
+    if (error) { el.disabled = false; vdRemove(up.done); return toast('No se pudo publicar: ' + errEs(error), 'bad'); }
+    vdCommit('story', 'story', id);
+    addUnique(S.stories, data, 'stories');
+    await closeModal(); updateStoriesBar();
+    toast('Story publicada. Se borrará sola en 24 horas', 'ok');
+  },
+  async 'story-delete'(el) {
+    const s = S.stories.find(x => x.id === el.dataset.id);
+    if (!s || !confirm(s.author_id === S.user.id ? '¿Borrar tu story?' : '¿Borrar esta story para todos? No se puede deshacer.')) return;
+    const { error } = await sb.from('stories').delete().eq('id', s.id);
+    if (error) return toast('Error: ' + errEs(error), 'bad');
+    vdDropRow('story', s.author_id, s.id, s.video);
+    dropTargetLocal('story', s.id);
+    if (SV) svShow(); updateStoriesBar(); if (S.section === 'mod') softRender();
+    toast('Story borrada', 'ok');
+  },
   'ph-del'(el) {
     const key = el.dataset.ph, d = PH_DRAFT[key]; if (!d) return;
     const i = d.findIndex(x => x.k === el.dataset.k);
@@ -4853,7 +5491,7 @@ const actions = {
     if (!p || !confirm('¿Eliminar esta publicación? Se borrarán también sus comentarios.')) return;
     const { error } = await sb.from('feed_posts').delete().eq('id', p.id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
-    phDropRow('feed', p.author_id, p);
+    phDropRow('feed', p.author_id, p); vdDropRow('fvideo', p.author_id, p.id, p.video);
     dropTargetLocal('feed_post', p.id);
     render(); toast('Publicación eliminada', 'ok');
   },
@@ -5026,17 +5664,24 @@ document.addEventListener('submit', async e => {
     e.preventDefault();
     const body = mentionEncode(f.elements['body']);
     if (phBusy('feed-new')) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
-    if (!body && !phDraft('feed-new').length) return toast('Escribe algo o añade una foto', 'bad');
+    if (VD_BUSY['feed-new']) return toast('Espera un momento: el vídeo aún se está preparando', 'bad');
+    const vx = VD_DRAFT['feed-new'];
+    if (!body && !phDraft('feed-new').length && !vx) return toast('Escribe algo o añade una foto o un vídeo', 'bad');
     if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
     const link = firstLink(body); // el primer enlace del texto se muestra como tarjeta (Spotify, YouTube…)
     const btn = $('button[type=submit]', f); btn.disabled = true;
-    const id = phUuid(); // el id se crea aquí para subir antes las fotos
-    const up = await phUpload('feed-new', 'feed', id, btn);
+    const id = phUuid(); // el id se crea aquí para subir antes las fotos o el vídeo
+    const up = vx ? { photos: [], paths: [] } : await phUpload('feed-new', 'feed', id, btn);
     if (!up) { btn.disabled = false; return; }
-    const { data, error } = await sb.from('feed_posts').insert({ id, author_id: S.user.id, body, link_url: link || null, photos: up.photos }).select().single();
+    const vup = vx ? await vdUpload('fvideo', id, vx, btn) : null;
+    if (vx && !vup) { btn.disabled = false; return; }
+    const row = { id, author_id: S.user.id, body, link_url: link || null, photos: up.photos };
+    if (vup) { const days = VD_DAYS.includes(+f.elements['vdays'].value) ? +f.elements['vdays'].value : 1; row.video = vup.video; row.video_expires_at = new Date(Date.now() + days * 86400000).toISOString(); }
+    const { data, error } = await sb.from('feed_posts').insert(row).select().single();
     btn.disabled = false;
-    if (error) { phRemove(up.paths); return toast('No se pudo publicar: ' + errEs(error), 'bad'); }
+    if (error) { phRemove(up.paths); if (vup) vdRemove(vup.done); return toast('No se pudo publicar: ' + errEs(error), 'bad'); }
     phCommit('feed-new', 'feed', id);
+    if (vup) { vdCommit('feed-new', 'fvideo', id); f.elements['vdays'].value = '1'; }
     if (!S.fposts.some(x => x.id === data.id)) S.fposts.unshift(data);
     render(); toast('Publicado', 'ok');
   } else if (f.id === 'feedEditForm') {
@@ -5062,6 +5707,16 @@ document.addEventListener('submit', async e => {
     e.preventDefault();
     const v = k => f.elements[k].value.trim() || null;
     await saveProfileFields({ bio: v('bio'), instrument: v('instrument'), level: v('level'), favorites: v('favorites'), gear: v('gear') }, 'Perfil guardado');
+  } else if (f.id === 'svReplyForm') { // responder a una story: llega como mensaje privado
+    e.preventDefault();
+    const inp = f.elements['body'], body = inp.value.trim(), to = f.dataset.to; if (!body) return;
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+    const { data, error } = await sb.from('dm_messages').insert({ id: phUuid(), sender_id: S.user.id, recipient_id: to, body, story_id: f.dataset.story }).select().single();
+    btn.disabled = false;
+    if (error) return toast('No se pudo enviar: ' + errEs(error), 'bad');
+    addUnique(S.dms, data, 'dm_messages'); refreshChrome();
+    inp.value = ''; inp.blur();
+    toast('Respuesta enviada por mensaje privado', 'ok');
   } else if (f.id === 'dmForm') {
     e.preventDefault();
     const ta = f.elements['body'], body = ta.value.trim(), to = f.dataset.to, key = 'dm-' + to;
@@ -5448,7 +6103,7 @@ async function downloadBackup(btn) { // solo profesor: todo lo que él puede lee
       profiles: 'id, display_name, nickname, email, role, approved, archived_at, created_at, birth_date, family_dm_ok, bio, instrument, level, favorites, gear, app_installed_at',
       listening_items: '*', listening_folders: '*', listening_genres: '*', listening_item_genres: '*', listening_assignments: '*', listening_comments: '*', listening_answer_reactions: '*',
       board_posts: '*', board_recipients: '*', board_reads: '*',
-      feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*',
+      feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*', stories: '*', story_views: '*', story_reactions: '*',
       homework_tasks: '*', payments_plans: '*', payments_records: '*', lessons: '*', lessons_students: '*',
       goals_stages: '*', goals_items: '*', goals_done: '*', blocked_emails: '*'
     };
@@ -6143,7 +6798,7 @@ async function openNotifFromUrl(url) {
      lo privado del alumno (sus escuchas, respuestas, deberes, mensajes, clase…) es inventado. */
 const PREVIEW_ID = '00000000-0000-4000-8000-0000000a1a1a';
 const PREVIEW_ERR = { code: 'preview', message: 'Vista de alumno: es solo para mirar, no se guarda nada.' };
-const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large']);
+const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large', 'video_quota']);
 function previewStub() { // imita una consulta de supabase-js (encadenable y con await) que siempre falla con PREVIEW_ERR
   const res = { data: null, error: PREVIEW_ERR, count: null, status: 403 };
   const p = new Proxy(function () { }, { get: (_, k) => k === 'then' ? (ok, no) => Promise.resolve(res).then(ok, no) : () => p, apply: () => p });
@@ -6162,7 +6817,7 @@ function previewGuard(c) {
         return t.rpc(fn, args);
       };
       if (k === 'functions') return { invoke: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) };
-      if (k === 'storage') return { from: b => { const s = t.storage.from(b); return { download: p => s.download(p), upload: () => Promise.resolve({ data: null, error: PREVIEW_ERR }), remove: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) }; } }; // fotos: ver sí, subir o borrar no
+      if (k === 'storage') return { from: b => { const s = t.storage.from(b); return { download: p => s.download(p), createSignedUrl: (p, x) => s.createSignedUrl(p, x), upload: () => Promise.resolve({ data: null, error: PREVIEW_ERR }), remove: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) }; } }; // fotos: ver sí, subir o borrar no
       if (k === 'auth') return new Proxy(t.auth, { get: (a, m) => ['signOut', 'updateUser', 'signUp', 'resetPasswordForEmail'].includes(m) ? () => Promise.resolve({ data: {}, error: PREVIEW_ERR }) : bind(a, m) });
       return bind(t, k);
     }
@@ -6222,6 +6877,7 @@ async function enterPreview() {
     ansRx: readA ? [{ assignment_id: readA.id, question: 'highlights', user_id: teacherId, emoji: '🔥', created_at: readA.teacher_read_at }] : [],
     posts, reads: posts.slice(1).map(p => ({ post_id: p.id, student_id: PREVIEW_ID, read_at: iso(-DAY) })),
     fposts: S.fposts.slice(), fcomments: S.fcomments.slice(), reactions: S.reactions.slice(), dir,
+    stories: S.stories.filter(storyLive), storyViews: [], storyRx: [],
     homework: [
       { id: fid(), student_id: PREVIEW_ID, title: 'Escalas pentatónicas a 80 bpm', details: 'Las cinco posiciones, subiendo y bajando, con metrónomo.', due_date: date(2), done_at: null, created_by: teacherId, created_at: iso(-3 * DAY) },
       { id: fid(), student_id: PREVIEW_ID, title: 'Repasar el riff de la última clase', details: null, due_date: date(-1), done_at: null, created_by: teacherId, created_at: iso(-6 * DAY) },
