@@ -29,14 +29,15 @@ const { chromium } = require('playwright');
   await p.evaluate(() => loadData(true).then(render));
   await goto(p, 'students');
   ok(await p.locator('[data-action=reject][data-id=s3]').count() === 1, 'El pendiente tiene botón "Rechazar" junto a "Aprobar"');
-  await p.click('[data-action=reject][data-id=s3]'); await wait(p);
-  ok(await p.locator('.modal input[name=rejBlock]').count() === 3, 'Modal: solo rechazar / bloquear correo / bloquear dominio');
+  ok(await p.locator('.linkbtn[data-action=block-pending][data-id=s3]').count() === 1, 'Y aparte, un enlace pequeño "Bloquear"');
+  await shot(p, 'rechazar-fila.png');
+  await p.click('[data-action=block-pending][data-id=s3]'); await wait(p);
+  ok(await p.locator('.modal [data-action=block-confirm]').count() === 2, 'Bloquear: elegir correo o dominio');
   ok((await p.textContent('.modal')).includes('@spam-bots.net'), 'Ofrece bloquear @spam-bots.net');
   await shot(p, 'rechazar-modal.png');
-  await p.check('.modal input[name=rejBlock][value=domain]');
-  await p.click('.modal [data-action=reject-confirm]'); await wait(p, 500);
+  await p.click('.modal [data-action=block-confirm][data-kind=domain]'); await wait(p, 500);
   let d = await snapshot(p);
-  ok(!d.profiles.some(x => x.id === 's3'), 'Rechazar borra la cuenta');
+  ok(!d.profiles.some(x => x.id === 's3'), 'Bloquear quita también la solicitud');
   ok(d.blocked_emails.length === 1 && d.blocked_emails[0].kind === 'domain' && d.blocked_emails[0].pattern === 'spam-bots.net', 'Queda bloqueado el dominio spam-bots.net');
   ok(!(await p.textContent('#app')).includes('Correos bloqueados'), 'La lista ya no está en Alumnos');
   await goto(p, 'settings');
@@ -66,9 +67,8 @@ const { chromium } = require('playwright');
   // ============ Rechazar sin bloquear ============
   p = await open('t1');
   await goto(p, 'students');
-  await p.click('[data-action=reject][data-id=s3]'); await wait(p);
-  ok(await p.locator('.modal input[name=rejBlock][value=none]:checked').count() === 1, 'Por defecto: solo rechazar (sin bloquear)');
-  await p.click('.modal [data-action=reject-confirm]'); await wait(p, 500);
+  await p.click('[data-action=reject][data-id=s3]'); await wait(p, 500); // confirm() se acepta solo
+  ok(await p.locator('.modal').count() === 0, 'Rechazar no abre ninguna ventana de opciones');
   d = await snapshot(p);
   ok(!d.profiles.some(x => x.id === 's3') && d.blocked_emails.length === 0, 'Solo rechazar: cuenta borrada y nada bloqueado');
   await p.context().close();
@@ -78,8 +78,8 @@ const { chromium } = require('playwright');
   await p.evaluate(() => { __DB.profiles.find(x => x.id === 's3').email = 'alguien@gmail.com'; });
   await p.evaluate(() => loadData(true).then(render));
   await goto(p, 'students');
-  await p.click('[data-action=reject][data-id=s3]'); await wait(p);
-  ok(await p.locator('.modal input[name=rejBlock][value=domain]').count() === 0 && await p.locator('.modal input[name=rejBlock][value=email]').count() === 1, 'Gmail: se ofrece bloquear el correo, no el dominio entero');
+  await p.click('[data-action=block-pending][data-id=s3]'); await wait(p);
+  ok(await p.locator('.modal [data-kind=domain]').count() === 0 && await p.locator('.modal [data-kind=email]').count() === 1, 'Gmail: se ofrece bloquear el correo, no el dominio entero');
   await p.context().close();
 
   // ============ El profesor no puede rechazar a un alumno aprobado ============
