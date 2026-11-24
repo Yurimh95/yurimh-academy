@@ -1157,6 +1157,14 @@ const dueSort = (a, b) => {
   if (b.due_date) return 1;
   return (b.assigned_at || '').localeCompare(a.assigned_at || '');
 };
+/* Orden de las escuchas dentro de cada carpeta (Yuri, 2026-11-24): los álbumes por artista y luego título (así los
+   discos de un mismo grupo salen juntos); lo demás por título, porque en canciones de YouTube el "artista" es el canal.
+   Sin distinguir mayúsculas ni tildes, ignorando signos y con números naturales (Vol. 2 antes que Vol. 10).
+   Un "[Official MV]" o similar al principio del título no cuenta. */
+const itemColl = new Intl.Collator('es', { sensitivity: 'base', numeric: true, ignorePunctuation: true });
+const itemTitleKey = it => String(it.title || '').replace(/^\s*(\[[^\]]*\]\s*)+/, '');
+const itemSort = (a, b) => itemColl.compare(a.kind === 'album' && a.artist ? a.artist : itemTitleKey(a), b.kind === 'album' && b.artist ? b.artist : itemTitleKey(b))
+  || itemColl.compare(itemTitleKey(a), itemTitleKey(b)) || String(a.id).localeCompare(String(b.id));
 
 const isTeacher = () => !!S.profile && S.profile.role === 'teacher';
 const firstName = n => String(n || '').trim().split(/\s+/)[0] || '';
@@ -3272,7 +3280,7 @@ function studentListList() {
   const list = tab.filter(a => (!q || itemHay(a.item).includes(q))
     && (!c.folder || (c.folder === NO_FOLDER ? !folderName(a.item.folder_id) : a.item.folder_id === c.folder))
     && (!c.genre || itemHasGenre(a.item_id, c.genre))
-    && (!c.kind || a.item.kind === c.kind)).sort(dueSort);
+    && (!c.kind || a.item.kind === c.kind)).sort(S.filter === 'pend' ? dueSort : (a, b) => itemSort(a.item, b.item)); // en Pendientes manda la fecha límite
   if (!list.length) return `<div class="empty">${!all.length ? 'Todavía no tienes nada asignado.' : act ? 'No hay escuchas con esos filtros.' : 'No hay elementos en esta pestaña.'}</div>`;
   const groups = [...foldersSorted().map(f => ({ id: f.id, name: f.name, rows: list.filter(a => a.item.folder_id === f.id) })),
     { id: NO_FOLDER, name: S.folders.length ? 'Sin carpeta' : 'Todas', rows: list.filter(a => !folderName(a.item.folder_id)) }].filter(g => g.rows.length);
@@ -3644,7 +3652,7 @@ function catRow(it, i) {
 }
 function catalogList() {
   if (!S.items.length) return `<div class="empty">El catálogo está vacío. Crea tu primer elemento.</div>`;
-  const list = catFiltered(), c = catState(), act = catActive();
+  const list = catFiltered().sort(itemSort), c = catState(), act = catActive();
   if (!list.length) return `<div class="empty">No hay escuchas con esos filtros.</div>`;
   const groups = [...foldersSorted().map(f => ({ id: f.id, name: f.name, items: list.filter(it => it.folder_id === f.id) })),
     { id: NO_FOLDER, name: S.folders.length ? 'Sin carpeta' : 'Todas', items: list.filter(it => !folderName(it.folder_id)) }]
