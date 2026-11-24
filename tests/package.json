@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node build-test.js",
-    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js && node test-modulos.js && node test-menciones.js && node test-editar.js &&node test-companeros.js && node test-duracion.js && node test-agenda.js && node test-emojis.js && node test-previews.js && node test-ficha-escucha.js && node test-asignar-varias.js && node test-bajas.js && node test-objetivos.js && node test-comentarios.js && node test-reacciones-respuestas.js && node test-limite-email.js && node test-deberes-movil.js && node test-biblioteca.js && node test-vista-alumno.js && node test-ics.mjs"
+    "test": "node build-test.js && node test-core.js && node test-social.js && node test-realtime.js && node test-fase2.js && node test-modulos.js && node test-menciones.js && node test-editar.js &&node test-companeros.js && node test-duracion.js && node test-agenda.js && node test-emojis.js && node test-previews.js && node test-ficha-escucha.js && node test-asignar-varias.js && node test-bajas.js && node test-objetivos.js && node test-comentarios.js && node test-reacciones-respuestas.js && node test-limite-email.js && node test-deberes-movil.js && node test-biblioteca.js && node test-vista-alumno.js && node test-ajustes.js && node test-ics.mjs"
   },
   "devDependencies": { "playwright": "^1.48.0" }
 }
