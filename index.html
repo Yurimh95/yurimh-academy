@@ -104,6 +104,14 @@ svg.i{width:20px;height:20px;flex:none}
 .me{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
 .me .who{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .me .who small{display:block;color:var(--faint);font-weight:500;font-size:12px}
+/* Vista de alumno (profesor): botón para entrar y barra fija para salir */
+.pvbtn{justify-content:center}
+.pvbtn svg,.pvbar svg{width:17px;height:17px}
+.pvbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:8px 8px 8px 14px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--neon);box-shadow:0 0 18px rgba(var(--neon-rgb),.18);color:var(--strong);font-size:14px}
+.pvbar .t{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.pvbar .t svg{color:var(--neon);flex:none}
+.pvbar .sub{font-size:12.5px}
+@media (max-width:760px){.pvbar .sub{display:none}}
 .iconbtn{font:inherit;cursor:pointer;width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--muted);display:inline-grid;place-items:center;transition:color .15s,border-color .15s,background .15s}
 .iconbtn:hover{color:var(--strong);border-color:var(--line-strong);background:var(--hover)}
 .iconbtn.sm{width:32px;height:32px;border-radius:9px;border-color:transparent;background:transparent}
@@ -912,6 +920,7 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3"/></symbol>
   <symbol id="i-clock"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/></symbol>
 </svg>
 <div id="app"><div class="loading">Cargando…</div></div>
@@ -951,7 +960,8 @@ const KIND = { album: 'Álbum', song: 'Canción', playlist: 'Playlist' };
 
 const configured = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SUPABASE_URL) && SUPABASE_KEY.length > 20 && !SUPABASE_URL.includes('TU-PROYECTO') && !SUPABASE_KEY.includes('TU-CLAVE');
 document.title = APP_NAME;
-const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+// sb pasa por previewGuard: en la «Vista de alumno» del profesor bloquea cualquier escritura (ver VISTA DE ALUMNO)
+const sb = configured ? previewGuard(supabase.createClient(SUPABASE_URL, SUPABASE_KEY)) : null;
 
 const S = {
   user: null, profile: null,
@@ -994,6 +1004,7 @@ const ERR_CODES = {
   refresh_token_not_found: 'Tu sesión ha caducado. Vuelve a entrar.',
   otp_expired: 'El enlace ha caducado o ya se usó. Pide uno nuevo.',
   reauthentication_needed: 'Por seguridad, vuelve a entrar antes de hacer este cambio.',
+  preview: 'Vista de alumno: es solo para mirar, no se guarda nada.',
   // Postgres
   '23505': 'Eso ya existe.',
   '23503': 'Ese elemento ya no existe. Recarga la página.',
@@ -1707,7 +1718,7 @@ function rtStart() {
   });
 }
 function rtStop() { if (rtChannel) { sb.removeChannel(rtChannel); rtChannel = null; } rtWasLive = false; }
-async function rtResync() { if (S.profile && S.profile.approved && await loadData(true)) softRender(); }
+async function rtResync() { if (S.preview) return; if (S.profile && S.profile.approved && await loadData(true)) softRender(); }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   if (hiddenAt && Date.now() - hiddenAt > 60000) rtResync(); // vuelves a la pestaña tras más de 1 minuto
@@ -1738,7 +1749,7 @@ function softRender() {
 }
 
 async function rtHandle(t, p) {
-  if (!S.profile || !S.user) return;
+  if (!S.profile || !S.user || S.preview) return; // en la vista de alumno no se toca nada; al salir se recarga todo
   const ev = p.eventType, row = p.new || {}, old = p.old || {}, me = S.user.id, teacher = isTeacher();
   // Alguien que aún no está en el directorio (alumno recién aprobado…): lo recargamos para su nombre y foto
   if (ev !== 'DELETE' && row.author_id && !S.dir[row.author_id]) await loadDirectory();
@@ -2217,6 +2228,7 @@ async function loadLibrary() {
   S.folders = r[0].data || []; S.genres = r[1].data || []; S.itemGenres = r[2].data || [];
 }
 async function loadDirectory() {
+  if (S.preview) return; // borraría al alumno de prueba del directorio
   const { data } = await sb.rpc('get_directory');
   S.dir = {}; (data || []).forEach(d => { S.dir[d.id] = d; });
 }
@@ -2244,7 +2256,7 @@ function render() {
   // Sin columna derecha (decisión de Yuri, 2026-11-23): escuchas y compañeros ya tienen su sección; menos distracciones
   $('#app').innerHTML = `<div class="shell">
     ${sidebar(secs)}
-    <div class="main">${topbar(here)}${body}</div>
+    <div class="main">${S.preview ? previewBar() : ''}${topbar(here)}${body}</div>
   </div>
   ${tabbar(secs)}`;
   histSync();
@@ -2298,6 +2310,7 @@ function sidebar(secs) {
       ${themeSwitch()}
       <div class="me">${avatarHtml(S.user.id, 36)}<div class="who">${esc(S.profile.display_name)}<small>${t ? 'Profesor' : 'Alumno'}</small></div>
         <button class="iconbtn sm" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button></div>
+      ${t ? `<button class="btn sm pvbtn" data-action="preview-on" title="Mira la app como la ve un alumno (solo para mirar)">${ic('eye')} Ver como alumno</button>` : ''}
     </div>
   </aside>`;
 }
@@ -2583,7 +2596,8 @@ function postFormModal(id) {
 function profileView() {
   const p = S.profile;
   return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
-    <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></div>
+    <span style="display:flex;gap:8px">${isTeacher() ? `<button class="btn sm pvbtn only-m" data-action="preview-on">${ic('eye')} Ver como alumno</button>` : ''}
+    <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></span></div>
   <div class="two prof-grid">
     ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
     ${!isTeacher() ? goalsPanel() : ''}
@@ -4086,7 +4100,9 @@ const actions = {
   noop() { },
   backdrop(el, e) { if (e.target === el) closeModal(); },
   close() { closeModal(); },
-  async logout() { await sb.auth.signOut(); },
+  async logout() { if (S.preview) return exitPreview(); await sb.auth.signOut(); },
+  'preview-on'() { enterPreview(); },
+  'preview-off'() { exitPreview(); },
   async recheck() { await route(); },
   'show-new'() { // muestra las publicaciones que han llegado en directo
     S.feedQueue.forEach(p => { if (!S.fposts.some(x => x.id === p.id)) S.fposts.unshift(p); });
@@ -4111,8 +4127,8 @@ const actions = {
     if (b) { const th = el.dataset.t; b.dataset.t = th === 'light' ? 'dark' : 'light'; b.innerHTML = ic(th === 'light' ? 'moon' : 'sun'); }
   },
   'avatar-save'() { cropSave(); },
-  'push-on'() { pushEnable(); },
-  'push-off'() { pushDisable(); },
+  'push-on'() { if (S.preview) return toast(ERR_CODES.preview); pushEnable(); },
+  'push-off'() { if (S.preview) return toast(ERR_CODES.preview); pushDisable(); },
   async 'install-app'() {
     if (!installPrompt) return;
     installPrompt.prompt();
@@ -5648,6 +5664,131 @@ async function openNotifFromUrl(url) {
   let n = S.notifs.find(x => x.id === id);
   if (!n) { const { data } = await sb.from('notifications').select('*').eq('id', id).maybeSingle(); if (data) { n = data; addUnique(S.notifs, data, 'notifications'); } }
   if (n) openNotif(n);
+}
+
+
+/* ============================ VISTA DE ALUMNO ============================
+   Para el profesor: ver la app tal como la ve un alumno, para revisar el diseño.
+   Es un alumno ficticio («Alumno de prueba») con datos inventados en el navegador; nada va a la base de datos:
+   - previewGuard envuelve el cliente de Supabase y, mientras S.preview exista, devuelve un error
+     'preview' en cualquier insert/update/upsert/delete, RPC (salvo get_profile/get_avatar_large),
+     Edge Function, cambio de contraseña o cierre de sesión. Las lecturas sí pasan.
+   - El tiempo real y las recargas se ignoran (rtHandle, rtResync, loadDirectory) y al salir se recarga todo.
+   - Lo público (Inicio, avisos para todos, catálogo de escuchas, lista general de objetivos) es real;
+     lo privado del alumno (sus escuchas, respuestas, deberes, mensajes, clase…) es inventado. */
+const PREVIEW_ID = '00000000-0000-4000-8000-0000000a1a1a';
+const PREVIEW_ERR = { code: 'preview', message: 'Vista de alumno: es solo para mirar, no se guarda nada.' };
+const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large']);
+function previewStub() { // imita una consulta de supabase-js (encadenable y con await) que siempre falla con PREVIEW_ERR
+  const res = { data: null, error: PREVIEW_ERR, count: null, status: 403 };
+  const p = new Proxy(function () { }, { get: (_, k) => k === 'then' ? (ok, no) => Promise.resolve(res).then(ok, no) : () => p, apply: () => p });
+  return p;
+}
+function previewGuard(c) {
+  const bind = (o, k) => { const v = o[k]; return typeof v === 'function' ? v.bind(o) : v; };
+  const WRITE = new Set(['insert', 'update', 'upsert', 'delete']);
+  return new Proxy(c, {
+    get(t, k) {
+      if (!S.preview) return bind(t, k);
+      if (k === 'from') return name => new Proxy(t.from(name), { get: (q, m) => WRITE.has(m) ? () => previewStub() : bind(q, m) });
+      if (k === 'rpc') return (fn, args) => {
+        if (!PREVIEW_READ_RPC.has(fn)) return previewStub();
+        if (args && args.p_id === PREVIEW_ID) return Promise.resolve({ data: fn === 'get_profile' ? [previewPublicProfile()] : null, error: null });
+        return t.rpc(fn, args);
+      };
+      if (k === 'functions') return { invoke: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) };
+      if (k === 'auth') return new Proxy(t.auth, { get: (a, m) => ['signOut', 'updateUser', 'signUp', 'resetPasswordForEmail'].includes(m) ? () => Promise.resolve({ data: {}, error: PREVIEW_ERR }) : bind(a, m) });
+      return bind(t, k);
+    }
+  });
+}
+const previewPublicProfile = () => { const p = S.profile; return { id: PREVIEW_ID, public_name: p.display_name, avatar: null, role: 'student', bio: p.bio, instrument: p.instrument, level: p.level, favorites: p.favorites, gear: p.gear }; };
+function previewBar() {
+  return `<div class="pvbar" role="status"><div class="t">${ic('eye')}<div><b>Vista de alumno</b> <span class="sub">· alumno ficticio con datos de ejemplo. Puedes pulsar lo que quieras: no se guarda nada.</span></div></div>
+    <button class="btn sm primary" data-action="preview-off">Salir</button></div>`;
+}
+async function enterPreview() {
+  if (S.preview || !isTeacher()) return;
+  if ($('#modalRoot').firstChild) await closeModal();
+  const saved = { ...S };
+  const teacherId = S.user.id;
+  const now = Date.now(), iso = ms => new Date(now + ms).toISOString(), DAY = 86400000;
+  const date = days => { const d = new Date(now + days * DAY); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  let n = 0; const fid = () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`; // ids falsos con forma de uuid
+  const profile = {
+    id: PREVIEW_ID, display_name: 'Alumno de prueba', nickname: null, avatar: null, avatar_src: null, avatar_crop: null, avatar_lg: null,
+    email: 'alumno@ejemplo.com', role: 'student', approved: true, archived_at: null, created_at: iso(-60 * DAY),
+    bio: 'Aprendiendo a tocar las canciones que me gustan.', instrument: 'electric', level: 'intermediate',
+    favorites: 'Rock, blues y metal', gear: 'Guitarra eléctrica y un ampli pequeño',
+    birth_date: '2000-01-01', family_dm_ok: false, install_prompted_at: iso(-30 * DAY), app_installed_at: null
+  };
+  // Escuchas: las 6 más recientes del catálogo real (con su portada), cada una en un estado distinto
+  let items = S.items.slice(0, 6);
+  if (!items.length) items = [['Álbum de ejemplo', 'album'], ['Canción de ejemplo', 'song'], ['Playlist de ejemplo', 'playlist']]
+    .map(([title, kind]) => ({ id: fid(), title, kind, url: 'https://open.spotify.com/', brief: 'Texto de contexto de ejemplo.', thumb_url: null, created_at: iso(-20 * DAY) }));
+  const fullAns = { highlights: 'Los cambios de dinámica entre las estrofas y el estribillo.', likes: 'El sonido de las guitarras y cómo se reparten a izquierda y derecha.', dislikes: 'Alguna canción se me hace larga.', learned: 'Que un riff sencillo bien tocado funciona mejor que uno complicado.', would_use: 'La idea de doblar la guitarra rítmica.', would_never_use: 'Tanto efecto en la voz.' };
+  const states = [
+    { due_date: date(4), note: 'Fíjate sobre todo en los solos.' },
+    { listened: true, listened_at: iso(-5 * DAY), answers: fullAns, teacher_read_at: iso(-4 * DAY) },
+    { due_date: date(-3) },
+    { listened: true, listened_at: iso(-DAY), answers: { highlights: fullAns.highlights, likes: fullAns.likes } },
+    {},
+    { due_date: date(10) }
+  ];
+  const assigns = items.map((it, i) => ({ id: fid(), item_id: it.id, student_id: PREVIEW_ID, item: it, note: null, due_date: null, assigned_at: iso(-(i + 2) * DAY), listened: false, listened_at: null, answers: {}, updated_at: iso(-DAY), teacher_read_at: null, ...states[i] }));
+  const itemIds = new Set(items.map(i => i.id));
+  const readA = assigns.find(a => a.teacher_read_at);
+  // Avisos: los que son para todos (reales). Todos leídos menos el más reciente.
+  const forAll = S.posts.filter(p => !S.recipients.some(r => r.post_id === p.id)).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const posts = forAll.length ? forAll : [{ id: fid(), author_id: teacherId, title: 'Aviso de ejemplo', body: 'Así se ve un aviso del profesor.', audience: 'all', pinned: false, created_at: iso(-2 * DAY), updated_at: iso(-2 * DAY) }];
+  const dir = { ...S.dir, [PREVIEW_ID]: { id: PREVIEW_ID, public_name: profile.display_name, avatar: null, role: 'student' } };
+  // Objetivos: la lista general real, con la primera etapa y parte de la segunda conseguidas, y uno personal inventado
+  const general = S.goalItems.filter(g => !g.student_id).sort(goalSort);
+  const stages = [...new Set(general.map(g => g.stage))];
+  const doneGoals = general.filter(g => g.stage === stages[0]).concat(general.filter(g => g.stage === stages[1]).slice(0, 2));
+  const goalItems = [{ id: fid(), student_id: PREVIEW_ID, stage: null, title: 'Tocar una canción completa con metrónomo', details: null, sort: 0, created_at: iso(-10 * DAY) }].concat(general);
+  const lessonStart = new Date(now + 2 * DAY); lessonStart.setHours(18, 0, 0, 0);
+  Object.assign(S, {
+    preview: { saved }, user: { id: PREVIEW_ID, email: profile.email }, profile,
+    items: [], students: [], payPlans: [], payRecords: [], lessonNames: [], recipients: [], reports: [], blocks: [], mates: [], dmRx: [], feedQueue: [],
+    assigns, folders: S.folders.filter(f => items.some(i => i.folder_id === f.id)), genres: S.genres.slice(), itemGenres: S.itemGenres.filter(g => itemIds.has(g.item_id)),
+    lcomments: S.lcomments.filter(c => itemIds.has(c.item_id)),
+    ansRx: readA ? [{ assignment_id: readA.id, question: 'highlights', user_id: teacherId, emoji: '🔥', created_at: readA.teacher_read_at }] : [],
+    posts, reads: posts.slice(1).map(p => ({ post_id: p.id, student_id: PREVIEW_ID, read_at: iso(-DAY) })),
+    fposts: S.fposts.slice(), fcomments: S.fcomments.slice(), reactions: S.reactions.slice(), dir,
+    homework: [
+      { id: fid(), student_id: PREVIEW_ID, title: 'Escalas pentatónicas a 80 bpm', details: 'Las cinco posiciones, subiendo y bajando, con metrónomo.', due_date: date(2), done_at: null, created_by: teacherId, created_at: iso(-3 * DAY) },
+      { id: fid(), student_id: PREVIEW_ID, title: 'Repasar el riff de la última clase', details: null, due_date: date(-1), done_at: null, created_by: teacherId, created_at: iso(-6 * DAY) },
+      { id: fid(), student_id: PREVIEW_ID, title: 'Cambios de acordes abiertos', details: 'Sol, Do, Re y Mim, un minuto cada cambio.', due_date: null, done_at: iso(-4 * DAY), created_by: teacherId, created_at: iso(-9 * DAY) }
+    ],
+    dms: [
+      { id: fid(), sender_id: teacherId, recipient_id: PREVIEW_ID, body: '¡Hola! ¿Qué tal van las escalas?', created_at: iso(-2 * DAY), read_at: iso(-2 * DAY + 3600000) },
+      { id: fid(), sender_id: PREVIEW_ID, recipient_id: teacherId, body: 'Bien, ya me salen a 70 bpm.', created_at: iso(-2 * DAY + 3700000), read_at: iso(-2 * DAY + 4000000) },
+      { id: fid(), sender_id: teacherId, recipient_id: PREVIEW_ID, body: 'Genial. En la próxima clase lo vemos.', created_at: iso(-3 * 3600000), read_at: null }
+    ],
+    dmContacts: [teacherId], dmCan: { [teacherId]: true }, dmWith: null,
+    notifs: [
+      { id: fid(), user_id: PREVIEW_ID, kind: 'assignment', actor_id: teacherId, target_id: items[0].id, extra: items[0].title, created_at: iso(-2 * DAY), read_at: null },
+      { id: fid(), user_id: PREVIEW_ID, kind: 'homework', actor_id: teacherId, target_id: null, extra: 'Escalas pentatónicas a 80 bpm', created_at: iso(-3 * DAY), read_at: null },
+      { id: fid(), user_id: PREVIEW_ID, kind: 'board_post', actor_id: teacherId, target_id: posts[0].id, extra: posts[0].title, created_at: iso(-4 * DAY), read_at: iso(-4 * DAY) }
+    ],
+    goalStages: S.goalStages.slice(), goalItems,
+    goalDone: doneGoals.map(g => ({ id: fid(), goal_id: g.id, student_id: PREVIEW_ID, done_at: iso(-7 * DAY), seen_at: iso(-7 * DAY) })), goalPending: false,
+    lessons: [{ id: fid(), event_key: 'preview', student_id: PREVIEW_ID, title: 'Clase de guitarra', starts_at: lessonStart.toISOString(), ends_at: new Date(lessonStart.getTime() + 3600000).toISOString() }],
+    section: ['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].includes(S.section) ? S.section : 'feed'
+  });
+  postSeenNow.clear();
+  render(); window.scrollTo(0, 0);
+  toast('Estás viendo la app como un alumno. Pulsa «Salir» arriba para volver.', 'ok');
+}
+async function exitPreview() {
+  if (!S.preview) return;
+  if ($('#modalRoot').firstChild) await closeModal();
+  const { saved } = S.preview;
+  Object.assign(S, saved, { preview: null });
+  postSeenNow.clear();
+  render(); window.scrollTo(0, 0);
+  if (await loadData(true)) softRender(); // por si llegó algo en directo mientras mirabas
 }
 
 /* -------------------------------- Arranque -------------------------- */
