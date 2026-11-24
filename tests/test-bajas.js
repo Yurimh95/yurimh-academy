@@ -34,9 +34,9 @@ const { chromium } = require('playwright');
   let d = await snapshot(p);
   const luis = d.profiles.find(x=>x.id==='s2');
   ok(luis.archived_at && luis.approved===false, 'Archivado: archived_at puesto y sin acceso');
-  ok(await p.locator('details.archived').count()===1 && (await p.textContent('details.archived summary')).includes('Archivados (1)'), 'Aparece en "Archivados (1)" al final de Alumnos');
+  ok(await p.locator('details.archived:not([data-blocked-panel])').count()===1 && (await p.textContent('details.archived:not([data-blocked-panel]) summary')).includes('Archivados (1)'), 'Aparece en "Archivados (1)" al final de Alumnos');
   ok(!(await p.textContent('#app')).includes('Pendientes de aprobar') || !(await p.locator('h2:has-text("Pendientes de aprobar") + .list').textContent()).includes('Luis'), 'No sale como pendiente de aprobar');
-  await p.click('details.archived summary'); await wait(p);
+  await p.click('details.archived:not([data-blocked-panel]) summary'); await wait(p);
   await shot(p,'bajas-archivados.png');
   await goto(p,'feed');
   ok(!(await p.textContent('#app')).includes('Joe Pass, ¡qué barbaridad!'), 'Profesor: la publicación del archivado queda oculta');
@@ -65,7 +65,7 @@ const { chromium } = require('playwright');
   // ================= PROFESOR: reactivar y borrar =================
   p = await open('t1', undefined, archivedDb);
   await goto(p,'students');
-  await p.click('details.archived summary'); await wait(p);
+  await p.click('details.archived:not([data-blocked-panel]) summary'); await wait(p);
   await p.click('[data-action=unarchive][data-id=s2]'); await wait(p,400);
   d = await snapshot(p);
   ok(d.profiles.find(x=>x.id==='s2').approved && !d.profiles.find(x=>x.id==='s2').archived_at, 'Reactivar: vuelve a tener acceso');
@@ -77,7 +77,7 @@ const { chromium } = require('playwright');
   await goto(p,'students');
   await p.click('[data-action=open-student][data-id=s2]'); await wait(p);
   await p.click('.modal [data-action=archive]'); await wait(p,400);
-  await p.click('details.archived summary'); await wait(p);
+  await p.click('details.archived:not([data-blocked-panel]) summary'); await wait(p);
   await p.click('[data-action=delete-student][data-id=s2]'); await wait(p);
   ok((await p.textContent('.modal')).includes('no se puede deshacer'), 'Modal de borrado con aviso');
   await shot(p,'bajas-borrar.png');
@@ -87,7 +87,7 @@ const { chromium } = require('playwright');
   d = await snapshot(p);
   ok(!d.profiles.some(x=>x.id==='s2') && !d.feed_posts.some(x=>x.author_id==='s2') && !d.feed_comments.some(x=>x.author_id==='s2'), 'Borrado: cuenta y contenido desaparecen');
   ok(!d.notifications.some(n=>n.kind==='account_deleted'), 'Borrar a un archivado no te manda aviso a ti mismo');
-  ok(await p.locator('details.archived').count()===0, 'Ya no queda en Archivados');
+  ok(await p.locator('details.archived:not([data-blocked-panel])').count()===0, 'Ya no queda en Archivados');
   await p.context().close();
 
   // ================= ALUMNA: borra su propia cuenta =================

@@ -2305,3 +2305,114 @@ begin
     end if;
   end loop;
 end $$;
+
+-- =====================================================================
+--  RECHAZAR ALUMNOS Y CORREOS BLOQUEADOS (2026-11-24)
+--   · Rechazar a un pendiente = borrar su cuenta (Edge Function
+--     "delete-account"): account_delete_check deja al profesor borrar
+--     archivados y también pendientes de aprobar.
+--   · blocked_emails: correos (kind 'email', normalizados con email_norm:
+--     minúsculas, sin "+etiqueta" y, en Gmail, sin puntos) y dominios
+--     (kind 'domain', incluye sus subdominios). Solo el profesor la ve.
+--   · El trigger auth_users_block_trg en auth.users impide registrarse
+--     (o cambiar el email) con uno bloqueado. Supabase responde entonces
+--     "Database error saving new user" y la app da un mensaje genérico.
+--   · Bloquear no afecta a cuentas que ya existen.
+-- =====================================================================
+create or replace function public.email_norm(e text)
+returns text language sql immutable set search_path = '' as $$
+  select case when position('@' in x) < 2 then null else
+    (case when d in ('gmail.com', 'googlemail.com')
+          then replace(split_part(l, '+', 1), '.', '')
+          else split_part(l, '+', 1) end)
+    || '@' || (case when d = 'googlemail.com' then 'gmail.com' else d end) end
+  from (select x, split_part(x, '@', 1) as l, split_part(x, '@', 2) as d
+        from (select lower(trim(coalesce(e, ''))) as x) s) t;
+$$;
+
+create table if not exists public.blocked_emails (
+  id         uuid primary key default gen_random_uuid(),
+  kind       text not null check (kind in ('email', 'domain')),
+  pattern    text not null check (char_length(pattern) between 3 and 254),
+  created_at timestamptz not null default now(),
+  unique (kind, pattern)
+);
+alter table public.blocked_emails enable row level security;
+revoke all on table public.blocked_emails from public, anon;
+grant select, insert, update, delete on public.blocked_emails to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public'
+                 and tablename = 'blocked_emails' and policyname = 'blocked_emails_all_teacher') then
+    create policy blocked_emails_all_teacher on public.blocked_emails for all to authenticated
+      using (public.is_teacher()) with check (public.is_teacher());
+  end if;
+end $$;
+
+-- Guarda siempre la forma normalizada ("N.ombre+x@Gmail.com" = "nombre@gmail.com")
+create or replace function public.blocked_emails_norm()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.kind = 'email' then
+    new.pattern := public.email_norm(new.pattern);
+    if new.pattern is null or new.pattern !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
+      raise exception 'Ese correo no es válido' using errcode = '23514';
+    end if;
+  else
+    new.pattern := lower(trim(both '@ ' from coalesce(new.pattern, '')));
+    if new.pattern !~ '^[a-z0-9-]+(\.[a-z0-9-]+)+$' then
+      raise exception 'Ese dominio no es válido' using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.blocked_emails_norm() from public, anon, authenticated;
+create or replace trigger blocked_emails_norm_trg before insert or update on public.blocked_emails
+  for each row execute function public.blocked_emails_norm();
+
+create or replace function public.is_email_blocked(e text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.blocked_emails b
+    where (b.kind = 'email' and b.pattern = public.email_norm(e))
+       or (b.kind = 'domain' and (split_part(lower(trim(e)), '@', 2) = b.pattern
+                                  or split_part(lower(trim(e)), '@', 2) like '%.' || b.pattern)));
+$$;
+revoke execute on function public.is_email_blocked(text) from public, anon, authenticated;
+
+create or replace function public.auth_users_block_fn()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.email is not null and public.is_email_blocked(new.email) then
+    raise exception 'blocked_email';
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.auth_users_block_fn() from public, anon, authenticated;
+create or replace trigger auth_users_block_trg
+  before insert or update of email on auth.users
+  for each row execute function public.auth_users_block_fn();
+
+-- El profesor puede borrar archivados y también pendientes de aprobar (rechazar)
+create or replace function public.account_delete_check(p_id uuid default null)
+returns uuid language plpgsql stable security definer set search_path = public as $$
+declare
+  me uuid := auth.uid();
+  target uuid := coalesce(p_id, auth.uid());
+  r public.profiles;
+begin
+  if me is null then raise exception 'No autorizado'; end if;
+  select * into r from public.profiles where id = target;
+  if not found then raise exception 'Esa cuenta no existe'; end if;
+  if r.role <> 'student' then raise exception 'La cuenta del profesor no se borra desde la app'; end if;
+  if target <> me and not (public.is_teacher() and (r.archived_at is not null or not r.approved)) then
+    raise exception 'Solo se puede borrar a un alumno archivado o pendiente de aprobar';
+  end if;
+  return target;
+end;
+$$;
+revoke execute on function public.account_delete_check(uuid) from public, anon;
+grant  execute on function public.account_delete_check(uuid) to authenticated;

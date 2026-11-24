@@ -301,6 +301,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
   .top{margin-bottom:14px}
   .top h1.sec{display:none}
   .mbrand,.only-m{display:flex}
+  .iconbtn.only-m{display:inline-grid}
   .tabbar{
     display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
     background:color-mix(in srgb,var(--panel) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -1039,7 +1040,9 @@ const ERR_TEXTS = [
   [/duplicate key/i, ERR_CODES['23505']],
   [/value too long/i, ERR_CODES['22001']],
   [/violates check constraint/i, ERR_CODES['23514']],
-  [/edge function returned a non-2xx/i, 'El servidor ha devuelto un error. Vuelve a intentarlo en un momento.'],
+  // Correo o dominio bloqueado por el profesor (trigger auth_users_block_trg). A propósito, no dice que está bloqueado.
+  [/database error saving new user|blocked_email/i, 'No se ha podido crear la cuenta con este correo.'],
+  [/edge function returned a non-2xx/i,'El servidor ha devuelto un error. Vuelve a intentarlo en un momento.'],
 ];
 function errEs(e) {
   if (!e) return 'error desconocido';
@@ -2216,6 +2219,11 @@ async function loadData(quiet = false) {
     catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
     try { await loadLibrary(); } catch (e) { console.warn('Carpetas y géneros:', e.message || e); S.folders = []; S.genres = []; S.itemGenres = []; }
     try { await loadGoals(); } catch (e) { console.warn('Objetivos:', e.message || e); S.goalStages = []; S.goalItems = []; S.goalDone = []; }
+    S.blocked = [];
+    if (S.profile.role === 'teacher') { // correos y dominios que no pueden registrarse
+      try { const { data, error } = await sb.from('blocked_emails').select('*').order('created_at', { ascending: false }); if (error) throw error; S.blocked = data || []; }
+      catch (e) { console.warn('Correos bloqueados:', e.message || e); }
+    }
     return true;
   } catch (e) {
     const m = String(e.message || e);
@@ -3420,7 +3428,8 @@ function teacherStudents() {
   return `
     ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
       <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div></div>
-      <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div>`).join('')}</div>` : ''}
+      <div class="chips"><button class="btn sm danger" data-action="reject" data-id="${s.id}">Rechazar</button>
+        <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div></div>`).join('')}</div>` : ''}
     <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
     ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
       <div class="row click" data-action="open-student" data-id="${s.id}">
@@ -3436,9 +3445,52 @@ function teacherStudents() {
       <div class="list">${arch.map(s => `
       <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">Archivado el ${fmtDate(s.archived_at.slice(0, 10))}</div></div></div>
         <div class="chips"><button class="btn sm" data-action="unarchive" data-id="${s.id}">Reactivar</button>
-        <button class="btn sm danger" data-action="delete-student" data-id="${s.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}`;
+        <button class="btn sm danger" data-action="delete-student" data-id="${s.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}
+    ${blockedPanel()}`;
 }
 const isPending = s => !s.approved && !s.archived_at;
+
+// ---------- Rechazar alumnos y correos bloqueados ----------
+// Proveedores comunes: bloquear el dominio entero dejaría fuera a casi todo el mundo, así que no se ofrece.
+const COMMON_MAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.es', 'outlook.com', 'outlook.es', 'live.com', 'live.es', 'msn.com',
+  'yahoo.com', 'yahoo.es', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com', 'proton.me', 'gmx.com', 'gmx.es', 'aol.com', 'telefonica.net', 'movistar.es'];
+const mailDomain = e => String(e || '').trim().toLowerCase().split('@')[1] || '';
+function blockedPanel() {
+  const list = S.blocked || [];
+  return `<details class="archived" data-blocked-panel ${S.blockedOpen ? 'open' : ''}><summary>Correos bloqueados (${list.length})</summary>
+    <p class="sub" style="margin:8px 0 10px">No pueden crear una cuenta. Con un correo se bloquean también sus variantes (mayúsculas, "nombre+algo@" y, en Gmail, los puntos). Con un dominio, todos sus correos. No afecta a cuentas que ya existen.</p>
+    <form id="blockAddForm" class="row" style="gap:8px;flex-wrap:wrap">
+      <input type="text" id="blockAddInput" data-no-emoji maxlength="254" autocomplete="off" spellcheck="false" placeholder="correo@ejemplo.com o @dominio.com" style="flex:1;min-width:200px">
+      <button type="submit" class="btn sm">Bloquear</button>
+    </form>
+    ${list.length ? `<div class="list" style="margin-top:10px">${list.map(b => `
+      <div class="row"><div><strong>${esc(b.kind === 'domain' ? '@' + b.pattern : b.pattern)}</strong>
+        <div class="sub">${b.kind === 'domain' ? 'Dominio entero' : 'Correo'} · desde el ${fmtDate(b.created_at.slice(0, 10))}</div></div>
+        <button class="btn sm" data-action="unblock-email" data-id="${b.id}">Desbloquear</button></div>`).join('')}</div>` : ''}
+  </details>`;
+}
+function rejectModal(id) {
+  const s = S.students.find(x => x.id === id);
+  if (!s) return;
+  const dom = mailDomain(s.email), domOk = dom && !COMMON_MAIL_DOMAINS.includes(dom);
+  openModal(`
+    <div class="modal-head"><h2>Rechazar a ${esc(s.display_name)}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <p class="sub">Se borra su cuenta. No se le avisa. ${s.email ? `Correo: <b>${esc(s.email)}</b>` : ''}</p>
+    <div class="radios" style="flex-direction:column;gap:12px;margin:4px 0 18px">
+      <label class="chk"><input type="radio" name="rejBlock" value="none" checked><span>Solo rechazar <span class="sub">(podría volver a registrarse)</span></span></label>
+      ${s.email ? `<label class="chk"><input type="radio" name="rejBlock" value="email"><span>Rechazar y bloquear este correo</span></label>` : ''}
+      ${domOk ? `<label class="chk"><input type="radio" name="rejBlock" value="domain"><span>Rechazar y bloquear todo <b>@${esc(dom)}</b> <span class="sub">(útil contra bots)</span></span></label>` : ''}
+    </div>
+    <div class="actions"><button class="btn ghost" data-action="close">Cancelar</button>
+      <button class="btn danger" data-action="reject-confirm" data-id="${s.id}">Rechazar</button></div>`);
+  $('.modal').classList.add('narrow');
+}
+async function blockAdd(kind, pattern) { // inserta y devuelve la fila; si ya estaba, la busca
+  const { data, error } = await sb.from('blocked_emails').insert({ kind, pattern }).select();
+  if (!error) { S.blocked = [data[0], ...(S.blocked || []).filter(b => b.id !== data[0].id)]; return { row: data[0] }; }
+  if (error.code === '23505' || /duplicate key/i.test(error.message || '')) return { dup: true };
+  return { error };
+}
 
 function answersHtml(a) {
   return QUESTIONS.map((q, i) => {
@@ -4328,6 +4380,39 @@ const actions = {
     toast(`${s.display_name} vuelve a estar activo`, 'ok');
   },
   'delete-student'(el) { deleteAccountModal(el.dataset.id); },
+  reject(el) { rejectModal(el.dataset.id); },
+  async 'reject-confirm'(el) {
+    const id = el.dataset.id, s = S.students.find(x => x.id === id);
+    if (!s) return;
+    const how = ($('input[name=rejBlock]:checked') || {}).value || 'none';
+    el.disabled = true; el.textContent = 'Rechazando…';
+    const fail = msg => { el.disabled = false; el.textContent = 'Rechazar'; toast(msg, 'bad'); };
+    // Primero el bloqueo: así no queda un hueco en el que pueda volver a registrarse
+    if (how !== 'none') {
+      const r = await blockAdd(how, how === 'domain' ? mailDomain(s.email) : s.email);
+      if (r.error) return fail('No se pudo bloquear: ' + errEs(r.error));
+    }
+    const { data, error } = await sb.functions.invoke('delete-account', { body: { user_id: id } });
+    if (error || !data || !data.ok) {
+      let msg = error ? errEs(error) : 'respuesta inesperada';
+      try { const b = error && error.context && await error.context.json(); if (b && b.error) msg = b.error; } catch (_) {}
+      return fail('No se pudo rechazar: ' + msg);
+    }
+    S.students = S.students.filter(x => x.id !== id);
+    if (how !== 'none') S.blockedOpen = true;
+    await closeModal(); await loadData(true); render();
+    toast(how === 'none' ? `${s.display_name} rechazado` : `${s.display_name} rechazado y ${how === 'domain' ? 'dominio' : 'correo'} bloqueado`, 'ok');
+  },
+  async 'unblock-email'(el) {
+    const b = (S.blocked || []).find(x => x.id === el.dataset.id);
+    if (!b) return;
+    const label = b.kind === 'domain' ? '@' + b.pattern : b.pattern;
+    if (!confirm(`¿Desbloquear ${label}?\n\nPodrá volver a crear una cuenta (y te saldrá pendiente de aprobar).`)) return;
+    const { error } = await sb.from('blocked_emails').delete().eq('id', b.id);
+    if (error) return toast('No se pudo desbloquear: ' + errEs(error), 'bad');
+    S.blocked = S.blocked.filter(x => x.id !== b.id); S.blockedOpen = true;
+    render(); toast(`${label} desbloqueado`, 'ok');
+  },
   'delete-me'() { deleteAccountModal(null); },
   async 'delete-confirm'(el) {
     const id = el.dataset.id || null, s = id ? S.students.find(x => x.id === id) : null;
@@ -5014,7 +5099,7 @@ async function downloadBackup(btn) { // solo profesor: todo lo que él puede lee
       board_posts: '*', board_recipients: '*', board_reads: '*',
       feed_posts: '*', feed_comments: '*', reactions: '*', moderation_reports: '*',
       homework_tasks: '*', payments_plans: '*', payments_records: '*', lessons: '*', lessons_students: '*',
-      goals_stages: '*', goals_items: '*', goals_done: '*'
+      goals_stages: '*', goals_items: '*', goals_done: '*', blocked_emails: '*'
     };
     const out = { app: APP_NAME, created_at: new Date().toISOString(), note: 'Copia de seguridad. No incluye mensajes privados entre alumnos (no los puede leer el profesor) ni contraseñas (las guarda Supabase cifradas).', tables: {} };
     for (const [t, cols] of Object.entries(tables)) {
@@ -5390,6 +5475,26 @@ document.addEventListener('change', async e => {
   S.goalStages = S.goalStages.filter(s => s.stage !== stage).concat(data || []);
   toast('Etapa guardada', 'ok');
 });
+// El desplegable de correos bloqueados recuerda si está abierto entre repintados
+document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('[data-blocked-panel]')) S.blockedOpen = e.target.open; }, true);
+// Bloquear un correo o un dominio a mano (Alumnos → Correos bloqueados)
+document.addEventListener('submit', async e => {
+  const f = e.target; if (f.id !== 'blockAddForm') return;
+  e.preventDefault();
+  const raw = $('#blockAddInput').value.trim().toLowerCase();
+  if (!raw) return;
+  const kind = raw.startsWith('@') || !raw.includes('@') ? 'domain' : 'email';
+  const pattern = kind === 'domain' ? raw.replace(/^@+/, '') : raw;
+  if (kind === 'domain' && COMMON_MAIL_DOMAINS.includes(pattern)
+      && !confirm(`@${pattern} es un proveedor que usa muchísima gente. Si lo bloqueas, nadie con un correo de ${pattern} podrá registrarse.\n\n¿Bloquearlo igualmente?`)) return;
+  const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+  const r = await blockAdd(kind, pattern);
+  btn.disabled = false;
+  if (r.error) return toast(kind === 'domain' ? 'Ese dominio no es válido. Escríbelo así: @dominio.com' : 'No se pudo bloquear: ' + errEs(r.error), 'bad');
+  S.blockedOpen = true; render();
+  toast(r.dup ? 'Ya estaba bloqueado' : `${kind === 'domain' ? '@' + r.row.pattern : r.row.pattern} bloqueado`, 'ok');
+});
+
 document.addEventListener('submit', async e => {
   const f = e.target; if (f.id !== 'goalForm') return;
   e.preventDefault();

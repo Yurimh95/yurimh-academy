@@ -3,7 +3,7 @@
 //
 // Quién puede:
 //  · Un alumno, su propia cuenta (Ajustes → Borrar mi cuenta). Body: {}
-//  · El profesor, un alumno ya archivado. Body: { user_id }
+//  · El profesor, un alumno ya archivado o pendiente de aprobar (Rechazar). Body: { user_id }
 // Seguridad:
 //  · verify_jwt true: sin sesión válida ni se llega aquí.
 //  · El permiso lo decide la base de datos (rpc account_delete_check) con el token de quien llama;

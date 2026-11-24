@@ -3,7 +3,13 @@
   const uid = p => p + Math.random().toString(16).slice(2,10);
   // __DB_OVERRIDE: para que una prueba continúe con el estado que dejó otra sesión (otra persona)
   const DB = window.__DB = JSON.parse(JSON.stringify(window.__DB_OVERRIDE || window.__DB_SEED));
+  DB.blocked_emails = DB.blocked_emails || [];
   let me = window.__ME || null;
+  // blocked_emails: email_norm() y la comprobación del trigger auth_users_block_trg
+  const emailNorm = e => { const x=String(e||'').trim().toLowerCase(); const i=x.indexOf('@'); if(i<1) return null;
+    let l=x.slice(0,i).split('+')[0], d=x.slice(i+1); if(d==='googlemail.com') d='gmail.com'; if(d==='gmail.com') l=l.replace(/\./g,''); return l+'@'+d; };
+  const emailBlocked = e => { const d=String(e||'').trim().toLowerCase().split('@')[1]||'';
+    return DB.blocked_emails.some(b=>(b.kind==='email'&&b.pattern===emailNorm(e))||(b.kind==='domain'&&(d===b.pattern||d.endsWith('.'+b.pattern)))); };
   const listeners = [];
   const P = () => DB.profiles.find(x => x.id === me);
   const isTeacher = () => !!P() && P().role==='teacher' && P().approved;
@@ -66,7 +72,8 @@
     classmates: r => r.requester_id===me || r.addressee_id===me || isTeacher(),
     goals_stages: () => isApproved(),
     goals_items: r => isTeacher() || (isApproved() && (!r.student_id || r.student_id===me)),
-    goals_done: r => isTeacher() || (r.student_id===me && isApproved())
+    goals_done: r => isTeacher() || (r.student_id===me && isApproved()),
+    blocked_emails: () => isTeacher()
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -103,7 +110,8 @@
     classmates: (op,r) => op==='update' ? r.addressee_id===me : (r.requester_id===me || r.addressee_id===me),
     goals_stages: () => isTeacher(),
     goals_items: () => isTeacher(),
-    goals_done: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved()))
+    goals_done: (op,r) => op==='delete' ? isTeacher() : (isTeacher() || (r.student_id===me && isApproved())),
+    blocked_emails: () => isTeacher()
   };
   const canInsert = {
     profiles: () => false,
@@ -132,7 +140,8 @@
     classmates: r => r.requester_id===me && r.status==='pending' && !r.accepted_at && canRequestMate(r.addressee_id),
     goals_stages: () => isTeacher(),
     goals_items: () => isTeacher(),
-    goals_done: r => isTeacher() && DB.goals_items.some(g=>g.id===r.goal_id && (!g.student_id || g.student_id===r.student_id)) // goals_done_guard
+    goals_done: r => isTeacher() && DB.goals_items.some(g=>g.id===r.goal_id && (!g.student_id || g.student_id===r.student_id)), // goals_done_guard
+    blocked_emails: () => isTeacher()
   };
   const checks = {
     feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
@@ -148,6 +157,7 @@
     listening_genres: r => r.name && String(r.name).trim().length>=1 && String(r.name).length<=60
       && !DB.listening_genres.some(g=>g.id!==r.id && (g.parent_id||null)===(r.parent_id||null) && g.name.trim().toLowerCase()===String(r.name).trim().toLowerCase())
       && (!r.parent_id || DB.listening_genres.some(g=>g.id===r.parent_id && !g.parent_id)), // listening_genres_guard: dos niveles
+    blocked_emails: r => r.kind==='email' ? /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.pattern||'') : /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(r.pattern||''),
     listening_items: r => r.artist==null || String(r.artist).length<=200,
     reactions: r => ['like','love','laugh','wow','sad','angry'].includes(r.emoji) && ['board_post','feed_post','feed_comment','listening_comment','listening_item'].includes(r.target_type)
   };
@@ -333,6 +343,8 @@
           if(table==='goals_done'){ row.done_at=row.done_at||new Date().toISOString(); row.seen_at=null; if(DB.goals_done.some(e=>e.goal_id===row.goal_id&&e.student_id===row.student_id)) return finish([],'duplicate key value violates unique constraint'); }
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; }
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
+          if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
+            if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
           if(pk[table]) delete row.id;
           if(table!=='listening_assignments'){ delete row.assigned_at; delete row.listened; delete row.answers; }
           if(checks[table] && !checks[table](row)) return finish([], 'new row for relation "'+table+'" violates check constraint');
@@ -380,7 +392,7 @@
       const fail=m=>({data:null,error:{message:'Edge Function returned a non-2xx status code',context:{json:async()=>({error:m})}}});
       if(!me) return fail('No autorizado'); if(!r) return fail('Esa cuenta no existe');
       if(r.role!=='student') return fail('La cuenta del profesor no se borra desde la app');
-      if(target!==me && !(isTeacher() && r.archived_at)) return fail('Solo se puede borrar a un alumno archivado');
+      if(target!==me && !(isTeacher() && (r.archived_at || !r.approved))) return fail('Solo se puede borrar a un alumno archivado o pendiente de aprobar');
       // profiles_deleted_notify + borrado en cascada
       if(r.approved && !r.archived_at) DB.profiles.filter(p=>p.role==='teacher'&&p.approved).forEach(t=>DB.notifications.push({id:'n'+Math.random().toString(36).slice(2),user_id:t.id,kind:'account_deleted',actor_id:null,target_id:null,extra:r.display_name,created_at:new Date().toISOString(),read_at:null}));
       const F=['author_id','user_id','student_id','sender_id','recipient_id','reporter_id','blocker_id','blocked_id','requester_id','addressee_id','actor_id'];
@@ -394,7 +406,7 @@
       onAuthStateChange(cb){ listeners.push(cb); return {data:{subscription:{}}}; },
       signOut: async()=>{ me=null; listeners.forEach(cb=>cb('SIGNED_OUT',null)); return {error:null}; },
       signInWithPassword: async()=>({error:null}),
-      signUp: async()=>(window.__EMAIL_LIMITED?{data:{session:null,user:null},error:{code:'over_email_send_rate_limit',status:429,message:'email rate limit exceeded'}}:{data:{session:null},error:null}),
+      signUp: async(x)=>(x && emailBlocked(x.email) ? {data:{user:null,session:null},error:{code:'unexpected_failure',status:500,message:'Database error saving new user'}} : window.__EMAIL_LIMITED?{data:{session:null,user:null},error:{code:'over_email_send_rate_limit',status:429,message:'email rate limit exceeded'}}:{data:{session:null},error:null}),
       updateUser: async(x)=>{ window.__lastPassword=x.password; return {error:null}; },
       resetPasswordForEmail: async()=>(window.__EMAIL_LIMITED?{data:null,error:{code:'over_email_send_rate_limit',status:429,message:'email rate limit exceeded'}}:{error:null})
     }
