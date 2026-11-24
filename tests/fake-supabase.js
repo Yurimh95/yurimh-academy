@@ -382,6 +382,10 @@
     if(!me) return {data:null,error:{message:'No autenticado'}};
     if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id) && canSeeProfile(p.id)).map(p=>p.id), error:null};
     if(name==='can_dm') return {data: (args.a===me||args.b===me) && canDm(args.a,args.b), error:null}; // solo responde a los implicados
+    if(name==='get_push_status'){ // solo el profesor; cuántos dispositivos por persona, nunca las claves
+      if(!isTeacher()) return {data:[],error:null};
+      const c={}; (DB.push_subscriptions||[]).forEach(x=>{ c[x.user_id]=(c[x.user_id]||0)+1; });
+      return {data:Object.keys(c).map(k=>({user_id:k,devices:c[k],last_at:null})),error:null}; }
     if(name==='dm_ok') return {data:null, error:{message:'permission denied for function dm_ok'}};
     if(name==='get_profile'){ const p=prof(args.p_id); if(!p||!p.approved||!isApproved()||!canSeeProfile(p.id)) return {data:[],error:null};
       return {data:[{id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role,bio:p.bio||null,instrument:p.instrument||null,level:p.level||null,favorites:p.favorites||null,learning:p.learning||null,gear:p.gear||null,can_message:canDm(me,p.id)}],error:null}; }

@@ -1252,6 +1252,20 @@ $$;
 revoke execute on function public.save_push_subscription(text, text, text) from public, anon;
 grant execute on function public.save_push_subscription(text, text, text) to authenticated;
 
+-- Ficha del alumno: el profesor ve si cada persona tiene las notificaciones activadas.
+-- Solo da cuántos dispositivos y desde cuándo; nunca la dirección ni las claves del dispositivo.
+-- A cualquier otra persona le devuelve una lista vacía.
+create or replace function public.get_push_status()
+returns table(user_id uuid, devices int, last_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select s.user_id, count(*)::int, max(s.created_at)
+  from public.push_subscriptions s
+  where public.is_teacher()
+  group by s.user_id;
+$$;
+revoke execute on function public.get_push_status() from public, anon;
+grant execute on function public.get_push_status() to authenticated;
+
 create extension if not exists pg_net;
 
 create or replace function public.notify_push_trg()

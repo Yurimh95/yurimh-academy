@@ -208,6 +208,17 @@ const { chromium } = require('playwright');
   ok((await i3.locator('.installbtn').count())===0, 'Con la app del móvil ya instalada, el botón desaparece para siempre');
   ok(await i3.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: barra superior sin scroll horizontal');
 
+  // ================= Ficha: ¿tiene las notificaciones activadas? =================
+  const pdb = JSON.parse(JSON.stringify(base));
+  pdb.push_subscriptions = [{user_id:'s1',endpoint:'https://x/1'},{user_id:'s1',endpoint:'https://x/2'}];
+  const pt = await open('t1', undefined, pdb); await wait(pt,300);
+  const pushTxt = async id => { await pt.evaluate(async i=>{ await closeModal(); S.section='students'; render(); studentDetailModal(i); }, id); await wait(pt,150);
+    return (await pt.locator('.modal [data-pushchip]').count()) ? pt.locator('.modal [data-pushchip]').innerText() : ''; };
+  ok((await pushTxt('s1')).includes('Tiene las notificaciones activadas (en 2 dispositivos)'), 'Ficha: con notificaciones, lo dice y cuenta los dispositivos');
+  { const t2 = await pushTxt('s2'); ok(t2.includes('No tiene las notificaciones activadas'), 'Ficha: sin notificaciones, lo dice'); }
+  const ps1 = await open('s1', undefined, pdb); await wait(ps1,300);
+  ok((await ps1.evaluate(async()=>(await sb.rpc('get_push_status')).data.length))===0, 'Un alumno no puede saber quién tiene las notificaciones activadas');
+
   console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
   console.log(fails? `\n${fails} FALLOS`:'\nTODO OK');
   await browser.close();

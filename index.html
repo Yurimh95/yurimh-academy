@@ -2487,6 +2487,11 @@ async function loadData(quiet = false) {
       S.homework = hw.data || []; S.payPlans = pp.data || []; S.payRecords = pr.data || [];
       S.fposts = fp.data; S.fcomments = fc.data; S.lcomments = lc.data; S.reactions = rx.data;
       S.dir = {}; (dr.data || []).forEach(d => { S.dir[d.id] = d; });
+      // Quién tiene las notificaciones activadas (ficha del alumno). Si falla, la ficha no dice nada.
+      try { const ps = await sb.rpc('get_push_status');
+        if (ps.error) throw ps.error;
+        S.pushOn = {}; (ps.data || []).forEach(x => { S.pushOn[x.user_id] = x.devices; });
+      } catch (e) { S.pushOn = null; }
     } else {
       const [a, bp, bd, rp, hw, fp, fc, lc, rx, dr] = await Promise.all([
         sb.from('listening_assignments').select('*, item:listening_items(*)').eq('student_id', me),
@@ -3999,6 +4004,7 @@ function studentDetailModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
     <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
+    ${S.pushOn ? `<p class="sub" style="margin:0 0 4px" data-pushchip>${S.pushOn[s.id] ? `🔔 Tiene las notificaciones activadas${S.pushOn[s.id] > 1 ? ` (en ${S.pushOn[s.id]} dispositivos)` : ''}` : '🔕 No tiene las notificaciones activadas'}</p>` : ''}
     ${(() => { const nl = nextLesson(s.id), cn = (S.lessonNames.find(x => x.student_id === s.id) || {}).calendar_name || '';
       return `<p class="sub" style="margin:0 0 4px">📅 ${nl ? `Próxima clase: <b>${esc(relDay(nl.starts_at))}</b> a las ${hhmm(nl.starts_at)}` : calSynced() ? 'Sin clases próximas en tu calendario' : 'Calendario sin conectar (Agenda)'}</p>
         <div class="rename"><input type="text" id="calNameInput" maxlength="80" value="${esc(cn)}" placeholder="Nombre en Google Calendar (si no es &quot;${esc(s.display_name)}&quot;)" aria-label="Nombre en Google Calendar"><button class="btn sm" data-action="cal-name" data-id="${s.id}">Guardar</button></div>`; })()}
