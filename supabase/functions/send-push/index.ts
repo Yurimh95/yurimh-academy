@@ -27,7 +27,7 @@ function texts(kind: string, actor: string, extra: string | null, target: string
       ? { title: "🎧 Nueva escucha", body: extra ?? "Tienes una escucha nueva" }
       : { title: "🎧 Escuchas nuevas", body: extra ?? "Tienes escuchas nuevas" };
     case "dm": return { title: `💬 ${actor}`, body: extra ? `Ha reaccionado ${extra} a tu mensaje` : "Te ha enviado un mensaje" }; // extra = emoji de la reacción
-    case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra ?? "" };
+    case "comment": return { title: `${actor} ha comentado tu publicación`, body: extra || "📷 Foto" }; // sin texto = comentario con solo una foto
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
     case "goal": return { title: "🏆 ¡Objetivo conseguido!", body: extra ?? "Has conseguido un objetivo nuevo" };

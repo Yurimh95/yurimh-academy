@@ -85,6 +85,9 @@ Que cierre la app del todo y la vuelva a abrir, y pulse otra vez **Ajustes → A
 - **Compañeros**: al pulsar el nombre o la foto de otro alumno, *+ Agregar como compañero*. El otro lo acepta o lo rechaza (en su Perfil o desde la notificación). Sus compañeros salen en su Perfil, para no perderlos de vista aunque el grupo crezca. Bloquear a alguien también le quita de compañeros.
 
 **Social**
+- **Fotos**: botón 📷 en el Inicio, en los avisos, en los mensajes privados (hasta **10** por publicación o mensaje) y en los comentarios (**1**). El texto es opcional si hay fotos. Antes de publicar se ven en miniatura y la × quita una. Se ven en rejilla (4 a la vista y "+N" si hay más); al pulsar una se abre a pantalla completa y se pasa de una a otra con las flechas o deslizando el dedo. Al editar un post o un aviso puedes quitar o añadir fotos.
+  - **Privacidad**: cada foto la ve solo quien puede ver aquello donde está (un mensaje privado, solo los dos; un aviso dirigido, solo sus destinatarios). No hay enlaces públicos que se puedan reenviar. La app las reduce antes de subirlas (unos 250 KB) y les quita los datos ocultos del móvil, **incluida la ubicación GPS**.
+  - **Espacio**: el plan gratuito de Supabase da 1 GB para fotos, que son unas 3.000. Lo ves en Supabase → **Storage**. Al borrar algo, sus fotos se borran; lo que borras tú en Moderación y las cuentas borradas se limpian solas cada noche.
 - **Reacciones**: 👍🏼 ❤️ 😂 😮 😢 😡. Una por emoji y persona; se quita pulsando otra vez.
 - **Comentarios en Escucha analítica**: solo los ven quienes tienen ese elemento asignado. Las 6 respuestas son siempre privadas (autor y tú).
 - **Moderación**: todo se publica al momento. Cualquiera puede **Denunciar**; tú decides si borrar o descartar.
@@ -114,7 +117,7 @@ Las clases se apuntan **solo en Google Calendar**, en un calendario dedicado a c
 - **Qué ven los alumnos entre sí**: nombre o apodo, foto, "Sobre ti", el Inicio y los comentarios de las escuchas que comparten. **Nunca** ven el email, la fecha de nacimiento, las respuestas, los deberes, los pagos, las clases ni los avisos de los demás. Lo garantiza la base de datos, no solo la web.
 - **Privacidad**: en *Ajustes → Privacidad* y al registrarse está el texto de qué datos se guardan y para qué. Es un texto orientativo y claro; no sustituye a un asesor legal si algún día lo necesitas.
 - **Menores**: si algún día das clase a un menor, informa a su familia (el texto de privacidad sirve de base). Sin fecha de nacimiento la app lo trata como menor.
-- **Copia de seguridad**: *Ajustes → Copia de seguridad* descarga todo en un archivo. Hazla de vez en cuando (por ejemplo, una al mes); el plan gratuito de Supabase no guarda copias recuperables.
+- **Copia de seguridad**: *Ajustes → Copia de seguridad* descarga todo en un archivo. Hazla de vez en cuando (por ejemplo, una al mes); el plan gratuito de Supabase no guarda copias recuperables. Guarda los textos y datos, **no las fotos** de las publicaciones (esas siguen en Supabase → Storage).
 - **Borrar a alguien**: *Supabase → Authentication → Users → borrar*. Sus datos se eliminan en cascada.
 - **Avisos por email**: aparcado. Basta con las notificaciones del móvil.
 - **Plan gratuito**: un proyecto sin actividad durante días puede pausarse. Si la web no carga, mira el panel de Supabase.

@@ -859,6 +859,52 @@ label.f>.emo-wrap{margin-top:6px}
 .lightbox img{width:min(88vw,76vh,640px);aspect-ratio:1;height:auto;object-fit:cover;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.6);background:#0b1530}
 .lightbox .lb-name{color:#fff;font-weight:700;font-size:16px;text-align:center}
 .lightbox .x{position:absolute;top:14px;right:14px;color:#fff;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.08)}
+/* Galería de fotos de posts, avisos, comentarios y mensajes */
+.lightbox.gal{cursor:default;padding:60px 12px 28px}
+.lightbox.gal img{width:auto;height:auto;max-width:100%;max-height:calc(100vh - 100px);max-height:calc(100dvh - 100px);aspect-ratio:auto;object-fit:contain;border-radius:8px;background:none;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.lightbox.gal img:not([src]){width:min(80vw,480px);aspect-ratio:4/3;background:rgba(255,255,255,.06)}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:30px;line-height:1;padding:0 0 4px;cursor:pointer;display:grid;place-items:center}
+.lb-nav:hover{background:rgba(255,255,255,.2)}
+.lb-nav.prev{left:14px}.lb-nav.next{right:14px}
+.lb-count{position:absolute;top:22px;left:50%;transform:translateX(-50%);color:#fff;font-weight:700;font-size:14px}
+@media (max-width:760px){.lb-nav{width:38px;height:38px;font-size:24px;background:rgba(2,6,16,.45)}.lb-nav.prev{left:6px}.lb-nav.next{right:6px}}
+.ph-grid{display:grid;gap:3px;margin:10px 0 4px;border-radius:14px;overflow:hidden;background:var(--panel2);max-width:560px;width:100%}
+.ph-grid.n1{grid-template:minmax(0,1fr)/minmax(0,1fr);max-height:560px}
+.ph-grid.n2{grid-template:minmax(0,1fr)/repeat(2,minmax(0,1fr));aspect-ratio:2/1}
+.ph-grid.n3{grid-template:repeat(2,minmax(0,1fr))/minmax(0,2fr) minmax(0,1fr);aspect-ratio:3/2}
+.ph-grid.n3 .ph-cell:first-child{grid-row:1/3}
+.ph-grid.n4{grid-template:repeat(2,minmax(0,1fr))/repeat(2,minmax(0,1fr));aspect-ratio:1}
+.ph-cell{position:relative;display:block;width:100%;height:100%;min-height:0;padding:0;margin:0;border:0;border-radius:0;background:var(--field);cursor:zoom-in;overflow:hidden}
+/* la foto no da tamaño a la celda: manda la rejilla (si no, una foto grande la estira) */
+.ph-cell img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s,filter .15s}
+.ph-cell img[src]{opacity:1}
+.ph-cell:hover img{filter:brightness(1.07)}
+.ph-cell:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.ph-cell.err::after{content:'Foto no disponible';position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:12px}
+.ph-more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(2,6,16,.55);color:#fff;font-size:28px;font-weight:800}
+.ph-grid.cm{max-width:240px;margin:6px 0 2px;border-radius:12px}
+.ph-grid.peek{max-width:150px;margin:6px 0 0;border-radius:10px}
+.ph-grid.dm{width:min(280px,60vw);margin:0 0 6px;border-radius:10px}
+.msg-row.mine .ph-grid.dm{background:rgba(255,255,255,.15)}
+.ph-strip{display:flex;flex-wrap:wrap;gap:8px}
+.ph-strip:empty{display:none}
+.ph-chip{position:relative;width:72px;height:72px;flex:none;border-radius:10px;overflow:hidden;background:var(--field);border:1px solid var(--line)}
+.ph-chip img{display:block;width:100%;height:100%;object-fit:cover}
+.ph-x{position:absolute;top:3px;right:3px;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:rgba(2,6,16,.72);color:#fff;font-size:16px;line-height:24px;cursor:pointer}
+.ph-x:hover{background:var(--bad)}
+.ph-chip.busy::after{content:'';position:absolute;inset:0;margin:auto;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:phSpin .8s linear infinite}
+@keyframes phSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ph-chip.busy::after{animation:none}}
+.ph-add{display:inline-flex;align-items:center;gap:6px}
+.ph-add svg{width:18px;height:18px;flex:none}
+.ph-add.icon{width:44px;height:44px;padding:0;justify-content:center;flex:none}
+.composer .ph-add{margin-right:auto}
+.composer-main>.ph-strip{margin-top:-2px}
+.f>.ph-strip{margin:8px 0}
+.ph-row{margin-top:6px}
+.cm>.ph-strip,.cm .ph-strip{margin-top:10px}
+.cm-new .ph-add.icon{width:40px;height:40px}
+.dm-ph .ph-strip{padding:10px 12px 0}
 .sdm-head h2{overflow-wrap:anywhere}
 .sdm-item{flex:1 1 260px}
 .sdm-open{cursor:pointer;border-radius:10px}
@@ -1587,7 +1633,7 @@ function commentRow(kind, x) {
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
   return `<div class="cmt" data-cmt-id="${x.id}">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
-    <div class="cmt-body">${richText(x.body)}</div></div>${mediaLinkCard(x.body)}
+    ${x.body ? `<div class="cmt-body">${richText(x.body)}</div>` : ''}</div>${phOf(c.type, x, 'cm')}${mediaLinkCard(x.body)}
     <div class="cmt-foot">${rxBar(c.type, x.id)}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="${c.type}" data-id="${x.id}">Denunciar</button>`) : ''}
@@ -1597,8 +1643,9 @@ function commentsInner(kind, pid) {
   const c = CM[kind];
   const list = cmList(kind).filter(x => x[c.key] === pid).sort((a, b) => a.created_at.localeCompare(b.created_at));
   return `${list.length ? list.map(x => commentRow(kind, x)).join('') : '<div class="sub" style="margin:6px 0 10px">Aún no hay comentarios.</div>'}
+    ${phStrip(`cm-${kind}-${pid}`)}
     <div class="cm-new"><textarea id="cmInput-${kind}-${pid}" maxlength="1000" rows="2" placeholder="Escribe un comentario… (@ para mencionar)"></textarea>
-    <button class="btn sm" data-action="comment-send" data-kind="${kind}" data-pid="${pid}">Comentar</button></div>`;
+    ${phPicker(`cm-${kind}-${pid}`, 1)}<button class="btn sm" data-action="comment-send" data-kind="${kind}" data-pid="${pid}">Comentar</button></div>`;
 }
 const commentsBlock = (kind, pid) => `<div class="cm" data-cm="${kind}:${pid}">${commentsInner(kind, pid)}</div>`;
 function updateComments(kind, pid) {
@@ -1633,7 +1680,7 @@ function cmPeekInner(pid) {
     ${pick.map(({ c }) => `<div class="peek-cmt" data-action="fpost-peek" data-id="${pid}" data-cmt="${c.id}">
       ${whoLink(c.author_id, avatarHtml(c.author_id, 28))}
       <div class="peek-bubble"><div class="cmt-head">${whoLink(c.author_id, `<b>${esc(whoName(c.author_id))}</b>`)}${teacherTag(c.author_id)}<span class="sub">${timeAgo(c.created_at)}</span></div>
-        <div class="peek-body">${richText(c.body)}</div>${cmPeekRx(c.id)}</div></div>`).join('')}
+        ${c.body ? `<div class="peek-body">${richText(c.body)}</div>` : ''}${phOf('feed_comment', c, 'peek')}${cmPeekRx(c.id)}</div></div>`).join('')}
     <div class="peek-new" data-action="fpost-peek" data-id="${pid}" data-focus="1">${avatarHtml(S.user.id, 28)}
       <span class="peek-input">${total ? 'Escribe un comentario…' : 'Sé el primero en comentar…'}</span></div>`;
 }
@@ -1695,7 +1742,7 @@ function reportRow(r) {
   const x = targetOf(r.target_type, r.target_id);
   return `<div class="row rep"><div style="min-width:0;flex:1">
       <div class="sub">${esc(TARGET_LABEL[r.target_type] || 'Contenido')} · denunciado por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
-      ${x ? `<div style="overflow-wrap:anywhere"><strong>${esc(whoName(x.author_id))}</strong>: ${esc(plainText(x.body).slice(0, 200))}</div>` : '<div class="sub">Contenido no disponible</div>'}
+      ${x ? `<div style="overflow-wrap:anywhere"><strong>${esc(whoName(x.author_id))}</strong>: ${esc(plainText(x.body).slice(0, 200) || (phList(x).length ? '📷 Foto' : ''))}</div>${phOf(r.target_type, x, 'cm')}` : '<div class="sub">Contenido no disponible</div>'}
       ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
     <div class="actions" style="margin:0"><button class="btn sm danger" data-action="mod-delete" data-id="${r.id}">Borrar contenido</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
 }
@@ -1756,7 +1803,7 @@ function uiBusy() {
   if ($('#modalRoot').firstChild) return true;
   const a = document.activeElement;
   if (a && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) && a.closest('#app')) return true;
-  return $$('#app textarea').some(x => x.value.trim()) || $$('#feedForm input[type=text]').some(x => x.value.trim());
+  return $$('#app textarea').some(x => x.value.trim()) || $$('#feedForm input[type=text]').some(x => x.value.trim()) || phPending();
 }
 function refreshChrome() {
   const secs = sections();
@@ -2007,6 +2054,224 @@ function lbClose(fromHistory = false) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#lightbox')) { e.stopImmediatePropagation(); lbClose(); } }, true);
 
+/* ================================ FOTOS ================================
+   Posts del Inicio, avisos y mensajes privados: hasta 10 fotos; comentarios: 1 (Yuri, 2026-11-24).
+   · Se reducen aquí antes de subirlas: 1600 px por el lado largo (~250 KB) y una miniatura de 800 px
+     para la rejilla. Al redibujarlas en un canvas pierden los datos ocultos de la cámara (GPS incluido).
+   · Van al almacén PRIVADO "media" de Supabase: <tipo>/<autor>/<id de la fila>/<clave>.jpg (+ _t.jpg).
+     La base de datos solo deja verlas a quien puede ver la fila (media_visible, en schema.sql).
+   · La fila guarda photos = [{k, w, h}]. Su id se crea aquí (phUuid) para subir las fotos ANTES de
+     insertarla: nadie ve nunca una publicación a medias.
+   · Se descargan con la sesión (sin enlaces públicos que se puedan reenviar) y solo cuando están
+     cerca de la pantalla. Se guardan en memoria mientras la app esté abierta, nunca en el navegador.
+   · Borrar lo tuyo borra sus archivos; lo demás lo limpia cada noche la Edge Function media-cleanup. */
+const PH_BUCKET = 'media';
+const PH_MAX = { feed: 10, board: 10, dm: 10, fcomment: 1, lcomment: 1 };
+const PH_BIG = 1600, PH_THUMB = 800;
+const PH_KIND_OF = { feed_post: 'feed', board_post: 'board', feed_comment: 'fcomment', listening_comment: 'lcomment', dm_message: 'dm' };
+const PH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>';
+function phUuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+const phList = r => Array.isArray(r && r.photos) ? r.photos : [];
+const phBase = (kind, owner, rowId) => `${kind}/${owner}/${rowId}/`;
+const phPaths = (kind, owner, rowId, photos) => photos.flatMap(p => [phBase(kind, owner, rowId) + p.k + '.jpg', phBase(kind, owner, rowId) + p.k + '_t.jpg']);
+const phSame = (a, b) => a.length === b.length && a.every((x, i) => x.k === b[i].k);
+
+// ---- Reducir antes de subir ----
+const phBlob = (c, q) => new Promise(res => c.toBlob(b => res(b), 'image/jpeg', q));
+async function phEncode(img, max, qs, limit) {
+  const w0 = img.naturalWidth, h0 = img.naturalHeight, k = Math.min(1, max / Math.max(w0, h0));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w0 * k)); c.height = Math.max(1, Math.round(h0 * k));
+  const cx = c.getContext('2d'); cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, c.width, c.height); // PNG con transparencia: fondo blanco
+  cx.imageSmoothingQuality = 'high'; cx.drawImage(img, 0, 0, c.width, c.height);
+  let b = null;
+  for (const q of qs) { b = await phBlob(c, q); if (b && b.size <= limit) break; }
+  return { blob: b, w: c.width, h: c.height };
+}
+async function phPrepare(file) {
+  if (!file || (file.type && !/^image\//.test(file.type))) return null;
+  const url = URL.createObjectURL(file);
+  const img = await loadImg(url); // el navegador ya la gira según la cámara (EXIF)
+  URL.revokeObjectURL(url);
+  if (!img || !img.naturalWidth) return null;
+  const big = await phEncode(img, PH_BIG, [0.82, 0.72, 0.6], 700000);
+  const th = await phEncode(img, PH_THUMB, [0.75, 0.6], 200000);
+  if (!big.blob || !th.blob) return null;
+  return { k: phUuid(), w: big.w, h: big.h, big: big.blob, thumb: th.blob, url: URL.createObjectURL(th.blob) };
+}
+
+// ---- Borradores: las fotos elegidas en cada formulario, antes de publicar ----
+// Claves: feed-new, feed-edit, board, cm-<feed|listening>-<id>, dm-<persona>
+const PH_DRAFT = {}, PH_BUSY = {}; // PH_BUSY: cuántas se están preparando todavía
+const phDraft = key => PH_DRAFT[key] || (PH_DRAFT[key] = []);
+const phBusy = key => PH_BUSY[key] || 0;
+const phPending = () => Object.keys(PH_DRAFT).some(k => k !== 'feed-edit' && k !== 'board' && PH_DRAFT[k].length) || Object.values(PH_BUSY).some(n => n > 0);
+function phDraftSet(key, photos, kind, owner, rowId) { // editar: empieza con las que ya tiene
+  phClear(key);
+  PH_DRAFT[key] = photos.map(p => ({ k: p.k, w: p.w, h: p.h, existing: true, path: phBase(kind, owner, rowId) + p.k + '_t.jpg' }));
+}
+function phClear(key) {
+  (PH_DRAFT[key] || []).forEach(x => { if (!x.existing && x.url) URL.revokeObjectURL(x.url); });
+  delete PH_DRAFT[key]; delete PH_BUSY[key];
+  phStripRefresh(key);
+}
+function phPicker(key, max, label = '') {
+  const what = max > 1 ? 'Añadir fotos' : 'Añadir una foto';
+  return `<button type="button" class="btn ph-add${label ? '' : ' icon'}" data-action="ph-add" data-ph="${esc(key)}" data-max="${max}" title="${what}" aria-label="${what}">${PH_ICON}${label ? `<span>${esc(label)}</span>` : ''}</button>`;
+}
+function phStripInner(key) {
+  return (PH_DRAFT[key] || []).map(x => `<div class="ph-chip"><img ${x.url ? `src="${esc(x.url)}"` : `data-ph-src="${esc(x.path)}"`} alt="">
+      <button type="button" class="ph-x" data-action="ph-del" data-ph="${esc(key)}" data-k="${esc(x.k)}" aria-label="Quitar esta foto" title="Quitar">×</button></div>`).join('')
+    + Array.from({ length: phBusy(key) }, () => '<div class="ph-chip busy" role="status" aria-label="Preparando la foto…"></div>').join('');
+}
+const phStrip = key => `<div class="ph-strip" data-ph-strip="${esc(key)}">${phStripInner(key)}</div>`;
+const phStripRefresh = key => $$('[data-ph-strip]').filter(n => n.dataset.phStrip === key).forEach(n => { n.innerHTML = phStripInner(key); });
+
+let phInput = null;
+function phChoose(key, max) {
+  if (!phInput) { // un solo selector de archivos para toda la app
+    phInput = document.createElement('input');
+    phInput.type = 'file'; phInput.accept = 'image/*'; phInput.hidden = true; phInput.id = 'phFile';
+    phInput.addEventListener('change', () => { const fs = [...phInput.files]; phInput.value = ''; if (fs.length) phAddFiles(phInput.dataset.key, +phInput.dataset.max || 1, fs); });
+    document.body.appendChild(phInput);
+  }
+  phInput.dataset.key = key; phInput.dataset.max = max; phInput.multiple = max > 1;
+  phInput.click();
+}
+async function phAddFiles(key, max, files) {
+  if (max === 1 && phDraft(key).length) phClear(key); // en los comentarios, elegir otra cambia la que había
+  const d = phDraft(key);
+  const room = max - d.length - phBusy(key);
+  if (room <= 0) return toast(`Como mucho ${max} fotos`, 'bad');
+  if (files.length > room) toast(`Solo caben ${room} foto${room === 1 ? '' : 's'} más: se añaden las primeras`, 'bad');
+  const take = files.slice(0, room);
+  PH_BUSY[key] = phBusy(key) + take.length; phStripRefresh(key);
+  let bad = 0;
+  for (const f of take) { // de una en una: las fotos del móvil son grandes
+    const x = await phPrepare(f).catch(() => null);
+    PH_BUSY[key] = Math.max(0, phBusy(key) - 1);
+    if (!x) bad++;
+    else if (PH_DRAFT[key] === d) d.push(x); // si mientras tanto se publicó o se cerró, no se añade
+    else URL.revokeObjectURL(x.url);
+    phStripRefresh(key);
+  }
+  if (bad) toast(bad === 1 ? 'No se pudo leer una de las fotos. Prueba con JPG o PNG' : `No se pudieron leer ${bad} fotos. Prueba con JPG o PNG`, 'bad');
+}
+
+// ---- Subir y borrar ----
+// Sube las fotos nuevas del borrador. Devuelve { photos (todas, en orden), paths (las subidas) } o null si falla.
+async function phUpload(key, kind, rowId, btn) {
+  const d = phDraft(key), fresh = d.filter(x => !x.existing), base = phBase(kind, S.user.id, rowId), done = [];
+  const label = btn ? btn.textContent : '';
+  try {
+    for (let i = 0; i < fresh.length; i++) {
+      if (btn) btn.textContent = `Subiendo fotos ${i + 1}/${fresh.length}…`;
+      const x = fresh[i];
+      const rs = await Promise.all([[x.k + '.jpg', x.big], [x.k + '_t.jpg', x.thumb]].map(([n, blob]) =>
+        sb.storage.from(PH_BUCKET).upload(base + n, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false })
+          .then(r => { if (!r.error) done.push(base + n); return r; })));
+      const err = rs.find(r => r.error);
+      if (err) throw err.error;
+    }
+    return { photos: d.map(x => ({ k: x.k, w: x.w, h: x.h })), paths: done };
+  } catch (e) {
+    phRemove(done);
+    toast('No se pudieron subir las fotos: ' + errEs(e), 'bad');
+    return null;
+  } finally { if (btn && fresh.length) btn.textContent = label; }
+}
+// Publicado: las fotos se ven al momento desde aquí (sin volver a descargarlas) y el borrador se vacía
+function phCommit(key, kind, rowId) {
+  const base = phBase(kind, S.user.id, rowId);
+  (PH_DRAFT[key] || []).forEach(x => {
+    if (x.existing || !x.url) return;
+    phCache.set(base + x.k + '_t.jpg', Promise.resolve(x.url));
+    phCache.set(base + x.k + '.jpg', Promise.resolve(URL.createObjectURL(x.big)));
+  });
+  delete PH_DRAFT[key]; delete PH_BUSY[key];
+  phStripRefresh(key);
+}
+function phRemove(paths) { if (paths && paths.length) sb.storage.from(PH_BUCKET).remove(paths).then(() => {}, () => {}); }
+// Al borrar algo tuyo, fuera también sus fotos (lo de otros lo limpia media-cleanup por la noche)
+function phDropRow(kind, owner, row) { if (row && owner === S.user.id && phList(row).length) phRemove(phPaths(kind, owner, row.id, phList(row))); }
+
+// ---- Mostrar ----
+const phCache = new Map(); // ruta -> Promise<URL del blob | null>
+function phUrl(path) {
+  let p = phCache.get(path);
+  if (!p) {
+    p = sb.storage.from(PH_BUCKET).download(path)
+      .then(({ data, error }) => (data && !error ? URL.createObjectURL(data) : null), () => null);
+    p.then(u => { if (!u && phCache.get(path) === p) phCache.delete(path); }); // si falla, se reintenta otro día
+    phCache.set(path, p);
+  }
+  return p;
+}
+function phLoad(img) {
+  const path = img.getAttribute('data-ph-src'), box = img.closest('.ph-cell, .ph-chip');
+  if (path) phUrl(path).then(u => { if (u) { img.src = u; if (box) box.classList.remove('err'); } else if (box) box.classList.add('err'); });
+}
+const phIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { phIO.unobserve(e.target); phLoad(e.target); } }), { rootMargin: '600px 0px' }) : null;
+function phScan() { $$('img[data-ph-src]:not([data-ph-on])').forEach(i => { i.setAttribute('data-ph-on', '1'); phIO ? phIO.observe(i) : phLoad(i); }); }
+let phScanQueued = false;
+new MutationObserver(() => { if (!phScanQueued) { phScanQueued = true; requestAnimationFrame(() => { phScanQueued = false; phScan(); }); } })
+  .observe(document.body, { childList: true, subtree: true });
+
+// Rejilla tipo Facebook/WhatsApp: hasta 4 a la vista y "+N" en la cuarta si hay más
+function phGrid(kind, owner, rowId, photos, cls = '') {
+  if (!photos || !photos.length) return '';
+  const base = phBase(kind, owner, rowId), n = photos.length;
+  const one = n === 1 ? ` style="aspect-ratio:${Math.max(0.6, Math.min(2, photos[0].w / photos[0].h)).toFixed(3)}"` : '';
+  return `<div class="ph-grid n${Math.min(n, 4)} ${cls}" data-ph-base="${esc(base)}" data-ph-keys="${esc(photos.map(p => p.k).join(','))}"${one}>${photos.slice(0, 4).map((p, i) =>
+    `<button type="button" class="ph-cell" data-action="ph-open" data-i="${i}" aria-label="Ver la foto ${i + 1} de ${n}"><img data-ph-src="${esc(base + p.k)}_t.jpg" alt="">${i === 3 && n > 4 ? `<span class="ph-more">+${n - 4}</span>` : ''}</button>`).join('')}</div>`;
+}
+// Las fotos de una fila de cualquier tabla (el dueño de un mensaje es quien lo envía)
+const phOf = (type, row, cls = '') => row ? phGrid(PH_KIND_OF[type], type === 'dm_message' ? row.sender_id : row.author_id, row.id, phList(row), cls) : '';
+
+// Visor a pantalla completa: flechas, deslizar el dedo, teclado; Atrás/Esc/× lo cierran
+function phOpen(el) {
+  const g = el.closest('[data-ph-base]'); if (!g || $('#lightbox')) return;
+  const base = g.dataset.phBase, keys = g.dataset.phKeys.split(',').filter(Boolean), many = keys.length > 1;
+  let i = Math.max(0, Math.min(keys.length - 1, +el.dataset.i || 0));
+  const lb = document.createElement('div');
+  lb.id = 'lightbox'; lb.className = 'lightbox gal'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Foto');
+  lb.innerHTML = `<button class="x" data-lb="close" aria-label="Cerrar">×</button>${many ? `<div class="lb-count" aria-live="polite"></div>
+    <button class="lb-nav prev" data-lb="prev" aria-label="Foto anterior">‹</button><button class="lb-nav next" data-lb="next" aria-label="Foto siguiente">›</button>` : ''}<img alt="">`;
+  const img = lb.querySelector('img'), count = lb.querySelector('.lb-count');
+  const show = () => {
+    const k = keys[i]; img.dataset.k = k; img.dataset.full = '';
+    if (count) count.textContent = `${i + 1} / ${keys.length}`;
+    img.removeAttribute('src');
+    phUrl(base + k + '_t.jpg').then(u => { if (u && img.dataset.k === k && !img.dataset.full) img.src = u; }); // la pequeña, al momento
+    phUrl(base + k + '.jpg').then(u => { if (u && img.dataset.k === k) { img.src = u; img.dataset.full = '1'; } }); // y la buena en cuanto llega
+  };
+  lb._go = d => { if (!many) return; i = (i + d + keys.length) % keys.length; show(); };
+  lb.addEventListener('click', e => {
+    e.stopPropagation();
+    const b = e.target.closest('[data-lb]');
+    if (b && b.dataset.lb !== 'close') return lb._go(b.dataset.lb === 'prev' ? -1 : 1);
+    if (e.target === img) return; // tocar la foto no la cierra
+    lbClose();
+  });
+  let tx = null;
+  lb.addEventListener('touchstart', e => { tx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+  lb.addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; tx = null; if (Math.abs(dx) > 50) lb._go(dx < 0 ? 1 : -1); });
+  document.body.appendChild(lb);
+  history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
+  show();
+}
+document.addEventListener('keydown', e => {
+  const lb = $('#lightbox.gal'); if (!lb) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); lb._go(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); lb._go(1); }
+});
+
 /* ------------------------------ Modal ------------------------------- */
 function openModal(html, onClose) {
   if (!$('#modalRoot').firstChild && S.profile) { // para que "Atrás" la cierre
@@ -2022,6 +2287,7 @@ async function closeModal(fromHistory = false) {
   $('#modalRoot').innerHTML = '';
   document.body.classList.remove('noscroll');
   itemReturn = null; // cerrar del todo olvida el "volver a la ficha"
+  phClear('feed-edit'); phClear('board'); // fotos elegidas en un editor que se cierra sin guardar
   // Cerrada con la ✕, Esc o al pulsar fuera: quitamos su entrada del historial
   if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
   if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
@@ -2441,8 +2707,9 @@ function feedView() {
   return `${forYou()}<form id="feedForm" class="panel composer">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
-        <textarea name="body" required maxlength="2000" rows="3" placeholder="¿Qué estás tocando? Comparte un riff, una duda o un enlace de Spotify o YouTube"></textarea>
-        <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
+        <textarea name="body" maxlength="2000" rows="3" placeholder="¿Qué estás tocando? Comparte un riff, una duda o un enlace de Spotify o YouTube"></textarea>
+        ${phStrip('feed-new')}
+        <div class="actions" style="margin-top:2px">${phPicker('feed-new', PH_MAX.feed, 'Foto')}<button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
@@ -2470,7 +2737,8 @@ function feedCard(p) {
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
     <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
-    <div class="fbody">${richText(p.body)}</div>
+    ${p.body ? `<div class="fbody">${richText(p.body)}</div>` : ''}
+    ${phOf('feed_post', p)}
     ${p.link_url ? linkCard(p.link_url) : ''}
     ${rxBar('feed_post', p.id)}
     <div class="factions">
@@ -2488,7 +2756,8 @@ function feedPostModal(id) {
   openModal(`
     <div class="modal-head"><div class="fhead">${avatarHtml(p.author_id, 42)}<div><b>${esc(whoName(p.author_id))}</b>${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <div class="fbody">${richText(p.body)}</div>
+    ${p.body ? `<div class="fbody">${richText(p.body)}</div>` : ''}
+    ${phOf('feed_post', p)}
     ${p.link_url ? linkCard(p.link_url) : ''}
     <div style="margin:12px 0">${rxBar('feed_post', p.id)}</div>
     <h2 class="h2">Comentarios</h2>
@@ -2502,10 +2771,12 @@ const editedTag = p => p.edited_at ? ` · <span class="edited" title="Editado el
 function feedEditModal(id) {
   const p = S.fposts.find(x => x.id === id);
   if (!p || p.author_id !== S.user.id) return;
+  phDraftSet('feed-edit', phList(p), 'feed', p.author_id, p.id);
   openModal(`
     <div class="modal-head"><h2>Editar publicación</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="feedEditForm" data-id="${p.id}">
-      <label class="f">Texto<textarea name="body" required maxlength="2000" rows="6">${esc(plainText(p.body))}</textarea></label>
+      <label class="f">Texto<textarea name="body" maxlength="2000" rows="6">${esc(plainText(p.body))}</textarea></label>
+      <div class="f">Fotos <span class="sub">(hasta ${PH_MAX.feed})</span>${phStrip('feed-edit')}<div class="ph-row">${phPicker('feed-edit', PH_MAX.feed, 'Añadir fotos')}</div></div>
       <p class="sub" style="margin:0 0 12px">Se verá la etiqueta «editado» junto a la fecha.</p>
       <div class="actions"><button class="btn" type="submit">Guardar cambios</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
@@ -2533,7 +2804,7 @@ function postCard(p, isNew) {
   return `<article class="card post ${isNew ? 'isnew' : ''}" data-post="${p.id}">
     <div class="card-top"><div class="chips">${p.pinned ? '<span class="chip acc">Fijado</span>' : ''}${isNew ? '<span class="chip new">Nuevo</span>' : ''}</div><span class="sub">${fmtDateTime(p.created_at)}</span></div>
     <h3>${esc(p.title)}</h3>
-    <div class="postbody">${richText(p.body)}</div>${mediaLinkCard(p.body)}
+    ${p.body ? `<div class="postbody">${richText(p.body)}</div>` : ''}${phOf('board_post', p)}${mediaLinkCard(p.body)}
     <div class="post-foot">${rxBar('board_post', p.id)}</div>
     ${reads}${tools}
   </article>`;
@@ -2601,11 +2872,13 @@ function postFormModal(id) {
   const ok = S.students.filter(s => s.approved);
   const sel = new Set(p ? S.recipients.filter(r => r.post_id === p.id).map(r => r.student_id) : []);
   const aud = p ? p.audience : 'all';
+  if (p) phDraftSet('board', phList(p), 'board', p.author_id, p.id); else phClear('board');
   openModal(`
     <div class="modal-head"><h2>${p ? 'Editar aviso' : 'Nuevo aviso'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="postForm" data-id="${p ? p.id : ''}">
       <label class="f">Título<input type="text" name="title" required maxlength="150" value="${esc(p ? p.title : '')}"></label>
-      <label class="f">Mensaje<textarea name="body" required maxlength="5000" rows="7" placeholder="Usa @ para mencionar a alguien y # para enlazar una sección o una escucha">${esc(p ? plainText(p.body) : '')}</textarea></label>
+      <label class="f">Mensaje<textarea name="body" maxlength="5000" rows="7" placeholder="Usa @ para mencionar a alguien y # para enlazar una sección o una escucha">${esc(p ? plainText(p.body) : '')}</textarea></label>
+      <div class="f">Fotos <span class="sub">(opcional, hasta ${PH_MAX.board})</span>${phStrip('board')}<div class="ph-row">${phPicker('board', PH_MAX.board, 'Añadir fotos')}</div></div>
       <div class="f">Destinatarios
         <div class="radios">
           <label class="chk"><input type="radio" name="audience" value="all" ${aud === 'all' ? 'checked' : ''}> Todos los alumnos</label>
@@ -3891,7 +4164,7 @@ function dmListHtml() {
   return `<div class="dm-list ${w ? 'has-open' : ''}">
     <div class="dm-list-head"><b>Conversaciones</b><button class="btn sm primary" data-action="dm-new">+ Nuevo</button></div>
     ${convs.length ? convs.map(c => `<div class="dm-conv ${c.id === w ? 'on' : ''}" data-action="dm-open" data-id="${c.id}">
-        ${avatarHtml(c.id, 42)}<div class="t"><b>${esc(whoName(c.id))}</b><span class="sub">${c.last.sender_id === S.user.id ? 'Tú: ' : ''}${esc(c.last.body.slice(0, 60))}</span></div>
+        ${avatarHtml(c.id, 42)}<div class="t"><b>${esc(whoName(c.id))}</b><span class="sub">${c.last.sender_id === S.user.id ? 'Tú: ' : ''}${esc((c.last.body || (phList(c.last).length ? '📷 Foto' : '')).slice(0, 60))}</span></div>
         <div class="dm-meta"><span class="sub">${timeAgo(c.last.created_at)}</span>${c.unread ? `<i class="dotn static">${c.unread}</i>` : ''}</div></div>`).join('')
       : '<div class="sub" style="padding:14px">Aún no tienes conversaciones. Pulsa "+ Nuevo" para escribir a alguien.</div>'}
   </div>`;
@@ -3903,7 +4176,7 @@ function threadInner(id) {
     const mine = m.sender_id === S.user.id, url = firstLink(m.body);
     const can = S.dmCan[id] !== false;
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg-wrap"><div class="msg-line"><div class="msg" data-dmid="${m.id}">
-        <div class="msg-body">${listify(linkify(m.body))}</div>${url ? linkCard(url) : ''}
+        ${phOf('dm_message', m, 'dm')}${m.body ? `<div class="msg-body">${listify(linkify(m.body))}</div>` : ''}${url ? linkCard(url) : ''}
         <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
           ${mine && m.read_at ? `<span class="seen" title="Visto" aria-label="Visto">${SEEN_ICON}</span>` : ''}
         </div>${dmMenuItems(m) ? `<button type="button" class="msg-more" data-dmmenu-open="${m.id}" title="Opciones" aria-label="Opciones del mensaje" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : ''}</div>${can ? `<button type="button" class="msg-rxbtn" data-dmrx-open="${m.id}" title="Reaccionar" aria-label="Reaccionar">${EMOJI_ICON}</button>` : ''}</div>${dmRxChip(m.id)}</div></div>`;
@@ -4063,7 +4336,7 @@ function threadView(id) {
     </div>
     <div class="dm-thread" id="dmThread">${threadInner(id)}</div>
     ${can === false ? `<div class="dm-cant">${isBlocked(id) ? 'Has bloqueado a esta persona. Desbloquéala para escribirle.' : 'No podéis escribiros en privado. Si crees que es un error, habla con tu profesor.'}</div>`
-      : `<form id="dmForm" class="dm-compose" data-to="${id}"><textarea name="body" rows="1" maxlength="2000" placeholder="Escribe un mensaje…" required></textarea><button class="btn primary" type="submit">Enviar</button></form>`}`;
+      : `<div class="dm-ph">${phStrip('dm-' + id)}</div><form id="dmForm" class="dm-compose" data-to="${id}">${phPicker('dm-' + id, PH_MAX.dm)}<textarea name="body" rows="1" maxlength="2000" placeholder="Escribe un mensaje…"></textarea><button class="btn primary" type="submit">Enviar</button></form>`}`;
 }
 function updateThread() { // repinta solo los mensajes (no toca lo que estás escribiendo)
   const t = $('#dmThread'); if (!t || !S.dmWith) return;
@@ -4262,6 +4535,7 @@ const actions = {
     if (!confirm('¿Borrar este mensaje? Desaparecerá también para la otra persona.')) return;
     const { error } = await sb.from('dm_messages').delete().eq('id', el.dataset.id);
     if (error) return toast('No se pudo borrar: ' + errEs(error), 'bad');
+    const m = S.dms.find(x => x.id === el.dataset.id); if (m) phDropRow('dm', m.sender_id, m);
     S.dms = S.dms.filter(m => m.id !== el.dataset.id); updateThread(); refreshChrome();
   },
   block(el) { blockModal(el.dataset.id); },
@@ -4513,13 +4787,18 @@ const actions = {
   },
   async 'comment-send'(el) {
     const { kind, pid } = el.dataset, c = CM[kind];
-    const ta = $(`#cmInput-${kind}-${pid}`), body = mentionEncode(ta);
-    if (!body) return toast('Escribe algo primero', 'bad');
+    const ta = $(`#cmInput-${kind}-${pid}`), body = mentionEncode(ta), key = `cm-${kind}-${pid}`, pk = PH_KIND_OF[c.type];
+    if (phBusy(key)) return toast('Espera un momento: la foto aún se está preparando', 'bad');
+    if (!body && !phDraft(key).length) return toast('Escribe algo o añade una foto', 'bad');
     if (body.length > 1000) return toast('El comentario es demasiado largo', 'bad');
     el.disabled = true;
-    const { data, error } = await sb.from(c.table).insert({ [c.key]: pid, author_id: S.user.id, body }).select().single();
+    const id = phUuid(); // el id se crea aquí para subir antes la foto
+    const up = await phUpload(key, pk, id, el);
+    if (!up) { el.disabled = false; return; }
+    const { data, error } = await sb.from(c.table).insert({ id, [c.key]: pid, author_id: S.user.id, body, photos: up.photos }).select().single();
     el.disabled = false;
-    if (error) return toast('No se pudo comentar: ' + errEs(error), 'bad');
+    if (error) { phRemove(up.paths); return toast('No se pudo comentar: ' + errEs(error), 'bad'); }
+    phCommit(key, pk, id);
     addUnique(cmList(kind), data, c.table); // el tiempo real puede haberlo traído ya
     ta.value = ''; ta._mentions = [];
     updateComments(kind, pid);
@@ -4530,6 +4809,7 @@ const actions = {
     if (!x || !confirm('¿Eliminar este comentario?')) return;
     const { error } = await sb.from(c.table).delete().eq('id', id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
+    phDropRow(PH_KIND_OF[c.type], x.author_id, x);
     dropTargetLocal(c.type, id);
     updateComments(kind, x[c.key]);
   },
@@ -4544,12 +4824,22 @@ const actions = {
     el.outerHTML = '<span class="sub">Denunciado</span>';
     toast('Denuncia enviada. Gracias', 'ok');
   },
+  // ---- Fotos ----
+  'ph-add'(el) { phChoose(el.dataset.ph, +el.dataset.max || 1); },
+  'ph-del'(el) {
+    const key = el.dataset.ph, d = PH_DRAFT[key]; if (!d) return;
+    const i = d.findIndex(x => x.k === el.dataset.k);
+    if (i >= 0) { const [x] = d.splice(i, 1); if (!x.existing && x.url) URL.revokeObjectURL(x.url); }
+    phStripRefresh(key);
+  },
+  'ph-open'(el) { phOpen(el); },
   'feed-edit'(el) { feedEditModal(el.dataset.id); },
   async 'feed-delete'(el) {
     const p = S.fposts.find(x => x.id === el.dataset.id);
     if (!p || !confirm('¿Eliminar esta publicación? Se borrarán también sus comentarios.')) return;
     const { error } = await sb.from('feed_posts').delete().eq('id', p.id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
+    phDropRow('feed', p.author_id, p);
     dropTargetLocal('feed_post', p.id);
     render(); toast('Publicación eliminada', 'ok');
   },
@@ -4584,6 +4874,7 @@ const actions = {
     if (!confirm(`¿Eliminar el aviso "${p.title}"?\nDesaparecerá para todos. No se puede deshacer.`)) return;
     const { error } = await sb.from('board_posts').delete().eq('id', p.id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
+    phDropRow('board', p.author_id, p);
     await loadData(); await closeModal(); render(); toast('Aviso eliminado', 'ok');
   },
   ...exportActions
@@ -4695,46 +4986,62 @@ document.addEventListener('submit', async e => {
     const ids = $$('input[name=pick]:checked', f).map(x => x.value);
     if (audience === 'selected' && !ids.length) return toast('Elige al menos un alumno', 'bad');
     const row = { title: el['title'].value.trim(), body: mentionEncode(el['body']), audience, pinned: el['pinned'].checked };
-    if (!row.title || !row.body) return toast('Escribe un título y un mensaje', 'bad');
+    if (phBusy('board')) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
+    if (!row.title) return toast('Escribe un título', 'bad');
+    if (!row.body && !phDraft('board').length) return toast('Escribe un mensaje o añade alguna foto', 'bad');
     if (row.body.length > 5000) return toast('El mensaje es demasiado largo', 'bad');
     const btn = $('button[type=submit]', f); btn.disabled = true;
-    let id = f.dataset.id, error;
-    if (id) ({ error } = await sb.from('board_posts').update(row).eq('id', id));
-    else {
-      const r = await sb.from('board_posts').insert({ ...row, author_id: S.user.id }).select().single();
-      error = r.error; if (!error) id = r.data.id;
-    }
+    const wasEdit = !!f.dataset.id, id = f.dataset.id || phUuid(); // el id se crea aquí para subir antes las fotos
+    const before = wasEdit ? phList(S.posts.find(x => x.id === id)) : [];
+    const up = await phUpload('board', 'board', id, btn);
+    if (!up) { btn.disabled = false; return; }
+    row.photos = up.photos;
+    let error;
+    if (wasEdit) ({ error } = await sb.from('board_posts').update(row).eq('id', id));
+    else ({ error } = await sb.from('board_posts').insert({ ...row, id, author_id: S.user.id }).select().single());
+    if (error) phRemove(up.paths);
     if (!error) ({ error } = await sb.from('board_recipients').delete().eq('post_id', id));
     if (!error && audience === 'selected') ({ error } = await sb.from('board_recipients').insert(ids.map(sid => ({ post_id: id, student_id: sid }))));
     btn.disabled = false;
     if (error) return toast('Error: ' + errEs(error), 'bad');
-    const wasEdit = !!f.dataset.id;
+    phRemove(phPaths('board', S.user.id, id, before.filter(x => !up.photos.some(y => y.k === x.k)))); // las que se quitaron
+    phCommit('board', 'board', id);
     await loadData(); await closeModal(); render();
     toast(wasEdit ? 'Aviso actualizado' : 'Aviso publicado', 'ok');
   } else if (f.id === 'feedForm') {
     e.preventDefault();
     const body = mentionEncode(f.elements['body']);
-    if (!body) return toast('Escribe algo para publicar', 'bad');
+    if (phBusy('feed-new')) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
+    if (!body && !phDraft('feed-new').length) return toast('Escribe algo o añade una foto', 'bad');
     if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
     const link = firstLink(body); // el primer enlace del texto se muestra como tarjeta (Spotify, YouTube…)
     const btn = $('button[type=submit]', f); btn.disabled = true;
-    const { data, error } = await sb.from('feed_posts').insert({ author_id: S.user.id, body, link_url: link || null }).select().single();
+    const id = phUuid(); // el id se crea aquí para subir antes las fotos
+    const up = await phUpload('feed-new', 'feed', id, btn);
+    if (!up) { btn.disabled = false; return; }
+    const { data, error } = await sb.from('feed_posts').insert({ id, author_id: S.user.id, body, link_url: link || null, photos: up.photos }).select().single();
     btn.disabled = false;
-    if (error) return toast('No se pudo publicar: ' + errEs(error), 'bad');
+    if (error) { phRemove(up.paths); return toast('No se pudo publicar: ' + errEs(error), 'bad'); }
+    phCommit('feed-new', 'feed', id);
     if (!S.fposts.some(x => x.id === data.id)) S.fposts.unshift(data);
     render(); toast('Publicado', 'ok');
   } else if (f.id === 'feedEditForm') {
     e.preventDefault();
     const p = S.fposts.find(x => x.id === f.dataset.id);
     if (!p) return closeModal();
-    const body = mentionEncode(f.elements['body']);
-    if (!body) return toast('Escribe algo o elimina la publicación', 'bad');
+    const body = mentionEncode(f.elements['body']), d = phDraft('feed-edit'), before = phList(p);
+    if (phBusy('feed-edit')) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
+    if (!body && !d.length) return toast('Escribe algo, deja alguna foto o elimina la publicación', 'bad');
     if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
-    if (body === p.body) return closeModal(); // sin cambios: no sale "editado"
+    if (body === p.body && phSame(d, before)) return closeModal(); // sin cambios: no sale "editado"
     const btn = $('button[type=submit]', f); btn.disabled = true;
-    const { data, error } = await sb.from('feed_posts').update({ body, link_url: firstLink(body) || null }).eq('id', p.id).select();
+    const up = await phUpload('feed-edit', 'feed', p.id, btn);
+    if (!up) { btn.disabled = false; return; }
+    const { data, error } = await sb.from('feed_posts').update({ body, link_url: firstLink(body) || null, photos: up.photos }).eq('id', p.id).select();
     btn.disabled = false;
-    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
+    if (error || !data || !data.length) { phRemove(up.paths); return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad'); }
+    phRemove(phPaths('feed', p.author_id, p.id, before.filter(x => !up.photos.some(y => y.k === x.k)))); // las que se quitaron
+    phCommit('feed-edit', 'feed', p.id);
     Object.assign(p, data[0]);
     await closeModal(); render(); toast('Publicación actualizada', 'ok');
   } else if (f.id === 'aboutForm') {
@@ -4743,12 +5050,17 @@ document.addEventListener('submit', async e => {
     await saveProfileFields({ bio: v('bio'), instrument: v('instrument'), level: v('level'), favorites: v('favorites'), gear: v('gear') }, 'Perfil guardado');
   } else if (f.id === 'dmForm') {
     e.preventDefault();
-    const ta = f.elements['body'], body = ta.value.trim(), to = f.dataset.to;
-    if (!body) return;
-    const btn = f.querySelector('button'); btn.disabled = true;
-    const { data, error } = await sb.from('dm_messages').insert({ sender_id: S.user.id, recipient_id: to, body }).select().single();
+    const ta = f.elements['body'], body = ta.value.trim(), to = f.dataset.to, key = 'dm-' + to;
+    if (phBusy(key)) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
+    if (!body && !phDraft(key).length) return;
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+    const id = phUuid(); // el id se crea aquí para subir antes las fotos
+    const up = await phUpload(key, 'dm', id, btn);
+    if (!up) { btn.disabled = false; return; }
+    const { data, error } = await sb.from('dm_messages').insert({ id, sender_id: S.user.id, recipient_id: to, body, photos: up.photos }).select().single();
     btn.disabled = false;
-    if (error) { if (/row-level security/i.test(error.message)) { S.dmCan[to] = false; render(); return toast('Ya no podéis escribiros en privado', 'bad'); } return toast('No se pudo enviar: ' + errEs(error), 'bad'); }
+    if (error) { phRemove(up.paths); if (/row-level security/i.test(error.message)) { S.dmCan[to] = false; render(); return toast('Ya no podéis escribiros en privado', 'bad'); } return toast('No se pudo enviar: ' + errEs(error), 'bad'); }
+    phCommit(key, 'dm', id);
     addUnique(S.dms, data, 'dm_messages');
     ta.value = ''; ta.style.height = '';
     updateThread(); scrollThread(); updateDmList(); ta.focus();
@@ -5836,6 +6148,7 @@ function previewGuard(c) {
         return t.rpc(fn, args);
       };
       if (k === 'functions') return { invoke: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) };
+      if (k === 'storage') return { from: b => { const s = t.storage.from(b); return { download: p => s.download(p), upload: () => Promise.resolve({ data: null, error: PREVIEW_ERR }), remove: () => Promise.resolve({ data: null, error: PREVIEW_ERR }) }; } }; // fotos: ver sí, subir o borrar no
       if (k === 'auth') return new Proxy(t.auth, { get: (a, m) => ['signOut', 'updateUser', 'signUp', 'resetPasswordForEmail'].includes(m) ? () => Promise.resolve({ data: {}, error: PREVIEW_ERR }) : bind(a, m) });
       return bind(t, k);
     }

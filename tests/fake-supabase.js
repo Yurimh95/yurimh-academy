@@ -143,11 +143,18 @@
     goals_done: r => isTeacher() && DB.goals_items.some(g=>g.id===r.goal_id && (!g.student_id || g.student_id===r.student_id)), // goals_done_guard
     blocked_emails: () => isTeacher()
   };
+  // Fotos (photos_ok del SQL): [{k: uuid, w, h}], sin repetir, hasta maxn. Con fotos, el texto es opcional.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const photosOk = (p, maxn) => Array.isArray(p) && p.length<=maxn && new Set(p.map(x=>x&&x.k)).size===p.length
+    && p.every(x=>x && typeof x==='object' && !Array.isArray(x) && Object.keys(x).length===3 && UUID_RE.test(String(x.k)) && /^[1-9][0-9]{0,4}$/.test(String(x.w)) && /^[1-9][0-9]{0,4}$/.test(String(x.h)));
+  const bodyOk = (r, max) => String(r.body??'').length<=max && (String(r.body??'').length>=1 || (Array.isArray(r.photos) && r.photos.length>=1));
+  const PHOTO_MAX = { feed_posts:10, board_posts:10, dm_messages:10, feed_comments:1, listening_comments:1 };
   const checks = {
-    feed_posts: r => r.body && r.body.length<=2000 && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
-    feed_comments: r => r.body && r.body.length<=1000,
-    listening_comments: r => r.body && r.body.length<=1000,
-    dm_messages: r => r.body && r.body.length<=2000 && r.sender_id!==r.recipient_id,
+    feed_posts: r => bodyOk(r,2000) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500)),
+    board_posts: r => r.title && String(r.title).length<=150 && bodyOk(r,5000) && photosOk(r.photos??[],10),
+    feed_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
+    listening_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
+    dm_messages: r => bodyOk(r,2000) && photosOk(r.photos??[],10) && r.sender_id!==r.recipient_id,
     goals_items: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (r.student_id || r.stage),
     homework_tasks: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (!r.details || r.details.length<=1500),
     payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
@@ -255,7 +262,7 @@
     }
     if (table==='profiles' && nw.archived_at) nw.approved=false; // profiles_archive_guard
     if (table==='goals_done' && !isTeacher() && (nw.goal_id!==old.goal_id||nw.student_id!==old.student_id||nw.done_at!==old.done_at)) throw new Error('Solo tu profesor marca los objetivos');
-    if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id)) throw new Error('Solo se puede marcar como leído');
+    if (table==='dm_messages' && (nw.body!==old.body||nw.sender_id!==old.sender_id||nw.recipient_id!==old.recipient_id||JSON.stringify(nw.photos||[])!==JSON.stringify(old.photos||[]))) throw new Error('Solo se puede marcar como leído');
     if (table==='notifications' && (nw.kind!==old.kind||nw.user_id!==old.user_id||nw.extra!==old.extra)) throw new Error('Solo se puede marcar como leída');
     if (table==='profiles'){
       nw.display_name=String(nw.display_name).trim(); if(nw.display_name.length<1||nw.display_name.length>60) throw new Error('El nombre debe tener entre 1 y 60 caracteres');
@@ -270,10 +277,10 @@
       nw.teacher_read_at = JSON.stringify(nw.answers)!==JSON.stringify(old.answers) ? null : (old.teacher_read_at||null);
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
-    if (table==='board_posts') nw.updated_at=new Date().toISOString();
+    if (table==='board_posts'){ nw.updated_at=new Date().toISOString(); if(!checks.board_posts(nw)) throw new Error('new row for relation "board_posts" violates check constraint'); }
     if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
       nw.id=old.id; nw.author_id=old.author_id; nw.created_at=old.created_at;
-      nw.edited_at=(nw.body!==old.body||nw.link_url!==old.link_url)?new Date().toISOString():(old.edited_at||null);
+      nw.edited_at=(nw.body!==old.body||nw.link_url!==old.link_url||JSON.stringify(nw.photos||[])!==JSON.stringify(old.photos||[]))?new Date().toISOString():(old.edited_at||null);
       if(!checks.feed_posts(nw)) throw new Error('new row for relation "feed_posts" violates check constraint');
     }
     if (table==='classmates'){
@@ -345,6 +352,7 @@
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
+          if(PHOTO_MAX[table] && row.photos===undefined) row.photos=[]; // default '[]' de la columna
           if(pk[table]) delete row.id;
           if(table!=='listening_assignments'){ delete row.assigned_at; delete row.listened; delete row.answers; }
           if(checks[table] && !checks[table](row)) return finish([], 'new row for relation "'+table+'" violates check constraint');
@@ -383,8 +391,42 @@
     const rows = isApproved()? DB.profiles.filter(p=>p.approved && canSeeProfile(p.id)).map(p=>({id:p.id,public_name:(p.nickname&&p.nickname.trim())||p.display_name,avatar:p.avatar||null,role:p.role})) : [];
     return {data:rows,error:null};
   });
+
+  // ---- Almacén de fotos "media" (imita las políticas de storage.objects del SQL) ----
+  // Ruta: <tipo>/<autor>/<fila>/<clave>(_t).jpg. En las pruebas los ids son cortos (s1, f1…), no uuid.
+  const STORE = window.__STORAGE = {}; // ruta -> { blob, owner, created_at }
+  const PH_RE = /^(feed|board|fcomment|lcomment|dm)\/([0-9a-z_-]+)\/([0-9a-z_-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t)?\.jpg$/;
+  const PH_T = { feed:['feed_posts','author_id'], board:['board_posts','author_id'], fcomment:['feed_comments','author_id'], lcomment:['listening_comments','author_id'], dm:['dm_messages','sender_id'] };
+  function mediaVisible(name){ // media_visible: lo tuyo siempre; lo demás, si puedes ver la fila y la fila tiene esa foto
+    const m=String(name).match(PH_RE); if(!m||!me) return false;
+    if(m[2]===me) return true;
+    const [t,f]=PH_T[m[1]];
+    return DB[t].some(r=>r.id===m[3] && r[f]===m[2] && canRead[t](r) && (r.photos||[]).some(p=>p.k===m[4]));
+  }
+  const mediaCanUpload = name => { const m=String(name).match(PH_RE); return !!m && m[2]===me && isApproved() && (m[1]!=='board' || isTeacher()); };
+  window.__mediaVisible = mediaVisible;
+  // Para las pruebas de privacidad: ¿qué vería otra persona? (cambia la sesión solo durante fn)
+  window.__asUser = (id, fn) => { const prev = me; me = id; try { return fn(); } finally { me = prev; } };
+  const storage = { from(bucket){ return {
+    upload: async (path, blob, opts={}) => {
+      if(!me) return {data:null,error:{message:'No autenticado',statusCode:'401'}};
+      if(bucket!=='media') return {data:null,error:{message:'Bucket not found',statusCode:'404'}};
+      if(!mediaCanUpload(path)) return {data:null,error:{message:'new row violates row-level security policy',statusCode:'403'}};
+      if(opts.contentType!=='image/jpeg') return {data:null,error:{message:'mime type not supported',statusCode:'415'}};
+      if(!blob || blob.size>2097152) return {data:null,error:{message:'The object exceeded the maximum allowed size',statusCode:'413'}};
+      if(STORE[path] && !opts.upsert) return {data:null,error:{message:'The resource already exists',statusCode:'409'}};
+      STORE[path]={blob,owner:me,created_at:new Date().toISOString(),size:blob.size};
+      return {data:{path},error:null};
+    },
+    download: async path => (STORE[path] && bucket==='media' && mediaVisible(path)) ? {data:STORE[path].blob,error:null} : {data:null,error:{message:'Object not found',statusCode:'404'}},
+    remove: async paths => { // media_delete: cada cual lo suyo
+      const gone=[]; (paths||[]).forEach(p=>{ if(STORE[p] && p.split('/')[1]===me && mediaVisible(p)){ delete STORE[p]; gone.push({name:p}); } });
+      return {data:gone,error:null};
+    }
+  }; } };
+
   window.supabase={createClient(){ return {
-    from:q, rpc,
+    from:q, rpc, storage,
     functions:{ invoke: async (name,{body}={})=>{ // Edge Functions simuladas
       if(name!=='delete-account') return {data:null,error:{message:'Function not found'}};
       // account_delete_check

@@ -2416,3 +2416,182 @@ end;
 $$;
 revoke execute on function public.account_delete_check(uuid) from public, anon;
 grant  execute on function public.account_delete_check(uuid) to authenticated;
+
+-- =====================================================================
+--  FOTOS EN POSTS, AVISOS, COMENTARIOS Y MENSAJES (2026-11-24)
+--  · Posts del Inicio, avisos y mensajes privados: hasta 10 fotos.
+--    Comentarios (feed y escucha): 1. Con fotos, el texto es opcional.
+--  · Los archivos van al almacén PRIVADO "media" (Supabase Storage), nunca públicos.
+--    Ruta: <tipo>/<autor>/<id de la fila>/<clave>.jpg y <clave>_t.jpg (miniatura).
+--    tipo: feed | board | fcomment | lcomment | dm
+--  · Cada fila guarda sus fotos en la columna photos: [{"k": clave, "w": ancho, "h": alto}, …]
+--  · Ver una foto = poder ver su fila (media_visible usa las RLS de la tabla, así que
+--    archivados, avisos dirigidos, escuchas no asignadas y mensajes ajenos quedan fuera)
+--    y que la fila siga teniendo esa foto. El autor ve siempre las suyas.
+--  · La app las reduce antes de subirlas (1600 px) y, al redibujarlas, pierden los
+--    datos ocultos de la cámara (ubicación GPS incluida).
+--  · Lo que se queda sin fila (contenido borrado por el profesor, cuentas borradas,
+--    subidas a medias) lo borra cada noche la Edge Function "media-cleanup" (media_orphans).
+-- =====================================================================
+create or replace function public.photos_ok(p jsonb, maxn int)
+returns boolean language sql immutable set search_path = public as $$
+  select case when p is null or jsonb_typeof(p) <> 'array' then false
+    else jsonb_array_length(p) <= maxn
+     and not exists (
+       select 1 from jsonb_array_elements(p) e
+       where case when jsonb_typeof(e) <> 'object' then true
+             else coalesce(e->>'k', '') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+               or coalesce(e->>'w', '') !~ '^[1-9][0-9]{0,4}$'
+               or coalesce(e->>'h', '') !~ '^[1-9][0-9]{0,4}$'
+               or (select count(*) from jsonb_object_keys(e)) <> 3 end)
+     and (select count(distinct e->>'k') from jsonb_array_elements(p) e) = jsonb_array_length(p)
+  end
+$$;
+
+alter table public.feed_posts         add column if not exists photos jsonb not null default '[]'::jsonb;
+alter table public.board_posts        add column if not exists photos jsonb not null default '[]'::jsonb;
+alter table public.dm_messages        add column if not exists photos jsonb not null default '[]'::jsonb;
+alter table public.feed_comments      add column if not exists photos jsonb not null default '[]'::jsonb;
+alter table public.listening_comments add column if not exists photos jsonb not null default '[]'::jsonb;
+
+-- El texto pasa a ser opcional si hay fotos (mismo tope de longitud que antes)
+alter table public.feed_posts drop constraint if exists feed_posts_body_check;
+alter table public.feed_posts add constraint feed_posts_body_check
+  check (char_length(body) <= 2000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1));
+alter table public.feed_posts drop constraint if exists feed_posts_photos_check;
+alter table public.feed_posts add constraint feed_posts_photos_check check (public.photos_ok(photos, 10));
+
+alter table public.board_posts drop constraint if exists board_posts_body_check;
+alter table public.board_posts add constraint board_posts_body_check
+  check (char_length(body) <= 5000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1));
+alter table public.board_posts drop constraint if exists board_posts_photos_check;
+alter table public.board_posts add constraint board_posts_photos_check check (public.photos_ok(photos, 10));
+
+alter table public.dm_messages drop constraint if exists dm_messages_body_check;
+alter table public.dm_messages add constraint dm_messages_body_check
+  check (char_length(body) <= 2000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1));
+alter table public.dm_messages drop constraint if exists dm_messages_photos_check;
+alter table public.dm_messages add constraint dm_messages_photos_check check (public.photos_ok(photos, 10));
+
+alter table public.feed_comments drop constraint if exists feed_comments_body_check;
+alter table public.feed_comments add constraint feed_comments_body_check
+  check (char_length(body) <= 1000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1));
+alter table public.feed_comments drop constraint if exists feed_comments_photos_check;
+alter table public.feed_comments add constraint feed_comments_photos_check check (public.photos_ok(photos, 1));
+
+alter table public.listening_comments drop constraint if exists listening_comments_body_check;
+alter table public.listening_comments add constraint listening_comments_body_check
+  check (char_length(body) <= 1000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1));
+alter table public.listening_comments drop constraint if exists listening_comments_photos_check;
+alter table public.listening_comments add constraint listening_comments_photos_check check (public.photos_ok(photos, 1));
+
+-- Editar un post: cambiar las fotos también cuenta como "editado"
+create or replace function public.feed_posts_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.id := old.id;
+  new.author_id := old.author_id;
+  new.created_at := old.created_at;
+  if new.body is distinct from old.body or new.link_url is distinct from old.link_url
+     or new.photos is distinct from old.photos then
+    new.edited_at := now();
+  else
+    new.edited_at := old.edited_at;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.feed_posts_guard() from public, anon, authenticated;
+
+-- Un mensaje privado enviado no se reescribe: tampoco sus fotos
+create or replace function public.dm_messages_guard()
+returns trigger
+language plpgsql set search_path = public
+as $$
+begin
+  if new.id is distinct from old.id or new.sender_id is distinct from old.sender_id
+     or new.recipient_id is distinct from old.recipient_id or new.body is distinct from old.body
+     or new.photos is distinct from old.photos
+     or new.created_at is distinct from old.created_at then
+    raise exception 'Solo se puede marcar como leído';
+  end if;
+  return new;
+end;
+$$;
+
+-- El almacén: privado, solo JPEG y como mucho 2 MB por archivo (la app los deja en ~250 KB)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('media', 'media', false, 2097152, array['image/jpeg'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- ¿Puede quien llama ver este archivo? (invoker: las RLS de cada tabla deciden)
+create or replace function public.media_visible(p_name text)
+returns boolean language plpgsql stable set search_path = public as $$
+declare
+  m text[] := regexp_match(p_name, '^(feed|board|fcomment|lcomment|dm)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t)?\.jpg$');
+  own uuid; rid uuid; ph jsonb;
+begin
+  if m is null or auth.uid() is null then return false; end if;
+  own := m[2]::uuid; rid := m[3]::uuid;
+  if own = auth.uid() then return true; end if; -- lo tuyo, siempre (también recién subido)
+  ph := jsonb_build_array(jsonb_build_object('k', m[4]));
+  return case m[1]
+    when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'board'    then exists (select 1 from public.board_posts        t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = rid and t.sender_id = own and t.photos @> ph)
+    else false end;
+end;
+$$;
+revoke execute on function public.media_visible(text) from public, anon;
+grant  execute on function public.media_visible(text) to authenticated;
+
+-- Subir: solo a tu carpeta, con cuenta aprobada; en avisos, solo el profesor
+create or replace function public.media_can_upload(p_name text)
+returns boolean language sql stable set search_path = public as $$
+  select coalesce((regexp_match(p_name, '^(feed|board|fcomment|lcomment|dm)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(_t)?\.jpg$'))[2]
+                  = auth.uid()::text, false)
+     and public.is_approved()
+     and (p_name not like 'board/%' or public.is_teacher())
+$$;
+revoke execute on function public.media_can_upload(text) from public, anon;
+grant  execute on function public.media_can_upload(text) to authenticated;
+
+drop policy if exists media_select on storage.objects;
+create policy media_select on storage.objects for select to authenticated
+  using (bucket_id = 'media' and public.media_visible(name));
+drop policy if exists media_insert on storage.objects;
+create policy media_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and public.media_can_upload(name));
+-- Borrar: cada cual lo suyo. Lo demás (moderación, cuentas borradas) lo limpia media-cleanup.
+drop policy if exists media_delete on storage.objects;
+create policy media_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'media' and split_part(name, '/', 2) = auth.uid()::text);
+
+-- Archivos sin fila que los use (más de 1 día): los borra la Edge Function "media-cleanup"
+create or replace function public.media_orphans(p_limit int default 500)
+returns setof text language sql stable security definer set search_path = public as $$
+  select o.name
+  from storage.objects o
+  cross join lateral (select regexp_match(o.name, '^(feed|board|fcomment|lcomment|dm)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t)?\.jpg$') as m) x
+  where o.bucket_id = 'media'
+    and o.created_at < now() - interval '1 day'
+    and not coalesce(case x.m[1]
+      when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'board'    then exists (select 1 from public.board_posts        t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = x.m[3]::uuid and t.sender_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      else false end, false)
+  order by o.created_at
+  limit greatest(1, least(coalesce(p_limit, 500), 1000));
+$$;
+revoke execute on function public.media_orphans(int) from public, anon, authenticated;
+grant  execute on function public.media_orphans(int) to service_role;
+
+-- Limpieza cada noche a las 04:15 (UTC)
+select cron.schedule('media-cleanup', '15 4 * * *',
+  $cron$select net.http_post(url := 'https://gyzwevayeloishhldumd.supabase.co/functions/v1/media-cleanup',
+    body := '{}'::jsonb, headers := '{"Content-Type":"application/json"}'::jsonb)$cron$);
