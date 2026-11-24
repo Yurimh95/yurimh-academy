@@ -38,8 +38,10 @@ const { chromium } = require('playwright');
   let d = await snapshot(p);
   ok(!d.profiles.some(x => x.id === 's3'), 'Rechazar borra la cuenta');
   ok(d.blocked_emails.length === 1 && d.blocked_emails[0].kind === 'domain' && d.blocked_emails[0].pattern === 'spam-bots.net', 'Queda bloqueado el dominio spam-bots.net');
-  ok(await p.locator('details[data-blocked-panel][open]').count() === 1, 'El desplegable "Correos bloqueados" se abre solo');
-  ok((await p.textContent('details[data-blocked-panel] summary')).includes('(1)'), 'Contador: Correos bloqueados (1)');
+  ok(!(await p.textContent('#app')).includes('Correos bloqueados'), 'La lista ya no está en Alumnos');
+  await goto(p, 'settings');
+  ok((await p.textContent('[data-blocked-emails]')).includes('(1)'), 'Ajustes → Privacidad: "Correos bloqueados (1)"');
+  ok((await p.textContent('.settings')).includes('@spam-bots.net'), 'Sale @spam-bots.net en la lista');
 
   // ---- Bloquear un correo de Gmail a mano: se normaliza ----
   await p.fill('#blockAddInput', 'Pe.Pito+clase@GMAIL.com');

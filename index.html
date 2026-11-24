@@ -2679,7 +2679,7 @@ function settingsView() {
       <div class="panel">
         <h2 class="h2" style="margin-top:0">${ic('shield')} Privacidad</h2>
         <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
-        ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
+        ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>' + blockedEmailsHtml()
           : `<ul class="plist">
             <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo tu profesor sabe que estás.</li>
             <li><b>Si alguien te molesta:</b> en un mensaje privado, mantén pulsado el mensaje (en el ordenador, la flechita ⌄) y elige <b>Denunciar</b>. También puedes pulsar <b>Bloquear</b> en la conversación y marcar "Denunciar también", o pulsar su nombre o su foto y elegir <b>Denunciar a esta persona</b>. Solo tu profesor ve las denuncias, y la otra persona no se entera.</li>
@@ -3445,8 +3445,7 @@ function teacherStudents() {
       <div class="list">${arch.map(s => `
       <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">Archivado el ${fmtDate(s.archived_at.slice(0, 10))}</div></div></div>
         <div class="chips"><button class="btn sm" data-action="unarchive" data-id="${s.id}">Reactivar</button>
-        <button class="btn sm danger" data-action="delete-student" data-id="${s.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}
-    ${blockedPanel()}`;
+        <button class="btn sm danger" data-action="delete-student" data-id="${s.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}`;
 }
 const isPending = s => !s.approved && !s.archived_at;
 
@@ -3455,19 +3454,20 @@ const isPending = s => !s.approved && !s.archived_at;
 const COMMON_MAIL_DOMAINS = ['gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.es', 'outlook.com', 'outlook.es', 'live.com', 'live.es', 'msn.com',
   'yahoo.com', 'yahoo.es', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com', 'proton.me', 'gmx.com', 'gmx.es', 'aol.com', 'telefonica.net', 'movistar.es'];
 const mailDomain = e => String(e || '').trim().toLowerCase().split('@')[1] || '';
-function blockedPanel() {
+// Ajustes → Privacidad (solo profesor)
+function blockedEmailsHtml() {
   const list = S.blocked || [];
-  return `<details class="archived" data-blocked-panel ${S.blockedOpen ? 'open' : ''}><summary>Correos bloqueados (${list.length})</summary>
-    <p class="sub" style="margin:8px 0 10px">No pueden crear una cuenta. Con un correo se bloquean también sus variantes (mayúsculas, "nombre+algo@" y, en Gmail, los puntos). Con un dominio, todos sus correos. No afecta a cuentas que ya existen.</p>
-    <form id="blockAddForm" class="row" style="gap:8px;flex-wrap:wrap">
-      <input type="text" id="blockAddInput" data-no-emoji maxlength="254" autocomplete="off" spellcheck="false" placeholder="correo@ejemplo.com o @dominio.com" style="flex:1;min-width:200px">
+  return `<h3 class="h3" data-blocked-emails>Correos bloqueados${list.length ? ` (${list.length})` : ''}</h3>
+    <p class="sub" style="margin:0 0 10px">No pueden crear una cuenta. Un correo se bloquea también con sus variantes (mayúsculas, "nombre+algo@" y, en Gmail, los puntos); un dominio, con todos sus correos. No afecta a cuentas que ya existen. También puedes bloquear al rechazar a alguien en Alumnos.</p>
+    <form id="blockAddForm" style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">
+      <input type="text" id="blockAddInput" data-no-emoji maxlength="254" autocomplete="off" spellcheck="false" placeholder="correo@ejemplo.com o @dominio.com" style="flex:1;min-width:180px">
       <button type="submit" class="btn sm">Bloquear</button>
     </form>
-    ${list.length ? `<div class="list" style="margin-top:10px">${list.map(b => `
-      <div class="row"><div><strong>${esc(b.kind === 'domain' ? '@' + b.pattern : b.pattern)}</strong>
-        <div class="sub">${b.kind === 'domain' ? 'Dominio entero' : 'Correo'} · desde el ${fmtDate(b.created_at.slice(0, 10))}</div></div>
-        <button class="btn sm" data-action="unblock-email" data-id="${b.id}">Desbloquear</button></div>`).join('')}</div>` : ''}
-  </details>`;
+    ${list.length ? `<div class="blist">${list.map(b => `
+      <div class="brow"><span><b>${esc(b.kind === 'domain' ? '@' + b.pattern : b.pattern)}</b>
+        <span class="sub" style="display:block">${b.kind === 'domain' ? 'Dominio entero' : 'Correo'} · desde el ${fmtDate(b.created_at.slice(0, 10))}</span></span>
+        <button class="btn sm ghost" data-action="unblock-email" data-id="${b.id}">Desbloquear</button></div>`).join('')}</div>`
+      : '<p class="sub" style="margin:0">No hay ningún correo bloqueado.</p>'}`;
 }
 function rejectModal(id) {
   const s = S.students.find(x => x.id === id);
@@ -4399,7 +4399,6 @@ const actions = {
       return fail('No se pudo rechazar: ' + msg);
     }
     S.students = S.students.filter(x => x.id !== id);
-    if (how !== 'none') S.blockedOpen = true;
     await closeModal(); await loadData(true); render();
     toast(how === 'none' ? `${s.display_name} rechazado` : `${s.display_name} rechazado y ${how === 'domain' ? 'dominio' : 'correo'} bloqueado`, 'ok');
   },
@@ -4410,7 +4409,7 @@ const actions = {
     if (!confirm(`¿Desbloquear ${label}?\n\nPodrá volver a crear una cuenta (y te saldrá pendiente de aprobar).`)) return;
     const { error } = await sb.from('blocked_emails').delete().eq('id', b.id);
     if (error) return toast('No se pudo desbloquear: ' + errEs(error), 'bad');
-    S.blocked = S.blocked.filter(x => x.id !== b.id); S.blockedOpen = true;
+    S.blocked = S.blocked.filter(x => x.id !== b.id);
     render(); toast(`${label} desbloqueado`, 'ok');
   },
   'delete-me'() { deleteAccountModal(null); },
@@ -5475,9 +5474,7 @@ document.addEventListener('change', async e => {
   S.goalStages = S.goalStages.filter(s => s.stage !== stage).concat(data || []);
   toast('Etapa guardada', 'ok');
 });
-// El desplegable de correos bloqueados recuerda si está abierto entre repintados
-document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('[data-blocked-panel]')) S.blockedOpen = e.target.open; }, true);
-// Bloquear un correo o un dominio a mano (Alumnos → Correos bloqueados)
+// Bloquear un correo o un dominio a mano (Ajustes → Privacidad → Correos bloqueados)
 document.addEventListener('submit', async e => {
   const f = e.target; if (f.id !== 'blockAddForm') return;
   e.preventDefault();
@@ -5491,7 +5488,7 @@ document.addEventListener('submit', async e => {
   const r = await blockAdd(kind, pattern);
   btn.disabled = false;
   if (r.error) return toast(kind === 'domain' ? 'Ese dominio no es válido. Escríbelo así: @dominio.com' : 'No se pudo bloquear: ' + errEs(r.error), 'bad');
-  S.blockedOpen = true; render();
+  render();
   toast(r.dup ? 'Ya estaba bloqueado' : `${kind === 'domain' ? '@' + r.row.pattern : r.row.pattern} bloqueado`, 'ok');
 });
 
