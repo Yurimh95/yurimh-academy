@@ -106,6 +106,7 @@ svg.i{width:20px;height:20px;flex:none}
 .me .who small{display:block;color:var(--faint);font-weight:500;font-size:12px}
 /* Vista de alumno (profesor): botón para entrar y barra fija para salir */
 .pvbtn{justify-content:center}
+.iconbtn.sm.pvicon{width:auto;padding:0 7px;gap:3px;display:inline-flex;align-items:center}
 .pvbtn svg,.pvbar svg{width:17px;height:17px}
 .pvbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:8px 8px 8px 14px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--neon);box-shadow:0 0 18px rgba(var(--neon-rgb),.18);color:var(--strong);font-size:14px}
 .pvbar .t{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
@@ -924,6 +925,7 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-clock"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-student" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5 12 5l10 4.5-10 4.5z"/><path d="M6 11.3v4.2c0 1.4 2.7 2.9 6 2.9s6-1.5 6-2.9v-4.2"/><path d="M22 9.5v5"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/></symbol>
 </svg>
 <div id="app"><div class="loading">Cargando…</div></div>
@@ -2312,7 +2314,7 @@ function sidebar(secs) {
     <div class="side-foot">
       ${themeSwitch()}
       <div class="me">${avatarHtml(S.user.id, 36)}<div class="who">${esc(S.profile.display_name)}<small>${t ? 'Profesor' : 'Alumno'}</small></div>
-        ${t && !S.preview ? `<button class="iconbtn sm" data-action="preview-on" title="Ver como alumno (solo para mirar)" aria-label="Ver como alumno">${ic('eye')}</button>` : ''}
+        ${t && !S.preview ? `<button class="iconbtn sm pvicon" data-action="preview-on" title="Ver como alumno (solo para mirar)" aria-label="Ver como alumno">${ic('student')}${ic('eye')}</button>` : ''}
         <button class="iconbtn sm" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button></div>
     </div>
   </aside>`;
