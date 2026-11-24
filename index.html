@@ -260,6 +260,9 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .privtext p{margin:0 0 12px;font-size:14.5px;line-height:1.55}.privtext b{color:var(--strong)}
 .prof-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
 .prof-bar .btn svg{width:17px;height:17px}
+.set-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.set-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){.set-cols{grid-template-columns:1fr}}
 .settings .h2{display:flex;align-items:center;gap:9px}
 .settings .h2 svg{width:20px;height:20px;color:var(--accent)}
 .settings .push-box{margin:0;padding:0;border:0;background:none}
@@ -2309,8 +2312,8 @@ function sidebar(secs) {
     <div class="side-foot">
       ${themeSwitch()}
       <div class="me">${avatarHtml(S.user.id, 36)}<div class="who">${esc(S.profile.display_name)}<small>${t ? 'Profesor' : 'Alumno'}</small></div>
+        ${t && !S.preview ? `<button class="iconbtn sm" data-action="preview-on" title="Ver como alumno (solo para mirar)" aria-label="Ver como alumno">${ic('eye')}</button>` : ''}
         <button class="iconbtn sm" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button></div>
-      ${t ? `<button class="btn sm pvbtn" data-action="preview-on" title="Mira la app como la ve un alumno (solo para mirar)">${ic('eye')} Ver como alumno</button>` : ''}
     </div>
   </aside>`;
 }
@@ -2641,39 +2644,45 @@ function settingsView() {
   const p = S.profile, t = isTeacher();
   const blocked = S.blocks.map(b => b.blocked_id);
   const minor = !t && isMinorProfile(p);
-  return `<div class="two settings">
-    <div class="panel"><h2 class="h2" style="margin-top:0">${ic('bell')} Notificaciones</h2>${pushSettingHtml()}</div>
-    ${installPanelHtml()}
-    <div class="panel">
-      <h2 class="h2" style="margin-top:0">${ic('shield')} Privacidad</h2>
-      <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
-      ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
-        : `<ul class="plist">
-          <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo tu profesor sabe que estás.</li>
-          <li><b>Si alguien te molesta:</b> en un mensaje privado, mantén pulsado el mensaje (en el ordenador, la flechita ⌄) y elige <b>Denunciar</b>. También puedes pulsar <b>Bloquear</b> en la conversación y marcar "Denunciar también", o pulsar su nombre o su foto y elegir <b>Denunciar a esta persona</b>. Solo tu profesor ve las denuncias, y la otra persona no se entera.</li>
-          <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
-          <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
-        <h3 class="h3">Personas bloqueadas</h3>
-        ${blocked.length ? `<div class="blist">${blocked.map(id => `<div class="brow">${avatarHtml(id, 32)}<span>${esc(whoName(id))}</span><button class="btn sm ghost" data-action="unblock" data-id="${id}" data-stay="1">Desbloquear</button></div>`).join('')}</div>`
-          : '<p class="sub" style="margin:0">No has bloqueado a nadie. Puedes hacerlo desde una conversación privada; nadie se entera, tampoco tu profesor.</p>'}`}
+  // Dos columnas independientes: cada panel va justo debajo del anterior de su columna, y los cortos
+  // (avisos, contraseña, cuenta) quedan a la vista aunque Privacidad sea muy largo.
+  return `<div class="settings set-cols">
+    <div class="set-col">
+      <div class="panel"><h2 class="h2" style="margin-top:0">${ic('bell')} Notificaciones</h2>${pushSettingHtml()}</div>
+      ${installPanelHtml()}
+      <form id="passForm" class="panel">
+        <h2 class="h2" style="margin-top:0">${ic('lock')} Seguridad</h2>
+        <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+        <label class="f">Repite la contraseña<input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn" type="submit">Cambiar contraseña</button>
+      </form>
+      <div class="panel">
+        <h2 class="h2" style="margin-top:0">${ic('profile')} Cuenta</h2>
+        <p class="sub" style="margin:0 0 12px">Conectado como ${esc(p.email || '')}</p>
+        <button class="btn ghost" data-action="logout">${ic('logout')} Cerrar sesión</button>
+        ${t ? '' : `<h3 class="h3" style="margin-top:18px">Borrar mi cuenta</h3>
+        <p class="sub" style="margin:0 0 10px">Borra para siempre tu cuenta y todo lo tuyo: perfil, publicaciones, comentarios, mensajes, respuestas y deberes. No se puede deshacer.</p>
+        <button class="btn danger sm" data-action="delete-me">Borrar mi cuenta</button>`}
+      </div>
     </div>
-    ${t ? `<div class="panel"><h2 class="h2" style="margin-top:0">${ic('payments')} Copia de seguridad</h2>
-      <p class="sub" style="margin:0 0 12px">El plan gratuito de Supabase no guarda copias que puedas recuperar. Descarga una de vez en cuando (por ejemplo, una al mes) y guárdala en tu ordenador o en tu nube: alumnos, escuchas, avisos, Inicio, deberes, pagos y agenda en un solo archivo.</p>
-      <button class="btn primary" data-action="backup">Descargar copia de seguridad</button>
-      <p class="sub" style="margin:10px 0 0">No incluye los mensajes privados entre alumnos (tú no puedes leerlos) ni las contraseñas.</p></div>` : ''}
-    <form id="passForm" class="panel">
-      <h2 class="h2" style="margin-top:0">${ic('lock')} Seguridad</h2>
-      <label class="f">Nueva contraseña (mínimo 8 caracteres)<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
-      <label class="f">Repite la contraseña<input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
-      <button class="btn" type="submit">Cambiar contraseña</button>
-    </form>
-    <div class="panel">
-      <h2 class="h2" style="margin-top:0">${ic('profile')} Cuenta</h2>
-      <p class="sub" style="margin:0 0 12px">Conectado como ${esc(p.email || '')}</p>
-      <button class="btn ghost" data-action="logout">${ic('logout')} Cerrar sesión</button>
-      ${t ? '' : `<h3 class="h3" style="margin-top:18px">Borrar mi cuenta</h3>
-      <p class="sub" style="margin:0 0 10px">Borra para siempre tu cuenta y todo lo tuyo: perfil, publicaciones, comentarios, mensajes, respuestas y deberes. No se puede deshacer.</p>
-      <button class="btn danger sm" data-action="delete-me">Borrar mi cuenta</button>`}
+    <div class="set-col">
+      <div class="panel">
+        <h2 class="h2" style="margin-top:0">${ic('shield')} Privacidad</h2>
+        <p style="margin:0 0 10px"><button class="linkbtn" data-action="privacy">Leer qué datos guarda la app, para qué y tus derechos →</button></p>
+        ${t ? '<p class="sub" style="margin:0">Como profesor ves el email, la edad y las respuestas de tus alumnos. Los mensajes privados entre alumnos no los ves, salvo los que te denuncien.</p>'
+          : `<ul class="plist">
+            <li><b>Lo ven tus compañeros de clase:</b> tu nombre o apodo, tu foto y lo que pones en "Sobre ti", pero solo cuando participas (publicas, comentas o reaccionas), si sois compañeros o si os habéis escrito. No hay lista de alumnos ni buscador: te encuentran a través de lo que publicas. Si no participas, solo tu profesor sabe que estás.</li>
+            <li><b>Si alguien te molesta:</b> en un mensaje privado, mantén pulsado el mensaje (en el ordenador, la flechita ⌄) y elige <b>Denunciar</b>. También puedes pulsar <b>Bloquear</b> en la conversación y marcar "Denunciar también", o pulsar su nombre o su foto y elegir <b>Denunciar a esta persona</b>. Solo tu profesor ve las denuncias, y la otra persona no se entera.</li>
+            <li><b>Solo lo ve tu profesor:</b> tu email, tu fecha de nacimiento y tus respuestas de las escuchas.</li>
+            <li><b>Mensajes privados:</b> ${minor ? (p.family_dm_ok ? 'tu familia ha autorizado que hables en privado con compañeros.' : 'puedes escribir a tu profesor. Para hablar con compañeros hace falta permiso de tu familia: díselo a tu profesor.') : 'puedes escribirte con tu profesor y con los compañeros que también puedan.'} Tu profesor no los lee, salvo los que se denuncien.</li></ul>
+          <h3 class="h3">Personas bloqueadas</h3>
+          ${blocked.length ? `<div class="blist">${blocked.map(id => `<div class="brow">${avatarHtml(id, 32)}<span>${esc(whoName(id))}</span><button class="btn sm ghost" data-action="unblock" data-id="${id}" data-stay="1">Desbloquear</button></div>`).join('')}</div>`
+            : '<p class="sub" style="margin:0">No has bloqueado a nadie. Puedes hacerlo desde una conversación privada; nadie se entera, tampoco tu profesor.</p>'}`}
+      </div>
+      ${t ? `<div class="panel"><h2 class="h2" style="margin-top:0">${ic('payments')} Copia de seguridad</h2>
+        <p class="sub" style="margin:0 0 12px">El plan gratuito de Supabase no guarda copias que puedas recuperar. Descarga una de vez en cuando (por ejemplo, una al mes) y guárdala en tu ordenador o en tu nube: alumnos, escuchas, avisos, Inicio, deberes, pagos y agenda en un solo archivo.</p>
+        <button class="btn primary" data-action="backup">Descargar copia de seguridad</button>
+        <p class="sub" style="margin:10px 0 0">No incluye los mensajes privados entre alumnos (tú no puedes leerlos) ni las contraseñas.</p></div>` : ''}
     </div>
   </div>`;
 }
