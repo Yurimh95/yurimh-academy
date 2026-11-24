@@ -2616,7 +2616,8 @@ select cron.schedule('media-cleanup', '15 4 * * *',
 --    Quien la ve puede reaccionar (cualquier emoji) y responder por privado; quien la
 --    sube ve quién la ha visto. Las vistas y reacciones solo las ve quien la subió.
 --  · Posts con vídeo: un vídeo por post (sin fotos), que caduca a 1, 3 o 7 días (lo elige
---    quien publica). Al caducar se borra el vídeo y queda el texto; sin texto, el post entero.
+--    quien publica). Al caducar se borra el vídeo y el post SE QUEDA (aunque no tenga texto) con
+--    "Vídeo no disponible", sus comentarios y reacciones (Yuri, 2026-11-25).
 --  · Calidad: la app los pasa a 720p (~20 MB por minuto) antes de subirlos.
 --  · Archivos: el vídeo va al almacén PRIVADO "video" (<tipo>/<autor>/<id>/<clave>.mp4) y
 --    su portada al de fotos, "media" (<clave>_t.jpg). tipo: story | fvideo.
@@ -2803,7 +2804,7 @@ alter table public.feed_posts add constraint feed_posts_video_check
   check (public.video_ok(video) and (video is null or (video_expires_at is not null and jsonb_array_length(photos) = 0)));
 alter table public.feed_posts drop constraint if exists feed_posts_body_check;
 alter table public.feed_posts add constraint feed_posts_body_check
-  check (char_length(body) <= 2000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1 or video is not null));
+  check (char_length(body) <= 2000 and (char_length(body) >= 1 or jsonb_array_length(photos) >= 1 or video_expires_at is not null));
 
 -- Caducidad: 1, 3 o 7 días desde que se publica (la base de datos pone la hora exacta)
 create or replace function public.feed_posts_video_ins()
@@ -3047,13 +3048,12 @@ create policy video_delete on storage.objects for delete to authenticated
   using (bucket_id = 'video' and split_part(name, '/', 2) = auth.uid()::text);
 
 -- ---------- Caducar y limpiar ----------
--- Cada hora: fuera las stories y los vídeos caducados (salvo lo denunciado sin revisar)
+-- Cada hora: fuera las stories y los vídeos caducados (salvo lo denunciado sin revisar).
+-- Los posts se quedan siempre, aunque no tengan texto: solo se les quita el vídeo.
 create or replace function public.media_expire()
 returns void language plpgsql security definer set search_path = public as $$
 begin
   delete from public.stories s where s.expires_at <= now() and not public.has_open_report('story', s.id);
-  delete from public.feed_posts p where p.video is not null and p.video_expires_at <= now()
-    and char_length(p.body) = 0 and jsonb_array_length(p.photos) = 0 and not public.has_open_report('feed_post', p.id);
   update public.feed_posts p set video = null where p.video is not null and p.video_expires_at <= now()
     and not public.has_open_report('feed_post', p.id);
   delete from public.video_plays where played_on < (date_trunc('month', now()) - interval '3 months')::date;

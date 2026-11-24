@@ -2439,16 +2439,40 @@ function vdMeta(blob) {
     const end = (err, val) => { if (done) return; done = true; URL.revokeObjectURL(url); err ? rej(err) : res(val); };
     v.muted = true; v.playsInline = true; v.preload = 'auto';
     v.onerror = () => end(new Error('vdMeta'));
-    setTimeout(() => end(new Error('vdMeta: tiempo')), 20000);
-    v.onloadedmetadata = () => { v.currentTime = Math.min(0.5, (isFinite(v.duration) ? v.duration : 1) / 3); };
-    v.onseeked = async () => {
+    setTimeout(() => end(new Error('vdMeta: tiempo')), 30000);
+    // Ir a un momento y esperar a que ese fotograma esté pintado de verdad (si no, sale negro)
+    const seek = t => new Promise(r => {
+      const on = () => {
+        v.removeEventListener('seeked', on);
+        if (v.requestVideoFrameCallback) { let ok = false; v.requestVideoFrameCallback(() => { ok = true; r(); }); setTimeout(() => { if (!ok) r(); }, 500); }
+        else setTimeout(r, 150);
+      };
+      v.addEventListener('seeked', on); v.currentTime = t;
+    });
+    let started = false;
+    v.onloadeddata = async () => {
+      if (started) return; started = true;
       try {
-        const w = v.videoWidth, h = v.videoHeight, k = Math.min(1, 480 / Math.max(1, Math.min(w, h)));
+        const w = v.videoWidth, h = v.videoHeight, d = isFinite(v.duration) ? v.duration : 1, k = Math.min(1, 480 / Math.max(1, Math.min(w, h)));
+        if (!w || !h) throw new Error('vdMeta: tamaño');
         const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
-        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-        const thumb = await phBlob(c, 0.75);
-        if (!thumb || !w || !h) throw new Error('vdMeta: portada');
-        end(null, { w, h, d: v.duration, thumb });
+        const cx = c.getContext('2d', { willReadFrequently: true });
+        const light = () => { // brillo medio de una muestra de píxeles (0-255)
+          const px = cx.getImageData(0, 0, c.width, c.height).data; let s = 0, n = 0;
+          for (let i = 0; i < px.length; i += 4 * 37) { s += px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11; n++; }
+          return n ? s / n : 0;
+        };
+        // Primero a los 0,5 s; si está casi negro (fundido, tapa…), al 25 % y al 50 %, y se queda la más clara
+        let best = null, bestL = -1;
+        for (const t of [Math.min(0.5, d / 3), d * 0.25, d * 0.5]) {
+          await seek(t);
+          cx.drawImage(v, 0, 0, c.width, c.height);
+          const L = light();
+          if (L > bestL) { bestL = L; best = await phBlob(c, 0.75); }
+          if (L > 24) break;
+        }
+        if (!best) throw new Error('vdMeta: portada');
+        end(null, { w, h, d: v.duration, thumb: best });
       } catch (e) { end(e); }
     };
     v.src = url;
@@ -2638,7 +2662,7 @@ const fvExpired = p => !p.video || (p.video_expires_at && new Date(p.video_expir
 const openReport = (type, id) => S.reports.some(r => r.target_type === type && r.target_id === id && !r.resolved);
 function feedVideo(p) {
   if (!p.video_expires_at) return '';
-  if (fvExpired(p)) return `<div class="vd-gone">${VD_ICON}<span>El vídeo ha caducado y se ha borrado</span></div>`;
+  if (fvExpired(p)) return `<div class="vd-gone">${VD_ICON}<span>Vídeo no disponible: ha caducado</span></div>`;
   return vdBox('fvideo', p.author_id, p.id, p.video, new Date(p.video_expires_at) > Date.now() ? `Se borra en ${vdLeft(p.video_expires_at)}` : 'Caducado · denunciado');
 }
 
@@ -5690,7 +5714,7 @@ document.addEventListener('submit', async e => {
     if (!p) return closeModal();
     const body = mentionEncode(f.elements['body']), d = phDraft('feed-edit'), before = phList(p);
     if (phBusy('feed-edit')) return toast('Espera un momento: las fotos aún se están preparando', 'bad');
-    if (!body && !d.length) return toast('Escribe algo, deja alguna foto o elimina la publicación', 'bad');
+    if (!body && !d.length && !p.video_expires_at) return toast('Escribe algo, deja alguna foto o elimina la publicación', 'bad'); // un post de vídeo puede quedarse sin texto
     if (body.length > 2000) return toast('El texto es demasiado largo', 'bad');
     if (body === p.body && phSame(d, before)) return closeModal(); // sin cambios: no sale "editado"
     const btn = $('button[type=submit]', f); btn.disabled = true;

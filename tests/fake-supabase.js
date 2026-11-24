@@ -172,7 +172,7 @@
   const videoOk = v => v==null || (typeof v==='object' && !Array.isArray(v) && Object.keys(v).length===4 && UUID_RE.test(String(v.k)) && /^[1-9][0-9]{0,3}$/.test(String(v.w)) && /^[1-9][0-9]{0,3}$/.test(String(v.h)) && /^[0-9]{1,2}(\.[0-9]{1,3})?$/.test(String(v.d)) && +v.d>=0.3 && +v.d<=61);
   const PHOTO_MAX = { feed_posts:10, board_posts:10, dm_messages:10, feed_comments:1, listening_comments:1 };
   const checks = {
-    feed_posts: r => (bodyOk(r,2000) || (r.video && String(r.body??'').length<=2000)) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500))
+    feed_posts: r => (bodyOk(r,2000) || ((r.video || r.video_expires_at) && String(r.body??'').length<=2000)) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500))
       && videoOk(r.video) && (!r.video || (r.video_expires_at && !(r.photos||[]).length)),
     stories: r => !!r.video && videoOk(r.video),
     story_reactions: r => r.emoji && String(r.emoji).length>=1 && String(r.emoji).length<=32,

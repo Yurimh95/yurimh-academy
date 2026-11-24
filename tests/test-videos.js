@@ -119,6 +119,11 @@ const path = require('path');
   await p.click(`[data-fpost="${fp2.id}"] [data-action=feed-delete]`); await p.waitForTimeout(400);
   F = await files(p);
   ok(!F.some(([k]) => k.includes(fp2.id)), 'Borrar tu post con vídeo borra el vídeo y su portada');
+  // Otro post solo con vídeo y un comentario, para ver qué queda al caducar
+  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(500);
+  const fp3 = (await state(p)).feed_posts.find(x => x.author_id === 's1' && x.video && x.body === '');
+  await db(p, id => sb.from('feed_comments').insert({ id: crypto.randomUUID(), post_id: id, author_id: 's1', body: '¿Qué tal suena?' }), fp3.id);
   D = await state(p); F = await files(p);
   await p.context().close();
 
@@ -179,7 +184,14 @@ const path = require('path');
   const fexp = await db(p, path => window.__asUser('s2', () => window.__mediaVisible(path)), `fvideo/s1/${fp.id}/${fp.video.k}.mp4`);
   ok(fexp === false, 'Un vídeo de post caducado deja de verse al momento');
   await p.click('.nav button[data-s=feed]'); await p.waitForTimeout(200);
-  ok(await p.locator(`[data-fpost="${fp.id}"] .vd-gone`).count() === 1 && await p.locator(`[data-fpost="${fp.id}"] .fbody`).count() === 1, 'El post caducado se queda con el texto y "El vídeo ha caducado"');
+  ok(await p.locator(`[data-fpost="${fp.id}"] .vd-gone`).count() === 1 && await p.locator(`[data-fpost="${fp.id}"] .fbody`).count() === 1, 'El post caducado se queda con el texto y "Vídeo no disponible"');
+  // Lo que hace media_expire cada hora: quitar el vídeo (llega en directo como un cambio del post)
+  await db(p, id => window.__rtExternalUpdate('feed_posts', id, { video: null, video_expires_at: new Date(Date.now() - 1000).toISOString() }), fp3.id);
+  await p.waitForTimeout(300);
+  const c3 = `[data-fpost="${fp3.id}"]`;
+  ok(await p.locator(c3).count() === 1 && /no disponible/.test(await p.locator(`${c3} .vd-gone`).textContent()), 'Un post solo con vídeo NO se borra al caducar: sale "Vídeo no disponible"');
+  ok(/Qué tal suena/.test(await p.locator(`${c3} [data-cmpeek]`).textContent()), 'Y conserva sus comentarios');
+  ok(await db(p, id => window.__DB.feed_posts.some(x => x.id === id && x.video === null && x.body === ''), fp3.id), 'La base de datos acepta el post sin texto y sin vídeo porque tuvo vídeo');
   // Ajustes: lo gastado este mes
   await p.click('.nav button[data-s=settings]'); await p.waitForTimeout(300);
   ok(/de 3 GB este mes/.test(await p.locator('[data-vquota]').textContent()), 'En Ajustes el profesor ve lo gastado en vídeo este mes');
