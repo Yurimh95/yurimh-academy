@@ -90,7 +90,7 @@ Que cierre la app del todo y la vuelva a abrir, y pulse otra vez **Ajustes → A
   - **Espacio**: el plan gratuito de Supabase da 1 GB para fotos, que son unas 3.000. Lo ves en Supabase → **Storage**. Al borrar algo, sus fotos se borran; lo que borras tú en Moderación y las cuentas borradas se limpian solas (cada hora).
 - **Vídeos y stories** (como Instagram), de hasta **60 segundos**. La app los pasa a 720p antes de subirlos (unos 20 MB por minuto). Si duran más, se queda el primer minuto.
   - **Stories**: la fila de círculos de arriba del Inicio. Pulsa **+** en "Tu story" y elige una **foto o un vídeo**. Se abre el editor, como en Instagram:
-    - **Foto**: arrástrala para encuadrarla y pellízcala (en el ordenador, la rueda del ratón) para ampliarla. Se ve **5 segundos**.
+    - **Encuadre** (foto o vídeo): arrástrala para moverla y pellízcala (en el ordenador, la rueda del ratón) para acercarla o **alejarla**. Lo que sobra se rellena con un degradado de los colores de la propia imagen, como en Instagram. Las fotos horizontales empiezan enteras. Una foto se ve **5 segundos**.
     - **Aa**: añade un texto. Eliges color, si lleva fondo y el tamaño, y puedes **mencionar con @** (a quien mencionas le llega un aviso). Los textos se arrastran a donde quieras, se agrandan pellizcando o con la rueda, se editan con un toque y se quitan arrastrándolos a la papelera 🗑️.
     - **✏️**: dibuja a mano con el dedo, con colores y grosor, y "Deshacer".
     - Al verla, la @mención se puede pulsar para abrir el perfil.
