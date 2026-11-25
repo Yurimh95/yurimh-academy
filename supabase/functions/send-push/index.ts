@@ -40,6 +40,7 @@ function texts(kind: string, actor: string, extra: string | null, target: string
     case "lesson": return { title: "🎸 Recordatorio de clase", body: `Tienes clase ${extra ?? "hoy"}` };
     case "homework": return { title: "📝 Deberes nuevos", body: extra ?? "Tienes deberes nuevos para practicar" };
     case "classmate_request": return { title: "Solicitud de compañero", body: `${actor} te ha enviado una solicitud para ser compañeros` };
+    case "mention_story": return { title: `${actor} te ha mencionado en su story`, body: "Mírala antes de que caduque (24 h)" };
     case "story_reaction": return { title: `${actor} ha reaccionado a tu story`, body: extra ?? "" }; // extra = el emoji
     case "video_quota": return extra === "100"
       ? { title: "🎬 Vídeos en pausa este mes", body: "Se ha gastado el presupuesto de vídeo del plan gratis. Se podrán subir otra vez el día 1" }

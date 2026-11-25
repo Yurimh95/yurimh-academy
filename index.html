@@ -993,6 +993,51 @@ body.story-open .ebox{z-index:95}
 .sv-float{position:absolute;left:50%;bottom:20px;font-size:56px;transform:translateX(-50%);animation:svFloat 1.2s ease-out forwards;pointer-events:none;z-index:4}
 @keyframes svFloat{to{transform:translate(-50%,-220px) scale(1.4);opacity:0}}
 @media (prefers-reduced-motion:reduce){.sv-float{animation:none;opacity:0}.sv-spin,.vd.loading::after{animation:none}}
+/* Story: marco 9:16 con la foto o el vídeo y, encima, textos y dibujo (visor y editor) */
+.sv-stage{container-type:size;display:flex;align-items:center;justify-content:center}
+.st-media{position:relative;z-index:2;width:min(100cqw,calc(100cqh * 9 / 16));aspect-ratio:9/16;overflow:hidden;container-type:inline-size;background:#000;pointer-events:none}
+.st-media video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.st-media video.fill{object-fit:cover}
+.lightbox .st-media .st-photo{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:auto;object-fit:cover;border-radius:0;box-shadow:none;background:none}
+.st-media [hidden]{display:none}
+.st-draw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.st-texts{position:absolute;inset:0;pointer-events:none}
+.st-t{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:88%;font-size:calc(var(--s) * 6.5cqw);font-weight:800;line-height:1.15;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--c);text-shadow:0 1px 3px rgba(0,0,0,.55);padding:.12em .4em;border-radius:.35em}
+.st-t.bg{background:var(--c);color:var(--tc);text-shadow:none}
+.st-t .mention{pointer-events:auto;cursor:pointer;color:inherit;background:none;text-decoration:underline;text-underline-offset:.12em}
+/* Editor */
+.lightbox.sed .st-media{pointer-events:auto;touch-action:none;cursor:move}
+.lightbox.sed.drawing .st-media{cursor:crosshair}
+.lightbox.sed .st-media .st-photo{inset:auto;max-width:none;max-height:none;object-fit:fill;user-select:none;-webkit-user-drag:none}
+.lightbox.sed .st-texts{pointer-events:auto}
+.lightbox.sed.drawing .st-texts{pointer-events:none}
+.lightbox.sed .st-t{cursor:grab;touch-action:none;user-select:none}
+.st-t.drag{opacity:.85;cursor:grabbing}
+.sed-top{position:absolute;top:10px;left:8px;right:8px;z-index:5;display:flex;gap:8px;align-items:center}
+.sed-top .sv-btn{background:rgba(0,0,0,.45)}
+.sed-tool{min-width:42px;height:42px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
+.sed-tool.on{background:var(--accent);box-shadow:var(--glow)}
+.sed-trash{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;font-size:26px;z-index:4;pointer-events:none;transition:transform .15s,background .15s}
+.sed-trash.hot{background:var(--bad);transform:translateX(-50%) scale(1.2)}
+.sed-trash[hidden]{display:none}
+.sed-prog{position:absolute;left:10px;right:10px;top:62px;z-index:4}
+.sed-prog:empty,.sed-prog .vd-story-prev,.sed-prog .vd-chip:not(.busy){display:none}
+.sed-prog .vd-chip{background:rgba(0,0,0,.65);border-color:rgba(255,255,255,.25);color:#fff}
+.sed-prog .vd-ptext{color:#fff}
+.sed-bottom{position:relative;z-index:3;padding:10px 12px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;background:#000}
+.sed-hint{margin:0;color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.35;text-align:center}
+.sed-colors{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sed-c{width:28px;height:28px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.75);cursor:pointer}
+.sed-c.on{box-shadow:0 0 0 3px var(--neon)}
+.sed-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.sed-chip{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.1);color:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.sed-chip:disabled{opacity:.4;cursor:default}
+.sed-size{display:flex;align-items:center;gap:6px;color:#fff;font-size:13px}
+.sed-size input{width:110px;accent-color:var(--neon)}
+.sed-textbox{position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.62);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:20px}
+.sed-textbox[hidden]{display:none}
+.sed-textbox textarea{background:transparent;border:0;outline:0;box-shadow:none;text-align:center;font-size:26px;font-weight:800;line-height:1.2;resize:none;border-radius:10px;padding:8px 10px;min-height:96px}
+body.story-open .mbox{z-index:96}
 /* Respuesta a una story en un mensaje privado */
 .msg-story{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.12);color:inherit;font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
 .msg-story img{width:34px;height:56px;object-fit:cover;border-radius:6px;background:#000;flex:none}
@@ -1344,7 +1389,7 @@ function listify(html) {
 const plainText = text => String(text ?? '').replace(MENTION_RE, (m, u, l, s) => mentionView(u, l, s).text);
 
 /* ---- Escribir menciones: al teclear @ o # sale una lista para elegir (flechas + Enter, o pulsar) ---- */
-const MENTION_INPUTS = '#feedForm textarea, #postForm textarea, .cm-new textarea';
+const MENTION_INPUTS = '#feedForm textarea, #postForm textarea, .cm-new textarea, #sedText';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 // A quién puede mencionar un alumno: al profesor, a sus compañeros y a quien participa en esa misma
 // conversación (autor y comentaristas), como en Facebook. Nunca una lista de todo el grupo: a los demás
@@ -1851,7 +1896,7 @@ function reportRow(r) {
   const x = targetOf(r.target_type, r.target_id);
   if (r.target_type === 'story') return `<div class="row rep"><div style="min-width:0;flex:1">
       <div class="sub">Story · denunciada por ${esc(whoName(r.reporter_id))} · ${timeAgo(r.created_at)}</div>
-      ${x ? `<div style="margin-top:6px"><button type="button" class="msg-story" data-action="story-open" data-id="${x.author_id}" data-story="${x.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', x.author_id, x.id, x.video))}_t.jpg" alt=""><span>Ver la story de <b>${esc(whoName(x.author_id))}</b></span></button></div>
+      ${x ? `<div style="margin-top:6px"><button type="button" class="msg-story" data-action="story-open" data-id="${x.author_id}" data-story="${x.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', x.author_id, x.id, stMedia(x)))}_t.jpg" alt=""><span>Ver la story de <b>${esc(whoName(x.author_id))}</b></span></button></div>
         <div class="sub">${storyLive(x) ? 'Caduca en ' + vdLeft(x.expires_at) : 'Ya ha caducado: se conserva hasta que la revises'}</div>` : '<div class="sub">Contenido no disponible</div>'}
       ${r.reason ? `<div class="sub">Motivo: ${esc(r.reason)}</div>` : ''}</div>
     <div class="actions" style="margin:0"><button class="btn sm danger" data-action="mod-delete" data-id="${r.id}">Borrar story</button><button class="btn sm ghost" data-action="mod-dismiss" data-id="${r.id}">Descartar</button></div></div>`;
@@ -2692,16 +2737,285 @@ function storiesBar() {
 }
 function updateStoriesBar() { const el = $('#storiesBar'); if (el) el.outerHTML = storiesBar(); }
 
-// Subir una story: elegir el vídeo y confirmar en una ventana con la vista previa
-function storyAddModal() {
-  vdClear('story');
-  openModal(`<div class="modal-head"><h2>Nueva story</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <div class="vd-story-box" data-vd-draft="story">${vdDraftInner('story')}</div>
-    <div class="ph-row"><button type="button" class="btn" data-action="vd-add" data-vd="story">${VD_ICON}<span>Elegir otro vídeo</span></button></div>
-    <p class="sub vd-note">Hasta 60 segundos. Las stories se borran solas a las <b>24 horas</b>: por ahora tenemos poco espacio en el plan gratuito, así que los vídeos solo están unos días y luego desaparecen.</p>
-    <div class="actions"><button class="btn primary" type="button" data-action="story-publish" disabled>Publicar story</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>`);
-  $('.modal').classList.add('narrow');
-  vdChoose('story');
+// ---- Lo que lleva una story: vídeo o foto, y encima textos y dibujo (overlay) ----
+const ST_PHOTO_SEC = 5, ST_W = 1080, ST_H = 1920, ST_VBH = 1778; // el dibujo va en 1000 × 1778 (9:16)
+const ST_COLORS = ['#ffffff', '#000000', '#2f86ff', '#3ff0ff', '#ff4d6d', '#ffb703', '#52d273', '#b06cff'];
+const stMedia = s => s.video || s.photo;
+const stColor = c => ST_COLORS.includes(c) ? c : '#ffffff';
+const stInk = c => ['#ffffff', '#3ff0ff', '#ffb703', '#52d273'].includes(c) ? '#000000' : '#ffffff'; // letra sobre fondo de color
+const stNum = (v, a, b, d) => { v = +v; return isFinite(v) ? Math.max(a, Math.min(b, v)) : d; };
+function stTextHtml(t, i, edit) {
+  const c = stColor(t.c), body = edit ? esc(plainText(t.t)) : richText(t.t);
+  return `<div class="st-t${t.b ? ' bg' : ''}" ${edit ? `data-ti="${i}"` : ''} style="left:${stNum(t.x, 0, 1, .5) * 100}%;top:${stNum(t.y, 0, 1, .5) * 100}%;--s:${stNum(t.s, .4, 4, 1)};--c:${c};--tc:${stInk(c)}">${body}</div>`;
+}
+function stDrawHtml(d) {
+  const pts = (Array.isArray(d.p) ? d.p.map(q => q.join(',')).join(' ') : String(d.p || '')).replace(/[^0-9., ]/g, '');
+  return `<polyline points="${pts}" fill="none" stroke="${stColor(d.c)}" stroke-width="${stNum(d.w, 2, 80, 10)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function stOverlayFill(box, ov, edit = false) {
+  ov = ov && typeof ov === 'object' ? ov : {};
+  box.querySelector('.st-texts').innerHTML = (Array.isArray(ov.texts) ? ov.texts : []).map((t, i) => stTextHtml(t, i, edit)).join('');
+  box.querySelector('.st-draw').innerHTML = (Array.isArray(ov.draw) ? ov.draw : []).map(stDrawHtml).join('');
+}
+const ST_MEDIA_HTML = `<div class="st-media"><video playsinline preload="auto"></video><img class="st-photo" alt="" hidden>
+  <svg class="st-draw" viewBox="0 0 1000 ${ST_VBH}" preserveAspectRatio="none"></svg><div class="st-texts"></div></div>`;
+
+/* ---- Crear una story: editor a pantalla completa, como Instagram ----
+   Foto: se encuadra arrastrando y pellizcando (o con la rueda). Vídeo: se prepara mientras editas.
+   Textos: varios, con color, fondo, tamaño y @menciones; se arrastran, se pellizcan y se tiran a la papelera.
+   Dibujo a mano con colores, grosor y deshacer. Todo va a la fila como datos (overlay). */
+let SE = null, stInput = null;
+function storyAddModal() { // "Tu story" → elegir foto o vídeo → editor
+  if (!stInput) {
+    stInput = document.createElement('input');
+    stInput.type = 'file'; stInput.accept = 'image/*,video/*'; stInput.hidden = true; stInput.id = 'stFile';
+    stInput.addEventListener('change', () => { const f = stInput.files[0]; stInput.value = ''; if (f) storyEditor(f); });
+    document.body.appendChild(stInput);
+  }
+  stInput.click();
+}
+async function storyEditor(file) {
+  if ($('#lightbox')) return;
+  const isVideo = /^video\//.test(file.type) || (!file.type && /\.(mp4|mov|m4v|webm)$/i.test(file.name));
+  if (!isVideo && file.type && !/^image\//.test(file.type)) return toast('Elige una foto o un vídeo', 'bad');
+  let img = null, url = null;
+  if (!isVideo) {
+    url = URL.createObjectURL(file); img = await loadImg(url);
+    if (!img || !img.naturalWidth) { URL.revokeObjectURL(url); return toast('No se pudo leer la foto. Prueba con JPG o PNG', 'bad'); }
+  }
+  const lb = document.createElement('div');
+  lb.id = 'lightbox'; lb.className = 'lightbox story sed'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Nueva story');
+  lb.innerHTML = `<div class="sv-frame">
+      <div class="sed-top"><button type="button" class="sv-btn" data-sed="cancel" aria-label="Descartar" title="Descartar">×</button><span style="flex:1"></span>
+        <button type="button" class="sed-tool" data-sed="text" title="Añadir texto" aria-label="Añadir texto">Aa</button>
+        <button type="button" class="sed-tool" data-sed="draw" title="Dibujar" aria-label="Dibujar">✏️</button></div>
+      <div class="sv-stage">${ST_MEDIA_HTML}<div class="sed-trash" hidden aria-hidden="true">🗑️</div>
+        <div class="sed-prog" data-vd-draft="story"></div></div>
+      <div class="sed-bottom"></div>
+      <div class="sed-textbox" hidden><textarea id="sedText" rows="3" maxlength="300" placeholder="Escribe… (con @ mencionas a alguien)" data-no-emoji></textarea>
+        <div class="sed-colors" data-sed-colors="text"></div>
+        <div class="sed-row"><button type="button" class="sed-chip" data-sed="bg">Fondo: no</button>
+          <label class="sed-size">Tamaño <input type="range" min="0.5" max="3" step="0.05" value="1" data-sed-size></label>
+          <button type="button" class="btn primary sm" data-sed="text-ok">Listo</button></div></div>
+    </div>`;
+  document.body.appendChild(lb); document.body.classList.add('story-open');
+  history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
+  const box = lb.querySelector('.st-media'), v = box.querySelector('video'), ph = box.querySelector('.st-photo');
+  SE = { lb, box, v, ph, kind: isVideo ? 'video' : 'photo', img, url, z: 1, ox: 0, oy: 0, texts: [], draw: [], mode: 'move', color: '#ffffff', width: 12, edit: -1, tc: '#ffffff', tb: false, busy: false };
+  lb._onClose = () => {
+    if (!SE) return;
+    v.pause(); v.removeAttribute('src'); if (SE.url) URL.revokeObjectURL(SE.url); if (SE.vurl) URL.revokeObjectURL(SE.vurl);
+    vdClear('story'); SE = null; document.body.classList.remove('story-open'); mentionClose();
+  };
+  if (isVideo) {
+    v.hidden = false; ph.hidden = true; v.muted = true; v.loop = true;
+    SE.vurl = URL.createObjectURL(file); v.src = SE.vurl; v.play().catch(() => { });
+    vdAddFile('story', file).then(() => {
+      if (!SE || SE.v !== v) return;
+      const x = VD_DRAFT.story;
+      if (!x) { lbClose(); return; } // no se pudo preparar (ya avisó)
+      v.src = x.vurl || (x.vurl = URL.createObjectURL(x.blob)); v.play().catch(() => { }); // el ya recortado
+      v.classList.toggle('fill', Math.abs(x.w / x.h - 9 / 16) < 0.12);
+      sedBottom();
+    });
+  } else { v.hidden = true; ph.hidden = false; ph.src = url; }
+  sedBottom(); sedColors(); sedLayout();
+  new ResizeObserver(() => SE && SE.lb === lb && sedLayout()).observe(box);
+  sedWire();
+}
+// Foto: la escala mínima llena el marco 9:16; z amplía y (ox, oy) mueven, en fracciones del ancho del marco
+function sedLayout() {
+  if (!SE || SE.kind !== 'photo') return;
+  const r = SE.box.getBoundingClientRect(), W = r.width, H = r.height; if (!W) return;
+  const { naturalWidth: iw, naturalHeight: ih } = SE.img, b = Math.max(W / iw, H / ih) * SE.z, dw = iw * b, dh = ih * b;
+  const mx = (dw - W) / 2 / W, my = (dh - H) / 2 / W;
+  SE.ox = Math.max(-mx, Math.min(mx, SE.ox)); SE.oy = Math.max(-my, Math.min(my, SE.oy));
+  Object.assign(SE.ph.style, { width: dw + 'px', height: dh + 'px', left: (W - dw) / 2 + SE.ox * W + 'px', top: (H - dh) / 2 + SE.oy * W + 'px' });
+}
+function sedRender() { if (SE) stOverlayFill(SE.box, { texts: SE.texts, draw: SE.draw }, true); }
+function sedColors() {
+  if (!SE) return;
+  SE.lb.querySelectorAll('[data-sed-colors]').forEach(el => {
+    const cur = el.dataset.sedColors === 'text' ? SE.tc : SE.color;
+    el.innerHTML = ST_COLORS.map(c => `<button type="button" class="sed-c${c === cur ? ' on' : ''}" data-sed-color="${c}" data-for="${el.dataset.sedColors}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
+  });
+}
+function sedBottom() {
+  if (!SE) return;
+  const el = SE.lb.querySelector('.sed-bottom'), drawing = SE.mode === 'draw';
+  SE.lb.classList.toggle('drawing', drawing);
+  SE.lb.querySelectorAll('[data-sed=draw]').forEach(b => b.classList.toggle('on', drawing));
+  if (drawing) {
+    el.innerHTML = `<div class="sed-colors" data-sed-colors="draw"></div>
+      <div class="sed-row"><label class="sed-size">Grosor <input type="range" min="4" max="40" step="1" value="${SE.width}" data-sed-width></label>
+        <button type="button" class="sed-chip" data-sed="undo" ${SE.draw.length ? '' : 'disabled'}>↶ Deshacer</button>
+        <button type="button" class="btn primary sm" data-sed="draw-ok">Listo</button></div>`;
+    sedColors(); return;
+  }
+  const wait = SE.kind === 'video' && !VD_DRAFT.story;
+  el.innerHTML = `<p class="sed-hint">${SE.kind === 'photo' ? 'Arrastra la foto para encuadrarla y pellízcala (o usa la rueda) para ampliarla.' : 'Las stories se borran solas a las 24 horas.'} Los textos se arrastran; tíralos a la papelera para quitarlos.</p>
+    <button type="button" class="btn primary" data-sed="publish" ${wait || SE.busy ? 'disabled' : ''}>${SE.busy ? 'Publicando…' : wait ? 'Preparando el vídeo…' : 'Publicar story'}</button>`;
+}
+function sedTextOpen(i = -1) {
+  if (!SE) return;
+  SE.edit = i; const t = SE.texts[i];
+  SE.tc = t ? stColor(t.c) : SE.tc; SE.tb = t ? !!t.b : SE.tb;
+  const tb = SE.lb.querySelector('.sed-textbox'), ta = tb.querySelector('textarea');
+  tb.hidden = false; ta.value = ''; ta._mentions = [];
+  if (t) mentionSeed(ta, t.t);
+  tb.querySelector('[data-sed-size]').value = t ? t.s : 1;
+  sedTextStyle(); sedColors();
+  SE.lb.querySelectorAll('.st-t').forEach((n, k) => { n.style.visibility = k === i ? 'hidden' : ''; });
+  setTimeout(() => ta.focus(), 30);
+}
+function sedTextStyle() {
+  const tb = SE.lb.querySelector('.sed-textbox'), ta = tb.querySelector('textarea');
+  ta.style.color = SE.tb ? stInk(SE.tc) : SE.tc; ta.style.background = SE.tb ? SE.tc : 'transparent';
+  tb.querySelector('[data-sed=bg]').textContent = 'Fondo: ' + (SE.tb ? 'sí' : 'no');
+}
+function sedTextOk() {
+  const tb = SE.lb.querySelector('.sed-textbox'), ta = tb.querySelector('textarea');
+  const t = mentionEncode(ta).trim(), s = +tb.querySelector('[data-sed-size]').value || 1;
+  if (SE.edit >= 0) { if (t) Object.assign(SE.texts[SE.edit], { t, c: SE.tc, b: SE.tb ? 1 : 0, s }); else SE.texts.splice(SE.edit, 1); }
+  else if (t) { if (SE.texts.length >= 20) toast('Como mucho 20 textos', 'bad'); else SE.texts.push({ t, x: .5, y: .3 + (SE.texts.length % 5) * .1, s, c: SE.tc, b: SE.tb ? 1 : 0 }); }
+  tb.hidden = true; ta.blur(); SE.edit = -1; mentionClose();
+  sedRender();
+}
+function sedWire() {
+  const { lb, box } = SE;
+  const pts = new Map(); let drag = null, pinch = null, stroke = null;
+  const rel = e => { const r = box.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, W: r.width, H: r.height }; };
+  const trash = lb.querySelector('.sed-trash');
+  const overTrash = e => { const r = trash.getBoundingClientRect(); return !trash.hidden && e.clientX > r.left - 20 && e.clientX < r.right + 20 && e.clientY > r.top - 20 && e.clientY < r.bottom + 20; };
+  box.addEventListener('pointerdown', e => {
+    if (!SE || !lb.querySelector('.sed-textbox').hidden) return;
+    try { box.setPointerCapture(e.pointerId); } catch (er) { } pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (SE.mode === 'draw') {
+      if (pts.size > 1 || SE.draw.length >= 80) return;
+      const p = rel(e); stroke = { c: SE.color, w: SE.width, p: [[Math.round(p.x * 1000), Math.round(p.y * ST_VBH)]] }; SE.draw.push(stroke); sedRender(); return;
+    }
+    if (pts.size === 2) { // pellizco: el texto que arrastras o, si no, la foto
+      const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ti: drag && drag.ti >= 0 ? drag.ti : -1, s0: drag && drag.ti >= 0 ? SE.texts[drag.ti].s : 0, z0: SE.z };
+      return;
+    }
+    const tEl = e.target.closest('.st-t'), ti = tEl ? +tEl.dataset.ti : -1;
+    drag = { ti, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t0: Date.now(), moved: false };
+    if (ti >= 0) { trash.hidden = false; tEl.classList.add('drag'); }
+  });
+  box.addEventListener('pointermove', e => {
+    if (!SE || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (SE.mode === 'draw') {
+      if (!stroke) return; const p = rel(e), q = [Math.round(Math.max(0, Math.min(1, p.x)) * 1000), Math.round(Math.max(0, Math.min(1, p.y)) * ST_VBH)], l = stroke.p[stroke.p.length - 1];
+      if (Math.hypot(q[0] - l[0], q[1] - l[1]) >= 6 && stroke.p.length < 400) { stroke.p.push(q); const pl = box.querySelector('.st-draw').lastElementChild; if (pl) pl.setAttribute('points', stroke.p.map(x => x.join(',')).join(' ')); }
+      return;
+    }
+    if (pinch && pts.size >= 2) {
+      const [a, b] = [...pts.values()], k = Math.hypot(a.x - b.x, a.y - b.y) / (pinch.d || 1);
+      if (pinch.ti >= 0) { SE.texts[pinch.ti].s = Math.max(.4, Math.min(4, pinch.s0 * k)); const n = box.querySelector(`.st-t[data-ti="${pinch.ti}"]`); if (n) n.style.setProperty('--s', SE.texts[pinch.ti].s); }
+      else if (SE.kind === 'photo') { SE.z = Math.max(1, Math.min(5, pinch.z0 * k)); sedLayout(); }
+      if (drag) drag.moved = true;
+      return;
+    }
+    if (!drag) return;
+    const r = box.getBoundingClientRect(), dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) drag.moved = true;
+    if (drag.ti >= 0) {
+      const t = SE.texts[drag.ti]; t.x = Math.max(0, Math.min(1, t.x + dx / r.width)); t.y = Math.max(0, Math.min(1, t.y + dy / r.height));
+      const n = box.querySelector(`.st-t[data-ti="${drag.ti}"]`); if (n) { n.style.left = t.x * 100 + '%'; n.style.top = t.y * 100 + '%'; }
+      trash.classList.toggle('hot', overTrash(e));
+    } else if (SE.kind === 'photo') { SE.ox += dx / r.width; SE.oy += dy / r.width; sedLayout(); }
+  });
+  const up = e => {
+    if (!SE || !pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (SE.mode === 'draw') { if (!pts.size) { if (stroke && stroke.p.length === 1) stroke.p.push([stroke.p[0][0] + 1, stroke.p[0][1]]); stroke = null; sedRender(); sedBottom(); } return; }
+    if (pts.size >= 1) { pinch = null; return; }
+    pinch = null;
+    if (drag && drag.ti >= 0) {
+      const gone = overTrash(e); trash.hidden = true; trash.classList.remove('hot');
+      if (gone) { SE.texts.splice(drag.ti, 1); sedRender(); }
+      else if (!drag.moved && Date.now() - drag.t0 < 400) { const i = drag.ti; drag = null; return sedTextOpen(i); } // un toque: editar
+      else sedRender();
+    }
+    drag = null;
+  };
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+  box.addEventListener('wheel', e => { // ordenador: la rueda cambia el tamaño del texto o el zoom de la foto
+    if (!SE || SE.mode === 'draw') return; e.preventDefault();
+    const tEl = e.target.closest('.st-t'), k = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+    if (tEl) { const t = SE.texts[+tEl.dataset.ti]; t.s = Math.max(.4, Math.min(4, t.s * k)); tEl.style.setProperty('--s', t.s); }
+    else if (SE.kind === 'photo') { SE.z = Math.max(1, Math.min(5, SE.z * k)); sedLayout(); }
+  }, { passive: false });
+  lb.addEventListener('input', e => {
+    if (!SE) return;
+    if (e.target.matches('[data-sed-width]')) SE.width = +e.target.value;
+  });
+  lb.addEventListener('click', e => {
+    if (!SE) return;
+    const c = e.target.closest('[data-sed-color]');
+    if (c) { if (c.dataset.for === 'text') { SE.tc = c.dataset.sedColor; sedTextStyle(); } else SE.color = c.dataset.sedColor; return sedColors(); }
+    const b = e.target.closest('[data-sed]'); if (!b) return;
+    e.stopPropagation();
+    const a = b.dataset.sed;
+    if (a === 'cancel') { if ((SE.texts.length || SE.draw.length) && !confirm('¿Descartar esta story?')) return; return lbClose(); }
+    if (a === 'text') { if (SE.mode === 'draw') { SE.mode = 'move'; sedBottom(); } return sedTextOpen(-1); }
+    if (a === 'text-ok') return sedTextOk();
+    if (a === 'bg') { SE.tb = !SE.tb; return sedTextStyle(); }
+    if (a === 'draw') { SE.mode = SE.mode === 'draw' ? 'move' : 'draw'; return sedBottom(); }
+    if (a === 'draw-ok') { SE.mode = 'move'; return sedBottom(); }
+    if (a === 'undo') { SE.draw.pop(); sedRender(); return sedBottom(); }
+    if (a === 'publish') return sedPublish();
+  });
+}
+// La foto encuadrada, tal cual se ve en el marco, a 1080 × 1920 (y su miniatura)
+async function sedPhotoBlobs() {
+  const r = SE.box.getBoundingClientRect(), W = r.width, H = r.height, f = ST_W / W;
+  const { naturalWidth: iw, naturalHeight: ih } = SE.img, b = Math.max(W / iw, H / ih) * SE.z, dw = iw * b, dh = ih * b;
+  const c = document.createElement('canvas'); c.width = ST_W; c.height = ST_H;
+  const cx = c.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, ST_W, ST_H); cx.imageSmoothingQuality = 'high';
+  cx.drawImage(SE.img, ((W - dw) / 2 + SE.ox * W) * f, ((H - dh) / 2 + SE.oy * W) * f, dw * f, dh * f);
+  let big = null; for (const q of [0.85, 0.75, 0.62]) { big = await phBlob(c, q); if (big && big.size <= 1900000) break; }
+  const t = document.createElement('canvas'); t.width = 270; t.height = 480; t.getContext('2d').drawImage(c, 0, 0, 270, 480);
+  return { big, thumb: await phBlob(t, 0.75) };
+}
+async function sedPublish() {
+  if (!SE || SE.busy) return;
+  if (SE.kind === 'video' && !VD_DRAFT.story) return toast('Espera un momento: el vídeo aún se está preparando', 'bad');
+  SE.busy = true; sedBottom();
+  const se = SE, id = phUuid(), r3 = n => Math.round(n * 1000) / 1000;
+  const overlay = {};
+  if (se.texts.length) overlay.texts = se.texts.map(t => ({ t: t.t, x: r3(t.x), y: r3(t.y), s: Math.round(t.s * 100) / 100, c: t.c, b: t.b ? 1 : 0 }));
+  if (se.draw.length) overlay.draw = se.draw.map(d => ({ c: d.c, w: d.w, p: d.p.map(q => q.join(',')).join(' ') }));
+  let row = { id, author_id: S.user.id, overlay }, done = [], local = null;
+  try {
+    if (se.kind === 'video') {
+      const up = await vdUpload('story', id, VD_DRAFT.story, null);
+      if (!up) throw null;
+      row.video = up.video; done = up.done;
+    } else {
+      const { big, thumb } = await sedPhotoBlobs();
+      if (!big || !thumb) throw vdErr('No se pudo preparar la foto');
+      const k = phUuid(), base = `story/${S.user.id}/${id}/${k}`;
+      for (const [n, blob] of [['.jpg', big], ['_t.jpg', thumb]]) {
+        const res = await sb.storage.from(PH_BUCKET).upload(base + n, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+        if (res.error) throw res.error; done.push([PH_BUCKET, base + n]);
+      }
+      row.photo = { k, w: ST_W, h: ST_H }; local = { base, big, thumb };
+    }
+    const { data, error } = await sb.from('stories').insert(row).select().single();
+    if (error) throw error;
+    if (se.kind === 'video') vdCommit('story', 'story', id);
+    else { phCache.set(local.base + '.jpg', Promise.resolve(URL.createObjectURL(local.big))); phCache.set(local.base + '_t.jpg', Promise.resolve(URL.createObjectURL(local.thumb))); }
+    addUnique(S.stories, data, 'stories');
+    if (SE === se) lbClose();
+    updateStoriesBar(); toast('Story publicada. Se borrará sola en 24 horas', 'ok');
+  } catch (e) {
+    vdRemove(done);
+    if (e) toast(e.vd ? e.message : 'No se pudo publicar: ' + errEs(e), 'bad');
+    if (SE === se) { se.busy = false; sedBottom(); }
+  }
 }
 
 // ---- Visor a pantalla completa (reutiliza #lightbox: Atrás, Esc y la × lo cierran) ----
@@ -2715,33 +3029,35 @@ function storyOpen(author, storyId = null, single = false) {
   lb.id = 'lightbox'; lb.className = 'lightbox story'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Story');
   lb.innerHTML = `<div class="sv-frame">
       <div class="sv-bars"></div><div class="sv-head"></div>
-      <div class="sv-stage"><video playsinline preload="auto"></video>
+      <div class="sv-stage">${ST_MEDIA_HTML}
         <button type="button" class="sv-tap prev" data-sv="prev" aria-label="Anterior"></button><button type="button" class="sv-tap next" data-sv="next" aria-label="Siguiente"></button>
         <button type="button" class="sv-big" data-sv="play" hidden aria-label="Reproducir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
         <div class="sv-spin" hidden></div></div>
       <div class="sv-foot"></div></div>`;
   document.body.appendChild(lb); document.body.classList.add('story-open');
   history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
-  const v = lb.querySelector('video');
-  SV = { lb, v, order, ai: order.indexOf(author), si: 0, cur: null, muted: false };
+  const box = lb.querySelector('.st-media'), v = box.querySelector('video'), ph = box.querySelector('.st-photo');
+  SV = { lb, box, v, ph, order, ai: order.indexOf(author), si: 0, cur: null, muted: false, held: false, pt: null };
   const firstNew = list.findIndex(s => !storySeen(s));
   SV.si = storyId ? Math.max(0, list.findIndex(s => s.id === storyId)) : Math.max(0, firstNew);
-  lb._onClose = () => { v.pause(); v.removeAttribute('src'); try { v.load(); } catch (e) { } SV = null; document.body.classList.remove('story-open'); updateStoriesBar(); };
-  v.addEventListener('timeupdate', () => { const b = lb.querySelector('.sv-bars i.cur b'); if (b && v.duration) b.style.width = Math.min(100, v.currentTime / v.duration * 100) + '%'; });
-  v.addEventListener('ended', () => svGo(1));
+  lb._onClose = () => { v.pause(); v.removeAttribute('src'); try { v.load(); } catch (e) { } if (SV && SV.raf) cancelAnimationFrame(SV.raf); SV = null; document.body.classList.remove('story-open'); updateStoriesBar(); };
+  v.addEventListener('timeupdate', () => { const b = lb.querySelector('.sv-bars i.cur b'); if (b && v.duration && SV && SV.cur && SV.cur.video) b.style.width = Math.min(100, v.currentTime / v.duration * 100) + '%'; });
+  v.addEventListener('ended', () => { if (SV && SV.cur && SV.cur.video) svGo(1); });
   v.addEventListener('waiting', () => { const s = lb.querySelector('.sv-spin'); if (s) s.hidden = false; });
   v.addEventListener('playing', () => { const s = lb.querySelector('.sv-spin'); if (s) s.hidden = true; const b = lb.querySelector('.sv-big'); if (b) b.hidden = true; });
   // Mantener pulsado pausa (como Instagram); un toque corto en un lado pasa a la anterior o la siguiente
-  let downAt = 0, held = false;
+  let downAt = 0;
   const stage = lb.querySelector('.sv-stage');
-  stage.addEventListener('pointerdown', e => { if (!e.target.closest('.sv-tap')) return; downAt = Date.now(); held = false; setTimeout(() => { if (downAt && Date.now() - downAt >= 250) { held = true; v.pause(); } }, 260); });
-  const up = () => { if (held && SV && !svPaused()) v.play().catch(() => { }); downAt = 0; };
+  stage.addEventListener('pointerdown', e => { if (!e.target.closest('.sv-tap')) return; downAt = Date.now(); SV.held = false; setTimeout(() => { if (SV && downAt && Date.now() - downAt >= 250) { SV.held = true; svPause(); } }, 260); });
+  const up = () => { if (SV && SV.held) { SV.held = false; svResume(); SV.held = true; } downAt = 0; }; // held sigue en true para que el click de soltar no pase de story
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
   lb.addEventListener('click', e => {
+    const mn = e.target.closest('.st-t .mention[data-action]'); // una @mención: se cierra la story y se abre su perfil
+    if (mn) { e.stopPropagation(); const a = mn.dataset.action, el = mn.cloneNode(true); lbClose(); setTimeout(() => actions[a] && actions[a](el), 60); return; }
     const b = e.target.closest('[data-sv]');
-    if (b) { e.stopPropagation(); if (held) { held = false; return; } const a = b.dataset.sv;
+    if (b) { e.stopPropagation(); if (SV.held) { SV.held = false; return; } const a = b.dataset.sv;
       if (a === 'prev') return svGo(-1); if (a === 'next') return svGo(1);
-      if (a === 'play') { b.hidden = true; return v.play().catch(() => { b.hidden = false; }); }
+      if (a === 'play') { b.hidden = true; return SV.v.play().catch(() => { b.hidden = false; }); }
       if (a === 'close') return lbClose();
       if (a === 'mute') { SV.muted = v.muted = !v.muted; return svHead(); }
       if (a === 'viewers') return svViewers();
@@ -2751,15 +3067,30 @@ function storyOpen(author, storyId = null, single = false) {
     if (pk && SV && SV.cur) { e.stopPropagation(); return storyReact(SV.cur.id, pk.dataset.svPick); }
     const mo = e.target.closest('[data-sv-more]');
     if (mo && SV && SV.cur) { // selector completo de emojis
-      e.stopPropagation(); v.pause(); const id = SV.cur.id;
+      e.stopPropagation(); svPause(); const id = SV.cur.id;
       popPush(); setTimeout(() => { ex = { btn: mo, onPick: em => { storyReact(id, em); } }; emojiDraw(); }, 0);
       return;
     }
-    if (e.target === lb) lbClose(); // fuera del vídeo (ordenador)
+    if (e.target === lb) lbClose(); // fuera de la story (ordenador)
   });
   svShow();
 }
 const svPaused = () => !!(SV && (SV.lb.querySelector('.sv-viewers:not([hidden])') || SV.lb.querySelector('.sv-menu') || document.activeElement && SV.lb.contains(document.activeElement) && document.activeElement.matches('input') || $('#emojiBox')));
+// Pausa y sigue: el vídeo, o el reloj de 5 s de una foto
+function svPause() { if (!SV) return; SV.v.pause(); if (SV.pt && SV.pt.t0) { SV.pt.acc += Date.now() - SV.pt.t0; SV.pt.t0 = 0; } }
+function svResume() {
+  if (!SV || svPaused()) return;
+  if (SV.cur && SV.cur.video) SV.v.play().catch(() => { });
+  else if (SV.pt && !SV.pt.t0) { SV.pt.t0 = Date.now(); svTick(); }
+}
+function svTick() {
+  if (!SV || !SV.pt) return;
+  cancelAnimationFrame(SV.raf);
+  const p = SV.pt, ms = p.acc + (p.t0 ? Date.now() - p.t0 : 0), b = SV.lb.querySelector('.sv-bars i.cur b');
+  if (b) b.style.width = Math.min(100, ms / (ST_PHOTO_SEC * 10)) + '%';
+  if (ms >= ST_PHOTO_SEC * 1000) { SV.pt = null; return svGo(1); }
+  if (p.t0) SV.raf = requestAnimationFrame(svTick);
+}
 function svGo(d) {
   if (!SV) return;
   const list = storyListFor(SV.order[SV.ai]);
@@ -2770,7 +3101,7 @@ function svGo(d) {
     if (ai >= SV.order.length) return lbClose();
     SV.ai = ai; const l = storyListFor(SV.order[ai]); SV.si = Math.max(0, l.findIndex(s => !storySeen(s)));
   } else if (d < 0 && SV.ai > 0) { let ai = SV.ai - 1; while (ai > 0 && !storyListFor(SV.order[ai]).length) ai--; const l = storyListFor(SV.order[ai]); if (!l.length) return; SV.ai = ai; SV.si = l.length - 1; }
-  else { SV.v.currentTime = 0; return; }
+  else { if (SV.cur && SV.cur.video) SV.v.currentTime = 0; else if (SV.pt) { SV.pt.acc = 0; SV.pt.t0 = SV.pt.t0 ? Date.now() : 0; } return; }
   svShow();
 }
 async function svShow() {
@@ -2778,19 +3109,34 @@ async function svShow() {
   const author = SV.order[SV.ai], list = storyListFor(author);
   if (!list.length) return svGo(1);
   SV.si = Math.min(SV.si, list.length - 1);
-  const s = SV.cur = list[SV.si], me = S.user.id, lb = SV.lb, v = SV.v;
+  const s = SV.cur = list[SV.si], me = S.user.id, lb = SV.lb, v = SV.v, ph = SV.ph, m = stMedia(s);
+  cancelAnimationFrame(SV.raf); SV.pt = null;
   lb.querySelector('.sv-bars').innerHTML = list.map((x, i) => `<i class="${i < SV.si ? 'done' : i === SV.si ? 'cur' : ''}"><b></b></i>`).join('');
   svHead(); svFoot();
-  const base = vdBase('story', s.author_id, s.id, s.video);
-  v.pause(); v.removeAttribute('src'); v.muted = SV.muted;
-  phUrl(base + '_t.jpg').then(u => { if (SV && SV.cur === s && u) v.poster = u; });
+  stOverlayFill(SV.box, s.overlay);
+  const base = vdBase('story', s.author_id, s.id, m);
+  v.pause(); v.removeAttribute('src'); v.muted = SV.muted; v.removeAttribute('poster');
   lb.querySelector('.sv-spin').hidden = false; lb.querySelector('.sv-big').hidden = true;
-  const url = await vdSrc(base + '.mp4');
-  if (!SV || SV.cur !== s) return;
-  if (!url) { lb.querySelector('.sv-spin').hidden = true; toast('No se pudo cargar la story', 'bad'); return; }
-  v.src = url;
-  v.play().catch(() => { if (SV && SV.cur === s) { lb.querySelector('.sv-spin').hidden = true; lb.querySelector('.sv-big').hidden = false; } }); // el móvil pide un toque para el sonido
-  vdCount('story', s.id, base + '.mp4');
+  if (s.photo) { // foto: 5 segundos
+    v.hidden = true; ph.hidden = false; ph.removeAttribute('src');
+    phUrl(base + '_t.jpg').then(u => { if (SV && SV.cur === s && u && !ph.dataset.full) ph.src = u; });
+    ph.dataset.full = '';
+    const u = await phUrl(base + '.jpg');
+    if (!SV || SV.cur !== s) return;
+    lb.querySelector('.sv-spin').hidden = true;
+    if (u) { ph.src = u; ph.dataset.full = '1'; }
+    SV.pt = { acc: 0, t0: 0 }; svResume(); if (!SV.pt.t0) svTick();
+  } else {
+    ph.hidden = true; v.hidden = false;
+    v.classList.toggle('fill', Math.abs(m.w / m.h - 9 / 16) < 0.12);
+    phUrl(base + '_t.jpg').then(u => { if (SV && SV.cur === s && u) v.poster = u; });
+    const url = await vdSrc(base + '.mp4');
+    if (!SV || SV.cur !== s) return;
+    if (!url) { lb.querySelector('.sv-spin').hidden = true; toast('No se pudo cargar la story', 'bad'); return; }
+    v.src = url;
+    v.play().catch(() => { if (SV && SV.cur === s) { lb.querySelector('.sv-spin').hidden = true; lb.querySelector('.sv-big').hidden = false; } }); // el móvil pide un toque para el sonido
+    vdCount('story', s.id, base + '.mp4');
+  }
   if (s.author_id !== me && !storySeen(s) && storyLive(s) && !(isTeacher() && openReport('story', s.id))) { // apuntar que la has visto (revisar una denuncia no cuenta)
     const row = { story_id: s.id, user_id: me, viewed_at: new Date().toISOString() };
     S.storyViews.push(row);
@@ -2803,19 +3149,19 @@ function svHead() {
   const s = SV.cur, mine = s.author_id === S.user.id;
   const canMore = mine || isTeacher() || !isTeacherId(s.author_id);
   SV.lb.querySelector('.sv-head').innerHTML = `${avatarHtml(s.author_id, 34)}<div class="sv-who"><b>${esc(mine ? 'Tu story' : whoName(s.author_id))}</b><span>${storyLive(s) ? timeAgo(s.created_at) : 'Caducada · denunciada'}</span></div>
-    <button type="button" class="sv-btn" data-sv="mute" aria-label="${SV.muted ? 'Activar el sonido' : 'Silenciar'}" title="${SV.muted ? 'Activar el sonido' : 'Silenciar'}">${SV.muted ? '🔇' : '🔊'}</button>
+    ${s.video ? `<button type="button" class="sv-btn" data-sv="mute" aria-label="${SV.muted ? 'Activar el sonido' : 'Silenciar'}" title="${SV.muted ? 'Activar el sonido' : 'Silenciar'}">${SV.muted ? '🔇' : '🔊'}</button>` : ''}
     ${canMore ? `<button type="button" class="sv-btn" data-sv="more" aria-label="Opciones" title="Opciones">⋯</button>` : ''}
     <button type="button" class="sv-btn" data-sv="close" aria-label="Cerrar" title="Cerrar">×</button>`;
 }
 function svMore(btn) {
-  const old = SV.lb.querySelector('.sv-menu'); if (old) { old.remove(); SV.v.play().catch(() => { }); return; }
+  const old = SV.lb.querySelector('.sv-menu'); if (old) { old.remove(); svResume(); return; }
   const s = SV.cur, mine = s.author_id === S.user.id;
   const reported = S.reports.some(r => r.target_type === 'story' && r.target_id === s.id && r.reporter_id === S.user.id);
   const items = (mine || isTeacher()) ? `<button type="button" class="danger" data-action="story-delete" data-id="${s.id}">🗑️ Borrar story</button>`
     : reported ? '<div class="off">🚩 Denunciada</div>' : `<button type="button" data-action="report" data-type="story" data-id="${s.id}">🚩 Denunciar</button>`;
   const m = document.createElement('div'); m.className = 'sv-menu dmmenu'; m.innerHTML = items;
-  SV.lb.querySelector('.sv-frame').appendChild(m); SV.v.pause();
-  m.addEventListener('click', () => setTimeout(() => { if (m.isConnected) m.remove(); }, 0));
+  SV.lb.querySelector('.sv-frame').appendChild(m); svPause();
+  m.addEventListener('click', () => setTimeout(() => { if (m.isConnected) m.remove(); svResume(); }, 0));
 }
 function svFoot() {
   if (!SV || !SV.cur) return;
@@ -2833,17 +3179,17 @@ function svFoot() {
       <button type="button" class="more${myRx && !REACTIONS.some(r => r.e === myRx) ? ' mine' : ''}" data-sv-more aria-label="Más emojis" title="Más emojis">${myRx && !REACTIONS.some(r => r.e === myRx) ? esc(myRx) : '+'}</button></div>
     ${canReply ? `<form id="svReplyForm" class="sv-reply" data-to="${s.author_id}" data-story="${s.id}"><input type="text" name="body" maxlength="1000" autocomplete="off" data-no-emoji placeholder="Responder a ${esc(whoName(s.author_id))}…" aria-label="Responder por privado"><button class="btn primary sm" type="submit">Enviar</button></form>` : ''}`;
   const inp = foot.querySelector('input');
-  if (inp) { inp.addEventListener('focus', () => SV && SV.v.pause()); inp.addEventListener('blur', () => setTimeout(() => { if (SV && !svPaused()) SV.v.play().catch(() => { }); }, 150)); }
+  if (inp) { inp.addEventListener('focus', () => svPause()); inp.addEventListener('blur', () => setTimeout(svResume, 150)); }
 }
 function svViewers() {
   const box = SV.lb.querySelector('.sv-viewers'); if (!box) return;
-  if (!box.hidden) { box.hidden = true; SV.v.play().catch(() => { }); return; }
+  if (!box.hidden) { box.hidden = true; svResume(); return; }
   const s = SV.cur, rx = {};
   S.storyRx.filter(r => r.story_id === s.id).forEach(r => { rx[r.user_id] = r.emoji; });
   const ids = [...new Set([...S.storyViews.filter(v => v.story_id === s.id).sort((a, b) => (b.viewed_at || '').localeCompare(a.viewed_at || '')).map(v => v.user_id), ...Object.keys(rx)])];
   box.innerHTML = ids.length ? ids.map(id => `<div class="sv-vrow">${avatarHtml(id, 30)}<span class="sv-vname">${esc(S.dir[id] ? whoName(id) : 'Alguien')}</span>${rx[id] ? `<b>${esc(rx[id])}</b>` : ''}</div>`).join('')
     : '<div class="sub">Aún no la ha visto nadie.</div>';
-  box.hidden = false; SV.v.pause();
+  box.hidden = false; svPause();
 }
 async function storyReact(id, emoji) {
   const mine = S.storyRx.find(r => r.story_id === id && r.user_id === S.user.id), prev = S.storyRx.slice();
@@ -2858,14 +3204,21 @@ async function storyReact(id, emoji) {
   if (SV) { const f = document.createElement('div'); f.className = 'sv-float'; f.textContent = emoji; SV.lb.querySelector('.sv-stage').appendChild(f); setTimeout(() => f.remove(), 1200); }
   const { error } = await sb.from('story_reactions').upsert({ story_id: id, user_id: S.user.id, emoji }, { onConflict: 'story_id,user_id' });
   if (error) { S.storyRx = prev; svFoot(); toast(errEs(error), 'bad'); }
-  if (SV && !svPaused()) SV.v.play().catch(() => { });
+  setTimeout(svResume, 0);
+}
+// Al borrar una story tuya, fuera sus archivos (vídeo o foto, y la miniatura)
+function stDropFiles(s) {
+  if (!s || s.author_id !== S.user.id) return;
+  if (s.video) return vdDropRow('story', s.author_id, s.id, s.video);
+  const base = vdBase('story', s.author_id, s.id, s.photo);
+  vdRemove([[PH_BUCKET, base + '.jpg'], [PH_BUCKET, base + '_t.jpg']]);
 }
 // En un mensaje privado: "Ha respondido a tu story" con su portada mientras exista
 function storyReplyHtml(m) {
   const s = S.stories.find(x => x.id === m.story_id), toMe = m.recipient_id === S.user.id;
   const label = toMe ? 'Ha respondido a tu story' : 'Has respondido a su story';
   if (!s) return `<div class="msg-story off">${VD_ICON}<span>${label} · ya no está disponible</span></div>`;
-  return `<button type="button" class="msg-story" data-action="story-open" data-id="${s.author_id}" data-story="${s.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', s.author_id, s.id, s.video))}_t.jpg" alt=""><span>${label}</span></button>`;
+  return `<button type="button" class="msg-story" data-action="story-open" data-id="${s.author_id}" data-story="${s.id}" data-single="1"><img data-ph-src="${esc(vdBase('story', s.author_id, s.id, stMedia(s)))}_t.jpg" alt=""><span>${label}</span></button>`;
 }
 async function loadStories() {
   const r = await Promise.all([sb.from('stories').select('*').order('created_at', { ascending: true }), sb.from('story_views').select('*'), sb.from('story_reactions').select('*')]);
@@ -2877,7 +3230,7 @@ setInterval(() => {
   if (!S.profile || !S.user) return;
   const before = S.stories.length;
   S.stories = S.stories.filter(s => storyLive(s) || (isTeacher() && openReport('story', s.id)));
-  if (S.stories.length !== before) updateStoriesBar();
+  if (S.stories.length !== before && !SV) updateStoriesBar();
   S.fposts.forEach(p => {
     if (!p.video || !p.video_expires_at || !fvExpired(p)) return;
     const el = $(`[data-fpost="${p.id}"]`); if (el && el.querySelector('.vd')) el.outerHTML = feedCard(p);
@@ -2888,7 +3241,7 @@ document.addEventListener('keydown', e => {
   if (!SV || !$('#lightbox.story') || (document.activeElement && document.activeElement.matches('input, textarea'))) return;
   if (e.key === 'ArrowLeft') { e.preventDefault(); svGo(-1); }
   if (e.key === 'ArrowRight') { e.preventDefault(); svGo(1); }
-  if (e.key === ' ') { e.preventDefault(); SV.v.paused ? SV.v.play().catch(() => { }) : SV.v.pause(); }
+  if (e.key === ' ') { e.preventDefault(); const paused = SV.cur && SV.cur.video ? SV.v.paused : !(SV.pt && SV.pt.t0); paused ? (SV.held = false, svResume()) : svPause(); }
 });
 // Lo que gasta el vídeo este mes (Ajustes del profesor)
 async function vquotaFill() {
@@ -5050,13 +5403,14 @@ function notifText(n) {
     case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
     case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'story_reaction': return `${who} ha reaccionado ${esc(n.extra || '')} a tu story`;
+    case 'mention_story': return `${who} te ha mencionado en su story`;
     case 'video_quota': return n.extra === '100' ? '🎬 Se ha gastado el presupuesto de vídeo de este mes: no se pueden subir vídeos hasta el día 1' : '🎬 Este mes ya se ha usado el <b>70 %</b> del presupuesto de vídeo';
     case 'classmate_request': return `${who} te ha enviado una solicitud para ser compañeros`;
     case 'classmate_accept': return `${who} ha aceptado tu solicitud. Ya sois compañeros`;
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart', mention_story: 'chat' }[kind] || 'bell'; }
 function notifsModal() {
   const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -5097,6 +5451,7 @@ async function openNotif(n) {
     case 'homework': case 'lesson': S.section = 'homework'; render(); break;
     case 'classmate_request': case 'classmate_accept': render(); await profileModal(n.actor_id); break;
     case 'story_reaction': S.section = 'feed'; render(); if (S.stories.some(x => x.id === n.target_id)) storyOpen(S.user.id, n.target_id, true); else toast('Esa story ya ha caducado'); break;
+    case 'mention_story': S.section = 'feed'; render(); { const st = S.stories.find(x => x.id === n.target_id); if (st && storyLive(st)) storyOpen(st.author_id, st.id, true); else toast('Esa story ya ha caducado'); } break;
     case 'video_quota': S.section = 'settings'; render(); break;
     default: render();
   }
@@ -5479,25 +5834,12 @@ const actions = {
   'vd-play'(el) { vdPlay(el); },
   'story-add'() { storyAddModal(); },
   'story-open'(el) { storyOpen(el.dataset.id, el.dataset.story || null, !!el.dataset.single); },
-  async 'story-publish'(el) {
-    if (VD_BUSY.story) return toast('Espera un momento: el vídeo aún se está preparando', 'bad');
-    const x = VD_DRAFT.story; if (!x) return toast('Elige un vídeo', 'bad');
-    el.disabled = true;
-    const id = phUuid(), up = await vdUpload('story', id, x, el);
-    if (!up) { el.disabled = false; return; }
-    const { data, error } = await sb.from('stories').insert({ id, author_id: S.user.id, video: up.video }).select().single();
-    if (error) { el.disabled = false; vdRemove(up.done); return toast('No se pudo publicar: ' + errEs(error), 'bad'); }
-    vdCommit('story', 'story', id);
-    addUnique(S.stories, data, 'stories');
-    await closeModal(); updateStoriesBar();
-    toast('Story publicada. Se borrará sola en 24 horas', 'ok');
-  },
   async 'story-delete'(el) {
     const s = S.stories.find(x => x.id === el.dataset.id);
     if (!s || !confirm(s.author_id === S.user.id ? '¿Borrar tu story?' : '¿Borrar esta story para todos? No se puede deshacer.')) return;
     const { error } = await sb.from('stories').delete().eq('id', s.id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
-    vdDropRow('story', s.author_id, s.id, s.video);
+    stDropFiles(s);
     dropTargetLocal('story', s.id);
     if (SV) svShow(); updateStoriesBar(); if (S.section === 'mod') softRender();
     toast('Story borrada', 'ok');

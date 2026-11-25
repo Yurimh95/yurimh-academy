@@ -97,11 +97,12 @@ const path = require('path');
 
   // --- Story ---
   await pickVideo(p, '#storiesBar .st-me [data-action=story-add]', 'escala-largo.mp4');
-  ok(await p.locator('.modal .vd-story-prev video').count() === 1, 'La ventana "Nueva story" enseña la vista previa');
-  ok(/24 horas/.test(await p.locator('.modal .vd-note').textContent()), 'Y explica que se borra a las 24 horas');
+  await p.waitForFunction(() => document.querySelector('#lightbox.sed [data-sed=publish]:not([disabled])'), null, { timeout: 8000 });
+  ok(await p.locator('#lightbox.sed .st-media video:not([hidden])').count() === 1, 'El editor de la story enseña el vídeo');
+  ok(/24 horas/.test(await p.locator('#lightbox.sed .sed-hint').textContent()), 'Y explica que se borra a las 24 horas');
   ok(/primer minuto/.test(await toastText(p)), 'Un vídeo de más de 60 s avisa de que se queda el primer minuto');
   await shot(p, 'vd3-nueva-story.png');
-  await p.click('.modal [data-action=story-publish]'); await p.waitForTimeout(600);
+  await p.click('#lightbox.sed [data-sed=publish]'); await p.waitForTimeout(600);
   D = await state(p);
   const st = D.stories.find(x => x.author_id === 's1');
   ok(!!st && Math.abs((new Date(st.expires_at) - Date.now()) / 3600000 - 24) < 0.05, 'La story se publica y caduca a las 24 h');
@@ -197,7 +198,8 @@ const path = require('path');
   ok(/de 3 GB este mes/.test(await p.locator('[data-vquota]').textContent()), 'En Ajustes el profesor ve lo gastado en vídeo este mes');
   // Una story del profesor
   await pickVideo(p, '#storiesBar .st-me [data-action=story-add]').catch(async () => { await p.click('.nav button[data-s=feed]'); await pickVideo(p, '#storiesBar .st-me [data-action=story-add]'); });
-  await p.click('.modal [data-action=story-publish]'); await p.waitForTimeout(500);
+  await p.waitForFunction(() => document.querySelector('#lightbox.sed [data-sed=publish]:not([disabled])'), null, { timeout: 8000 });
+  await p.click('#lightbox.sed [data-sed=publish]'); await p.waitForTimeout(500);
   D = await state(p); F = await files(p);
   const tst = D.stories.find(x => x.author_id === 't1');
   ok(!!tst, 'El profesor también sube stories');

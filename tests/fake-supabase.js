@@ -170,11 +170,14 @@
   const bodyOk = (r, max) => String(r.body??'').length<=max && (String(r.body??'').length>=1 || (Array.isArray(r.photos) && r.photos.length>=1));
   // video_ok del SQL: {k, w, h, d}
   const videoOk = v => v==null || (typeof v==='object' && !Array.isArray(v) && Object.keys(v).length===4 && UUID_RE.test(String(v.k)) && /^[1-9][0-9]{0,3}$/.test(String(v.w)) && /^[1-9][0-9]{0,3}$/.test(String(v.h)) && /^[0-9]{1,2}(\.[0-9]{1,3})?$/.test(String(v.d)) && +v.d>=0.3 && +v.d<=61);
+  const overlayOk = o => !!o && typeof o==='object' && !Array.isArray(o) && Object.keys(o).every(k=>k==='texts'||k==='draw') && JSON.stringify(o).length<=60000
+    && (o.texts===undefined || (Array.isArray(o.texts) && o.texts.length<=20 && o.texts.every(t=>t && typeof t==='object' && typeof t.t==='string' && t.t.length<=400)))
+    && (o.draw===undefined || (Array.isArray(o.draw) && o.draw.length<=80));
   const PHOTO_MAX = { feed_posts:10, board_posts:10, dm_messages:10, feed_comments:1, listening_comments:1 };
   const checks = {
     feed_posts: r => (bodyOk(r,2000) || ((r.video || r.video_expires_at) && String(r.body??'').length<=2000)) && photosOk(r.photos??[],10) && (!r.link_url || (/^https?:\/\//i.test(r.link_url) && r.link_url.length<=500))
       && videoOk(r.video) && (!r.video || (r.video_expires_at && !(r.photos||[]).length)),
-    stories: r => !!r.video && videoOk(r.video),
+    stories: r => (!!r.video !== !!r.photo) && (!r.video || videoOk(r.video)) && (!r.photo || photosOk([r.photo],1)) && overlayOk(r.overlay), // stories_media_check + story_overlay_ok
     story_reactions: r => r.emoji && String(r.emoji).length>=1 && String(r.emoji).length<=32,
     board_posts: r => r.title && String(r.title).length<=150 && bodyOk(r,5000) && photosOk(r.photos??[],10),
     feed_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
@@ -223,6 +226,7 @@
     if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));
+    if(table==='stories'){ const txt=((row.overlay&&row.overlay.texts)||[]).map(t=>t.t).join(' '); approvedIds(mentionIds(txt)).filter(u=>!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_story',row.author_id,row.id,null)); }
     if(table==='story_reactions'){ const st=DB.stories.find(x=>x.id===row.story_id)||{}; notify(st.author_id,'story_reaction',row.user_id,row.story_id,row.emoji); }
     if(table==='homework_tasks') notify(row.student_id,'homework',row.created_by,row.id,row.title);
     if(table==='classmates') notify(row.addressee_id,'classmate_request',row.requester_id,row.requester_id,null);
@@ -380,7 +384,7 @@
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
-          if(table==='stories'){ row.created_at=new Date().toISOString(); row.expires_at=new Date(Date.now()+86400000).toISOString(); } // stories_ins
+          if(table==='stories'){ row.created_at=new Date().toISOString(); row.expires_at=new Date(Date.now()+86400000).toISOString(); row.video=row.video||null; row.photo=row.photo||null; row.overlay=row.overlay||{}; } // stories_ins
           if(table==='feed_posts'){ if(!row.video){ row.video=null; row.video_expires_at=null; } else { let d=Math.round((new Date(row.video_expires_at||Date.now())-Date.now())/86400000); if(![1,3,7].includes(d)) d=1; row.video_expires_at=new Date(Date.now()+d*86400000).toISOString(); } } // feed_posts_video_ins
           if(table==='dm_messages' && row.story_id===undefined) row.story_id=null;
           if(PHOTO_MAX[table] && row.photos===undefined) row.photos=[]; // default '[]' de la columna
@@ -436,12 +440,12 @@
   // Ruta: <tipo>/<autor>/<fila>/<clave>(_t).jpg. En las pruebas los ids son cortos (s1, f1…), no uuid.
   const STORE = window.__STORAGE = {}; // ruta -> { blob, owner, created_at }
   const PH_RE = /^(feed|board|fcomment|lcomment|dm|story|fvideo)\/([0-9a-z_-]+)\/([0-9a-z_-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t\.jpg|\.jpg|\.mp4)$/;
-  const phParse = name => { const m=String(name).match(PH_RE); if(!m) return null; const vid=m[1]==='story'||m[1]==='fvideo'; return (vid ? ['_t.jpg','.mp4'] : ['_t.jpg','.jpg']).includes(m[5]) ? m : null; }; // media_parse
+  const phParse = name => { const m=String(name).match(PH_RE); if(!m) return null; return (m[1]==='story' ? ['_t.jpg','.jpg','.mp4'] : m[1]==='fvideo' ? ['_t.jpg','.mp4'] : ['_t.jpg','.jpg']).includes(m[5]) ? m : null; }; // media_parse
   const PH_T = { feed:['feed_posts','author_id'], board:['board_posts','author_id'], fcomment:['feed_comments','author_id'], lcomment:['listening_comments','author_id'], dm:['dm_messages','sender_id'] };
   function mediaVisible(name){ // media_visible: lo tuyo siempre; lo demás, si puedes ver la fila y la fila tiene esa foto
     const m=phParse(name); if(!m||!me) return false;
     if(m[2]===me) return true;
-    if(m[1]==='story') return DB.stories.some(r=>r.id===m[3] && r.author_id===m[2] && storyVisible(r) && r.video.k===m[4]);
+    if(m[1]==='story') return DB.stories.some(r=>r.id===m[3] && r.author_id===m[2] && storyVisible(r) && (r.video||r.photo).k===m[4]);
     if(m[1]==='fvideo') return DB.feed_posts.some(r=>r.id===m[3] && r.author_id===m[2] && canRead.feed_posts(r) && r.video && r.video.k===m[4] && (new Date(r.video_expires_at)>Date.now() || (isTeacher() && openReport('feed_post', r.id))));
     const [t,f]=PH_T[m[1]];
     return DB[t].some(r=>r.id===m[3] && r[f]===m[2] && canRead[t](r) && (r.photos||[]).some(p=>p.k===m[4]));

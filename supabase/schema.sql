@@ -3102,3 +3102,123 @@ begin
     end if;
   end loop;
 end $$;
+
+-- =====================================================================
+--  STORIES CON FOTO, TEXTO, MENCIONES Y DIBUJO (2026-11-25)
+--  · Una story es un vídeo O una foto (vertical 1080×1920, encuadrada al subirla; dura 5 s).
+--    La foto va al almacén "media": story/<autor>/<id>/<clave>.jpg (+ _t.jpg, la miniatura).
+--  · overlay = {texts: [{t, x, y, s, c, b}], draw: [{c, w, p}]}: textos (las @menciones van como
+--    <@id>, igual que en el Inicio) y trazos a mano, en coordenadas relativas. La app los pinta
+--    encima al verla, así que las menciones se pueden pulsar.
+--  · Mencionar a alguien en una story le avisa (mention_story) si está aprobado y no te ha bloqueado.
+-- =====================================================================
+alter table public.stories add column if not exists photo jsonb;
+alter table public.stories add column if not exists overlay jsonb not null default '{}'::jsonb;
+alter table public.stories alter column video drop not null;
+
+create or replace function public.story_overlay_ok(o jsonb)
+returns boolean language sql immutable set search_path = public as $$
+  select case
+    when o is null or jsonb_typeof(o) <> 'object' then false
+    when pg_column_size(o) > 60000 then false
+    when exists (select 1 from jsonb_object_keys(o) k where k not in ('texts', 'draw')) then false
+    when o ? 'texts' and (jsonb_typeof(o->'texts') <> 'array' or jsonb_array_length(o->'texts') > 20) then false
+    when o ? 'draw' and (jsonb_typeof(o->'draw') <> 'array' or jsonb_array_length(o->'draw') > 80) then false
+    when o ? 'texts' and exists (select 1 from jsonb_array_elements(o->'texts') e
+         where jsonb_typeof(e) <> 'object' or jsonb_typeof(e->'t') is distinct from 'string' or char_length(e->>'t') > 400) then false
+    else true end
+$$;
+
+alter table public.stories drop constraint if exists stories_media_check;
+alter table public.stories add constraint stories_media_check
+  check (num_nonnulls(video, photo) = 1 and (photo is null or public.photos_ok(jsonb_build_array(photo), 1)));
+alter table public.stories drop constraint if exists stories_overlay_check;
+alter table public.stories add constraint stories_overlay_check check (public.story_overlay_ok(overlay));
+
+-- Nombres de archivo: las stories admiten también la foto (<clave>.jpg)
+create or replace function public.media_parse(p_name text)
+returns text[] language sql immutable set search_path = public as $$
+  select case
+    when m is null then null
+    when m[1] = 'story' and m[5] in ('_t.jpg', '.jpg', '.mp4') then m
+    when m[1] = 'fvideo' and m[5] in ('_t.jpg', '.mp4') then m
+    when m[1] not in ('story', 'fvideo') and m[5] in ('_t.jpg', '.jpg') then m
+    else null end
+  from (select regexp_match(p_name, '^(feed|board|fcomment|lcomment|dm|story|fvideo)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(_t\.jpg|\.jpg|\.mp4)$') as m) x
+$$;
+
+create or replace function public.media_visible(p_name text)
+returns boolean language plpgsql stable set search_path = public as $$
+declare
+  m text[] := public.media_parse(p_name);
+  own uuid; rid uuid; ph jsonb;
+begin
+  if m is null or auth.uid() is null then return false; end if;
+  own := m[2]::uuid; rid := m[3]::uuid;
+  if own = auth.uid() then return true; end if; -- lo tuyo, siempre (también recién subido)
+  ph := jsonb_build_array(jsonb_build_object('k', m[4]));
+  return case m[1]
+    when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'board'    then exists (select 1 from public.board_posts        t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = rid and t.author_id = own and t.photos @> ph)
+    when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = rid and t.sender_id = own and t.photos @> ph)
+    when 'story'    then exists (select 1 from public.stories            t where t.id = rid and t.author_id = own and coalesce(t.video, t.photo)->>'k' = m[4])
+    when 'fvideo'   then exists (select 1 from public.feed_posts         t where t.id = rid and t.author_id = own and t.video->>'k' = m[4]
+                                  and (t.video_expires_at > now() or (public.is_teacher() and public.has_open_report('feed_post', t.id))))
+    else false end;
+end;
+$$;
+revoke execute on function public.media_visible(text) from public, anon;
+grant  execute on function public.media_visible(text) to authenticated;
+
+create or replace function public.storage_orphans(p_limit int default 500)
+returns table (bucket text, name text) language sql stable security definer set search_path = public as $$
+  select o.bucket_id, o.name
+  from storage.objects o
+  cross join lateral (select public.media_parse(o.name) as m) x
+  where o.bucket_id in ('media', 'video')
+    and o.created_at < now() - case when x.m[1] in ('story', 'fvideo') then interval '2 hours' else interval '1 day' end
+    and not coalesce(
+      (o.bucket_id = 'video') = (x.m[5] = '.mp4') and case x.m[1]
+      when 'feed'     then exists (select 1 from public.feed_posts         t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'board'    then exists (select 1 from public.board_posts        t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'fcomment' then exists (select 1 from public.feed_comments      t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'lcomment' then exists (select 1 from public.listening_comments t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'dm'       then exists (select 1 from public.dm_messages        t where t.id = x.m[3]::uuid and t.sender_id = x.m[2]::uuid and t.photos @> jsonb_build_array(jsonb_build_object('k', x.m[4])))
+      when 'story'    then exists (select 1 from public.stories            t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and coalesce(t.video, t.photo)->>'k' = x.m[4])
+      when 'fvideo'   then exists (select 1 from public.feed_posts         t where t.id = x.m[3]::uuid and t.author_id = x.m[2]::uuid and t.video->>'k' = x.m[4])
+      else false end, false)
+  order by o.created_at
+  limit greatest(1, least(coalesce(p_limit, 500), 1000));
+$$;
+revoke execute on function public.storage_orphans(int) from public, anon, authenticated;
+grant  execute on function public.storage_orphans(int) to service_role;
+
+-- Menciones en el texto de una story
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
+                  'story_reaction', 'video_quota', 'mention_story'));
+
+create or replace function public.stories_mention_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare u uuid; txt text;
+begin
+  select string_agg(e->>'t', ' ') into txt
+    from jsonb_array_elements(case when jsonb_typeof(new.overlay->'texts') = 'array' then new.overlay->'texts' else '[]'::jsonb end) e;
+  for u in select public.mention_ids(txt) loop
+    if exists (select 1 from public.profiles where id = u and approved)
+       and not exists (select 1 from public.user_blocks where blocker_id = u and blocked_id = new.author_id) then
+      perform public.notify(u, 'mention_story', new.author_id, new.id, null);
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+revoke execute on function public.stories_mention_notify() from public, anon, authenticated;
+drop trigger if exists stories_mention_trg on public.stories;
+create trigger stories_mention_trg after insert on public.stories
+  for each row execute function public.stories_mention_notify();
