@@ -44,13 +44,15 @@ const path = require('path');
   ok(await p.locator('#lightbox.sed [data-sed=text]').count() === 1 && await p.locator('#lightbox.sed [data-sed=draw]').count() === 1, 'Se abre el editor con "Aa" (texto) y ✏️ (dibujar)');
   const ratio = await db(p, () => { const r = SE.box.getBoundingClientRect(); return r.width / r.height; });
   ok(Math.abs(ratio - 9 / 16) < 0.01, 'El marco es vertical 9:16');
+  const z0 = await db(p, () => SE.z), bg0 = await db(p, () => SE.box.style.background);
+  ok(z0 < 0.4 && /linear-gradient/.test(bg0), 'Una foto horizontal empieza entera (alejada) con un degradado de sus colores de fondo');
   // Encuadrar: arrastrar la foto
   await drag(p, '.st-media .st-photo', -120, 0);
   const ox = await db(p, () => SE.ox);
   ok(ox < -0.2, 'Arrastrar la foto la encuadra (se desplaza): ' + ox.toFixed(2));
   await db(p, () => { const f = (t, X, Y, id) => SE.box.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: X, clientY: Y, pointerId: id, pointerType: 'touch', buttons: 1 }));
     f('pointerdown', 150, 300, 21); f('pointerdown', 200, 300, 22); f('pointermove', 240, 300, 22); f('pointerup', 240, 300, 22); f('pointerup', 150, 300, 21); });
-  ok(await db(p, () => SE.z) > 1.4, 'Pellizcar con dos dedos amplía la foto');
+  ok(await db(p, () => SE.z) > 0.5, 'Pellizcar con dos dedos amplía la foto');
   // Texto 1
   await p.click('[data-sed=text]');
   ok(await p.locator('.sed-textbox:not([hidden]) #sedText').count() === 1, '"Aa" abre el cuadro de texto');

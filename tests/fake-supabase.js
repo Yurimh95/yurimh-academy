@@ -170,7 +170,7 @@
   const bodyOk = (r, max) => String(r.body??'').length<=max && (String(r.body??'').length>=1 || (Array.isArray(r.photos) && r.photos.length>=1));
   // video_ok del SQL: {k, w, h, d}
   const videoOk = v => v==null || (typeof v==='object' && !Array.isArray(v) && Object.keys(v).length===4 && UUID_RE.test(String(v.k)) && /^[1-9][0-9]{0,3}$/.test(String(v.w)) && /^[1-9][0-9]{0,3}$/.test(String(v.h)) && /^[0-9]{1,2}(\.[0-9]{1,3})?$/.test(String(v.d)) && +v.d>=0.3 && +v.d<=61);
-  const overlayOk = o => !!o && typeof o==='object' && !Array.isArray(o) && Object.keys(o).every(k=>k==='texts'||k==='draw') && JSON.stringify(o).length<=60000
+  const overlayOk = o => !!o && typeof o==='object' && !Array.isArray(o) && Object.keys(o).every(k=>k==='texts'||k==='draw'||k==='media') && (o.media===undefined || (o.media && typeof o.media==='object' && !Array.isArray(o.media))) && JSON.stringify(o).length<=60000
     && (o.texts===undefined || (Array.isArray(o.texts) && o.texts.length<=20 && o.texts.every(t=>t && typeof t==='object' && typeof t.t==='string' && t.t.length<=400)))
     && (o.draw===undefined || (Array.isArray(o.draw) && o.draw.length<=80));
   const PHOTO_MAX = { feed_posts:10, board_posts:10, dm_messages:10, feed_comments:1, listening_comments:1 };

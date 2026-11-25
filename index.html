@@ -1006,6 +1006,8 @@ body.story-open .ebox{z-index:95}
 .st-media{position:relative;z-index:2;width:min(100cqw,calc(100cqh * 9 / 16));aspect-ratio:9/16;overflow:hidden;container-type:inline-size;background:#000;pointer-events:none}
 .st-media video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
 .st-media video.fill{object-fit:cover}
+.st-media video.framed{inset:auto;object-fit:fill;background:transparent}
+.lightbox.sed .st-media{transition:background .3s}
 .lightbox .st-media .st-photo{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:auto;object-fit:cover;border-radius:0;box-shadow:none;background:none}
 .st-media [hidden]{display:none}
 .st-draw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -2814,6 +2816,29 @@ function stOverlayFill(box, ov, edit = false) {
   ov = ov && typeof ov === 'object' ? ov : {};
   box.querySelector('.st-texts').innerHTML = (Array.isArray(ov.texts) ? ov.texts : []).map((t, i) => stTextHtml(t, i, edit)).join('');
   box.querySelector('.st-draw').innerHTML = (Array.isArray(ov.draw) ? ov.draw : []).map(stDrawHtml).join('');
+  if (!edit) stMediaFrame(box, ov.media);
+}
+// Vídeo alejado o movido en el editor: tamaño y posición relativos al ancho del marco (cqw) y degradado de fondo
+function stMediaFrame(box, m) {
+  const v = box.querySelector('video'), ok = !!m && typeof m === 'object';
+  const g = ok && Array.isArray(m.g) ? m.g.filter(c => /^#[0-9a-f]{6}$/i.test(c)) : [];
+  box.style.background = g.length === 2 ? `linear-gradient(${g[0]}, ${g[1]})` : '';
+  if (ok && isFinite(m.w) && isFinite(m.h)) {
+    const w = stNum(m.w, .05, 6, 1), h = stNum(m.h, .05, 12, 1.778), x = stNum(m.x, -3, 3, 0), y = stNum(m.y, -6, 6, 0);
+    v.classList.add('framed');
+    Object.assign(v.style, { width: `calc(${w} * 100cqw)`, height: `calc(${h} * 100cqw)`, left: `calc(50% + ${x - w / 2} * 100cqw)`, top: `calc(50% + ${y - h / 2} * 100cqw)` });
+  } else { v.classList.remove('framed'); v.removeAttribute('style'); }
+}
+// Colores del fondo, sacados de la propia imagen (arriba y abajo), como Instagram
+function stAutoBg(el) {
+  try {
+    const c = document.createElement('canvas'); c.width = 12; c.height = 24;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(el, 0, 0, 12, 24);
+    const d = x.getImageData(0, 0, 12, 24).data;
+    const avg = (y0, y1) => { let r = 0, g = 0, b = 0, n = 0; for (let y = y0; y < y1; y++) for (let i = 0; i < 12; i++) { const k = (y * 12 + i) * 4; r += d[k]; g += d[k + 1]; b += d[k + 2]; n++; }
+      return '#' + [r, g, b].map(v => Math.round(v / n * 0.8).toString(16).padStart(2, '0')).join(''); }; // un poco más oscuro
+    return [avg(0, 6), avg(18, 24)];
+  } catch (e) { return ['#000000', '#000000']; }
 }
 const ST_MEDIA_HTML = `<div class="st-media"><video playsinline preload="auto"></video><img class="st-photo" alt="" hidden>
   <svg class="st-draw" viewBox="0 0 1000 ${ST_VBH}" preserveAspectRatio="none"></svg><div class="st-texts"></div></div>`;
@@ -2859,21 +2884,22 @@ async function storyEditor(file) {
   document.body.appendChild(lb); document.body.classList.add('story-open');
   history.pushState({ ...(history.state || {}), modal: 1, lb: 1 }, '');
   const box = lb.querySelector('.st-media'), v = box.querySelector('video'), ph = box.querySelector('.st-photo');
-  SE = { lb, box, v, ph, kind: isVideo ? 'video' : 'photo', img, url, z: 1, ox: 0, oy: 0, texts: [], draw: [], mode: 'move', color: '#ffffff', width: 12, edit: -1, tc: '#ffffff', tb: false, busy: false };
+  SE = { lb, box, v, ph, kind: isVideo ? 'video' : 'photo', img, url, z: null, zmin: 1, bg: null, ox: 0, oy: 0, texts: [], draw: [], mode: 'move', color: '#ffffff', width: 12, edit: -1, tc: '#ffffff', tb: false, busy: false };
   lb._onClose = () => {
     if (!SE) return;
     v.pause(); v.removeAttribute('src'); if (SE.url) URL.revokeObjectURL(SE.url); if (SE.vurl) URL.revokeObjectURL(SE.vurl);
     vdClear('story'); SE = null; document.body.classList.remove('story-open'); mentionClose();
   };
   if (isVideo) {
-    v.hidden = false; ph.hidden = true; v.muted = true; v.loop = true;
+    v.hidden = false; ph.hidden = true; v.muted = true; v.loop = true; v.classList.add('framed');
+    v.addEventListener('loadedmetadata', () => sedLayout());
+    v.addEventListener('timeupdate', () => { if (SE && SE.v === v && !SE.bgv && v.currentTime > 0.4) { SE.bgv = true; SE.bg = stAutoBg(v); sedLayout(); } }); // colores de un fotograma ya pintado
     SE.vurl = URL.createObjectURL(file); v.src = SE.vurl; v.play().catch(() => { });
     vdAddFile('story', file).then(() => {
       if (!SE || SE.v !== v) return;
       const x = VD_DRAFT.story;
       if (!x) { lbClose(); return; } // no se pudo preparar (ya avisó)
       v.src = x.vurl || (x.vurl = URL.createObjectURL(x.blob)); v.play().catch(() => { }); // el ya recortado
-      v.classList.toggle('fill', Math.abs(x.w / x.h - 9 / 16) < 0.12);
       sedBottom();
     });
   } else { v.hidden = true; ph.hidden = false; ph.src = url; }
@@ -2881,14 +2907,23 @@ async function storyEditor(file) {
   new ResizeObserver(() => SE && SE.lb === lb && sedLayout()).observe(box);
   sedWire();
 }
-// Foto: la escala mínima llena el marco 9:16; z amplía y (ox, oy) mueven, en fracciones del ancho del marco
+// Encuadre (foto o vídeo): z = 1 llena el marco 9:16; menos de 1 aleja (hasta la mitad de verla entera)
+// y lo que sobra se rellena con un degradado de sus colores. (ox, oy) mueven, en fracciones del ancho del marco.
+const sedDims = () => SE.kind === 'photo' ? [SE.img.naturalWidth, SE.img.naturalHeight] : [SE.v.videoWidth, SE.v.videoHeight];
 function sedLayout() {
-  if (!SE || SE.kind !== 'photo') return;
-  const r = SE.box.getBoundingClientRect(), W = r.width, H = r.height; if (!W) return;
-  const { naturalWidth: iw, naturalHeight: ih } = SE.img, b = Math.max(W / iw, H / ih) * SE.z, dw = iw * b, dh = ih * b;
-  const mx = (dw - W) / 2 / W, my = (dh - H) / 2 / W;
+  if (!SE) return;
+  const [iw, ih] = sedDims(), r = SE.box.getBoundingClientRect(), W = r.width, H = r.height;
+  if (!iw || !ih || !W) return;
+  const cover = Math.max(W / iw, H / ih), fit = Math.min(W / iw, H / ih);
+  SE.zmin = fit / cover * 0.5;
+  if (SE.z == null) SE.z = Math.abs(iw / ih - 9 / 16) > 0.12 ? fit / cover : 1; // muy horizontal o cuadrada: empieza entera, como Instagram
+  SE.z = Math.max(SE.zmin, Math.min(5, SE.z));
+  if (!SE.bg && SE.kind === 'photo') SE.bg = stAutoBg(SE.img);
+  const dw = iw * cover * SE.z, dh = ih * cover * SE.z, mx = dw > W + 1 ? (dw - W) / 2 / W : 0.5, my = dh > H + 1 ? (dh - H) / 2 / W : H / W / 2; // más pequeña que el marco: se mueve libre mientras su centro quede dentro
   SE.ox = Math.max(-mx, Math.min(mx, SE.ox)); SE.oy = Math.max(-my, Math.min(my, SE.oy));
-  Object.assign(SE.ph.style, { width: dw + 'px', height: dh + 'px', left: (W - dw) / 2 + SE.ox * W + 'px', top: (H - dh) / 2 + SE.oy * W + 'px' });
+  SE.frame = { w: dw / W, h: dh / W };
+  Object.assign((SE.kind === 'photo' ? SE.ph : SE.v).style, { width: dw + 'px', height: dh + 'px', left: (W - dw) / 2 + SE.ox * W + 'px', top: (H - dh) / 2 + SE.oy * W + 'px' });
+  SE.box.style.background = SE.bg ? `linear-gradient(${SE.bg[0]}, ${SE.bg[1]})` : '';
 }
 function sedRender() { if (SE) stOverlayFill(SE.box, { texts: SE.texts, draw: SE.draw }, true); }
 function sedColors() {
@@ -2911,7 +2946,7 @@ function sedBottom() {
     sedColors(); return;
   }
   const wait = SE.kind === 'video' && !VD_DRAFT.story;
-  el.innerHTML = `<p class="sed-hint">${SE.kind === 'photo' ? 'Arrastra la foto para encuadrarla y pellízcala (o usa la rueda) para ampliarla.' : 'Las stories se borran solas a las 24 horas.'} Los textos se arrastran; tíralos a la papelera para quitarlos.</p>
+  el.innerHTML = `<p class="sed-hint">Arrastra para encuadrar y pellizca (o usa la rueda) para acercar o alejar. Los textos se arrastran; tíralos a la papelera para quitarlos. Se borra sola a las 24 horas.</p>
     <button type="button" class="btn primary" data-sed="publish" ${wait || SE.busy ? 'disabled' : ''}>${SE.busy ? 'Publicando…' : wait ? 'Preparando el vídeo…' : 'Publicar story'}</button>`;
 }
 function sedTextOpen(i = -1) {
@@ -2971,7 +3006,7 @@ function sedWire() {
     if (pinch && pts.size >= 2) {
       const [a, b] = [...pts.values()], k = Math.hypot(a.x - b.x, a.y - b.y) / (pinch.d || 1);
       if (pinch.ti >= 0) { SE.texts[pinch.ti].s = Math.max(.4, Math.min(4, pinch.s0 * k)); const n = box.querySelector(`.st-t[data-ti="${pinch.ti}"]`); if (n) n.style.setProperty('--s', SE.texts[pinch.ti].s); }
-      else if (SE.kind === 'photo') { SE.z = Math.max(1, Math.min(5, pinch.z0 * k)); sedLayout(); }
+      else { SE.z = Math.max(SE.zmin, Math.min(5, pinch.z0 * k)); sedLayout(); }
       if (drag) drag.moved = true;
       return;
     }
@@ -2983,7 +3018,7 @@ function sedWire() {
       const t = SE.texts[drag.ti]; t.x = Math.max(0, Math.min(1, t.x + dx / r.width)); t.y = Math.max(0, Math.min(1, t.y + dy / r.height));
       const n = box.querySelector(`.st-t[data-ti="${drag.ti}"]`); if (n) { n.style.left = t.x * 100 + '%'; n.style.top = t.y * 100 + '%'; }
       trash.classList.toggle('hot', overTrash(e));
-    } else if (SE.kind === 'photo') { SE.ox += dx / r.width; SE.oy += dy / r.width; sedLayout(); }
+    } else { SE.ox += dx / r.width; SE.oy += dy / r.width; sedLayout(); }
   });
   const up = e => {
     if (!SE || !pts.has(e.pointerId)) return;
@@ -3004,7 +3039,7 @@ function sedWire() {
     if (!SE || SE.mode === 'draw') return; e.preventDefault();
     const tEl = e.target.closest('.st-t'), k = e.deltaY < 0 ? 1.08 : 1 / 1.08;
     if (tEl) { const t = SE.texts[+tEl.dataset.ti]; t.s = Math.max(.4, Math.min(4, t.s * k)); tEl.style.setProperty('--s', t.s); }
-    else if (SE.kind === 'photo') { SE.z = Math.max(1, Math.min(5, SE.z * k)); sedLayout(); }
+    else { SE.z = Math.max(SE.zmin, Math.min(5, SE.z * k)); sedLayout(); }
   }, { passive: false });
   lb.addEventListener('input', e => {
     if (!SE) return;
@@ -3032,7 +3067,8 @@ async function sedPhotoBlobs() {
   const r = SE.box.getBoundingClientRect(), W = r.width, H = r.height, f = ST_W / W;
   const { naturalWidth: iw, naturalHeight: ih } = SE.img, b = Math.max(W / iw, H / ih) * SE.z, dw = iw * b, dh = ih * b;
   const c = document.createElement('canvas'); c.width = ST_W; c.height = ST_H;
-  const cx = c.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, ST_W, ST_H); cx.imageSmoothingQuality = 'high';
+  const cx = c.getContext('2d'), bg = SE.bg || ['#000000', '#000000'], gr = cx.createLinearGradient(0, 0, 0, ST_H);
+  gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); cx.fillStyle = gr; cx.fillRect(0, 0, ST_W, ST_H); cx.imageSmoothingQuality = 'high';
   cx.drawImage(SE.img, ((W - dw) / 2 + SE.ox * W) * f, ((H - dh) / 2 + SE.oy * W) * f, dw * f, dh * f);
   let big = null; for (const q of [0.85, 0.75, 0.62]) { big = await phBlob(c, q); if (big && big.size <= 1900000) break; }
   const t = document.createElement('canvas'); t.width = 270; t.height = 480; t.getContext('2d').drawImage(c, 0, 0, 270, 480);
@@ -3046,6 +3082,7 @@ async function sedPublish() {
   const overlay = {};
   if (se.texts.length) overlay.texts = se.texts.map(t => ({ t: t.t, x: r3(t.x), y: r3(t.y), s: Math.round(t.s * 100) / 100, c: t.c, b: t.b ? 1 : 0 }));
   if (se.draw.length) overlay.draw = se.draw.map(d => ({ c: d.c, w: d.w, p: d.p.map(q => q.join(',')).join(' ') }));
+  if (se.kind === 'video' && se.frame) overlay.media = { w: r3(se.frame.w), h: r3(se.frame.h), x: r3(se.ox), y: r3(se.oy), g: se.bg || ['#000000', '#000000'] };
   let row = { id, author_id: S.user.id, overlay }, done = [], local = null;
   try {
     if (se.kind === 'video') {

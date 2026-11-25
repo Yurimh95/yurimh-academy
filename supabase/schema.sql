@@ -3107,7 +3107,7 @@ end $$;
 --  STORIES CON FOTO, TEXTO, MENCIONES Y DIBUJO (2026-11-25)
 --  · Una story es un vídeo O una foto (vertical 1080×1920, encuadrada al subirla; dura 5 s).
 --    La foto va al almacén "media": story/<autor>/<id>/<clave>.jpg (+ _t.jpg, la miniatura).
---  · overlay = {texts: [{t, x, y, s, c, b}], draw: [{c, w, p}]}: textos (las @menciones van como
+--  · overlay = {texts: [{t, x, y, s, c, b}], draw: [{c, w, p}], media: {w, h, x, y, g}}: textos (las @menciones van como
 --    <@id>, igual que en el Inicio) y trazos a mano, en coordenadas relativas. La app los pinta
 --    encima al verla, así que las menciones se pueden pulsar.
 --  · Mencionar a alguien en una story le avisa (mention_story) si está aprobado y no te ha bloqueado.
@@ -3121,7 +3121,8 @@ returns boolean language sql immutable set search_path = public as $$
   select case
     when o is null or jsonb_typeof(o) <> 'object' then false
     when pg_column_size(o) > 60000 then false
-    when exists (select 1 from jsonb_object_keys(o) k where k not in ('texts', 'draw')) then false
+    when exists (select 1 from jsonb_object_keys(o) k where k not in ('texts', 'draw', 'media')) then false
+    when o ? 'media' and jsonb_typeof(o->'media') <> 'object' then false
     when o ? 'texts' and (jsonb_typeof(o->'texts') <> 'array' or jsonb_array_length(o->'texts') > 20) then false
     when o ? 'draw' and (jsonb_typeof(o->'draw') <> 'array' or jsonb_array_length(o->'draw') > 80) then false
     when o ? 'texts' and exists (select 1 from jsonb_array_elements(o->'texts') e
