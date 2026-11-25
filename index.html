@@ -5257,6 +5257,9 @@ function dmListHtml() {
       : '<div class="sub" style="padding:14px">Aún no tienes conversaciones. Pulsa "+ Nuevo" para escribir a alguien.</div>'}
   </div>`;
 }
+function msgTime(iso) { // hora exacta del mensaje, "22:56"
+  return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
 function threadInner(id) {
   const msgs = myDms().filter(m => dmPartner(m) === id).sort((a, b) => a.created_at.localeCompare(b.created_at));
   if (!msgs.length) return '<div class="sub center" style="margin:auto">Aún no os habéis escrito. ¡Saluda! 👋</div>';
@@ -5265,7 +5268,7 @@ function threadInner(id) {
     const can = S.dmCan[id] !== false;
     return `<div class="msg-row ${mine ? 'mine' : ''}"><div class="msg-wrap"><div class="msg-line"><div class="msg" data-dmid="${m.id}">
         ${m.story_id ? storyReplyHtml(m) : ''}${phOf('dm_message', m, 'dm')}${m.body ? `<div class="msg-body">${listify(linkify(m.body))}</div>` : ''}${url ? linkCard(url) : ''}
-        <div class="msg-foot"><span>${timeAgo(m.created_at)}</span>
+        <div class="msg-foot"><span title="${esc(new Date(m.created_at).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' }))}">${msgTime(m.created_at)}</span>
           ${mine && m.read_at ? `<span class="seen" title="Visto" aria-label="Visto">${SEEN_ICON}</span>` : ''}
         </div>${dmMenuItems(m) ? `<button type="button" class="msg-more" data-dmmenu-open="${m.id}" title="Opciones" aria-label="Opciones del mensaje" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : ''}</div>${can ? `<button type="button" class="msg-rxbtn" data-dmrx-open="${m.id}" title="Reaccionar" aria-label="Reaccionar">${EMOJI_ICON}</button>` : ''}</div>${dmRxChip(m.id)}</div></div>`;
   }).join('');
