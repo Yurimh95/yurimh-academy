@@ -233,6 +233,18 @@ const { chromium } = require('playwright');
   // móvil
   const m = await open('s1',{width:390,height:844}); await goto(m,'feed');
   ok(await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: feed sin scroll horizontal');
+  // móvil: quién ha reaccionado (resumen pulsable → lista)
+  const who = '.fpost:has-text("Joe Pass") [data-rxwho]';
+  ok((await m.textContent(who)).trim()==='Tú y Lu', 'Móvil: resumen de reacciones "Tú y Lu"');
+  await m.click(who); await m.waitForTimeout(200);
+  const wl = (await m.textContent('#rxWhoBox')).replace(/\s+/g,' ');
+  ok(wl.includes('Tú') && wl.includes('Lu') && wl.includes('❤️') && wl.includes('👍🏼'), 'Móvil: la lista dice quién y con qué emoji: '+wl);
+  await m.goBack(); await m.waitForTimeout(250);
+  ok(await m.locator('#rxWhoBox').count()===0 && await m.locator('.fpost').count()>0, 'Atrás cierra la lista sin salir del Inicio');
+  await m.click(who); await m.waitForTimeout(200);
+  await m.click('#rxWhoBox .rxw-row:has-text("Lu")'); await m.waitForTimeout(400);
+  ok(await m.locator('#rxWhoBox').count()===0 && (await m.textContent('.modal')).includes('Lu'), 'Pulsar a una persona de la lista abre su perfil');
+  await m.keyboard.press('Escape');
   await m.screenshot({path:require('path').join(__dirname,'shots','m_feed.png')});
 
   console.log('\nERRORES DE CONSOLA/PÁGINA:', errors.length? errors : 'ninguno');
