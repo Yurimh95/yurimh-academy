@@ -779,6 +779,7 @@ label.f>.emo-wrap{margin-top:6px}
 .dm-conv .sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dm-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
 .dm-meta .dotn.static{position:static}
+.dm-conv .t .seen{vertical-align:-1px;margin-right:4px}
 .dm-empty{margin:auto;color:var(--faint);padding:20px;text-align:center}
 .dm-thread-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
 .dm-thread-head b{color:var(--strong)}
@@ -2126,11 +2127,11 @@ async function rtHandle(t, p) {
   if (t === 'dm_messages') {
     if (ev === 'DELETE') {
       if (!S.dms.some(m => m.id === old.id)) return;
-      S.dms = S.dms.filter(m => m.id !== old.id); updateThread(); refreshChrome(); return;
+      S.dms = S.dms.filter(m => m.id !== old.id); updateThread(); updateDmList(); refreshChrome(); return;
     }
     if (ev === 'UPDATE') { // "visto"
       const m = S.dms.find(x => x.id === row.id); if (!m) return;
-      Object.assign(m, row); updateThread(); refreshChrome(); return;
+      Object.assign(m, row); updateThread(); updateDmList(); refreshChrome(); return;
     }
     if (!addUnique(S.dms, row, t)) return;
     const from = dmPartner(row);
@@ -5252,13 +5253,21 @@ function dmListHtml() {
   return `<div class="dm-list ${w ? 'has-open' : ''}">
     <div class="dm-list-head"><b>Conversaciones</b><button class="btn sm primary" data-action="dm-new">+ Nuevo</button></div>
     ${convs.length ? convs.map(c => `<div class="dm-conv ${c.id === w ? 'on' : ''}" data-action="dm-open" data-id="${c.id}">
-        ${avatarHtml(c.id, 42)}<div class="t"><b>${esc(whoName(c.id))}</b><span class="sub">${c.last.sender_id === S.user.id ? 'Tú: ' : ''}${esc((c.last.body || (phList(c.last).length ? '📷 Foto' : '')).slice(0, 60))}</span></div>
-        <div class="dm-meta"><span class="sub">${timeAgo(c.last.created_at)}</span>${c.unread ? `<i class="dotn static">${c.unread}</i>` : ''}</div></div>`).join('')
+        ${avatarHtml(c.id, 42)}<div class="t"><b>${esc(whoName(c.id))}</b><span class="sub">${c.last.sender_id === S.user.id ? `${c.last.read_at ? `<span class="seen" title="Visto" aria-label="Visto">${SEEN_ICON}</span>` : ''}Tú: ` : ''}${esc((c.last.body || (phList(c.last).length ? '📷 Foto' : '')).slice(0, 60))}</span></div>
+        <div class="dm-meta"><span class="sub" title="${esc(new Date(c.last.created_at).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' }))}">${convTime(c.last.created_at)}</span>${c.unread ? `<i class="dotn static">${c.unread}</i>` : ''}</div></div>`).join('')
       : '<div class="sub" style="padding:14px">Aún no tienes conversaciones. Pulsa "+ Nuevo" para escribir a alguien.</div>'}
   </div>`;
 }
 function msgTime(iso) { // hora exacta del mensaje, "22:56"
   return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+function convTime(iso) { // lista de chats, como WhatsApp: "22:56", "ayer", "lunes" o "18/11/26"
+  const d = new Date(iso), day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const diff = Math.round((day(new Date()) - day(d)) / 864e5);
+  if (diff <= 0) return msgTime(iso);
+  if (diff === 1) return 'ayer';
+  if (diff < 7) return d.toLocaleDateString('es-ES', { weekday: 'long' });
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 function threadInner(id) {
   const msgs = myDms().filter(m => dmPartner(m) === id).sort((a, b) => a.created_at.localeCompare(b.created_at));
