@@ -669,6 +669,20 @@ label.f>.emo-wrap{margin-top:6px}
 @media (max-width:480px){ .durrow{grid-template-columns:1fr} }
 .tbrief{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tdur{flex:none;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
+/* Vídeo para ver: etiqueta y aviso al abrir el enlace */
+.wtag{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;line-height:1.5;color:var(--accent-hi);background:rgba(var(--accent-rgb),.13);border:1px solid rgba(var(--accent-rgb),.35);border-radius:6px;padding:0 7px;white-space:nowrap}
+.wtag.big{font-size:12.5px;border-radius:999px;padding:2px 10px}
+.watchchk{display:flex;align-items:flex-start;margin:4px 0 12px}
+.watchchk .sub{display:block;font-weight:400;margin-top:2px}
+.watchbox{position:fixed;inset:0;z-index:90;background:var(--overlay);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
+.watchbox .wb{width:100%;max-width:450px;max-height:100%;overflow-y:auto;background:var(--panel);border:1px solid var(--line-strong);border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.35),var(--glow-sm);animation:min .18s ease-out}
+.watchbox h3{margin:0;color:var(--strong);font-size:19px;letter-spacing:-.01em}
+.watchbox .wb-title{margin:4px 0 0;color:var(--accent-hi);font-weight:600}
+.watchbox p{margin:12px 0 0;color:var(--text);line-height:1.5}
+.watchbox ul{margin:12px 0 18px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.watchbox li{display:flex;gap:10px;align-items:flex-start;color:var(--text);line-height:1.45}
+.watchbox li>span:first-child{flex:none;font-size:18px;line-height:1.25}
+.watchbox .actions{justify-content:flex-end}
 .tdur::after{content:'·';margin-left:6px;color:var(--faint)}
 .tans{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;white-space:nowrap}
 .tans svg{width:15px;height:15px;vertical-align:-3px}
@@ -2244,7 +2258,7 @@ window.addEventListener('popstate', async e => {
     }
     return;
   }
-  if (popHist) { dmRxClose(false, true); emojiClose(false, true); rxWhoClose(true); popHist = false; return; } // burbuja de reacciones, menú o selector
+  if (popHist) { dmRxClose(false, true); emojiClose(false, true); rxWhoClose(true); watchClose(true); popHist = false; return; } // burbuja de reacciones, menú o selector
   if (lbClose(true)) return; // primero se cierra la foto ampliada
   if ($('#modalRoot').firstChild) { await closeModal(true); return; }
   const st = e.state || {};
@@ -4343,10 +4357,56 @@ async function fetchDuration(url) {
   } catch { return none; }
 }
 const kindIcon = k => `<span class="kicon" title="${esc(KIND[k] || k)}" aria-label="${esc(KIND[k] || k)}">${ic(k in KIND ? k : 'song')}</span>`;
-function playBtn(url) {
+function playBtn(url, it = null) {
   const sv = linkService(url);
-  return `<a class="playbtn ${sv}" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer" data-action="noop" title="${sv === 'sp' ? 'Escuchar en Spotify' : sv === 'yt' ? 'Ver en YouTube' : 'Abrir enlace'}" aria-label="Abrir enlace">${ic('play')}</a>`;
+  return `<a class="playbtn ${sv}" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer" data-action="noop"${watchAttr(it)} title="${sv === 'sp' ? 'Escuchar en Spotify' : sv === 'yt' ? 'Ver en YouTube' : 'Abrir enlace'}" aria-label="Abrir enlace">${ic('play')}</a>`;
 }
+
+/* ---------- Vídeo para ver (listening_items.watch_video) ----------
+   El profesor marca a mano algunas escuchas (videoclips, vídeos) como "para ver", no solo escuchar. Llevan la etiqueta
+   "🎬 Para ver" en la lista y en su ventana, y al alumno le sale este aviso cada vez que abre el enlace (▶ de la lista o
+   "Ver vídeo" de la ventana). Va por encima de la ventana abierta; Atrás, Esc, "Ahora no" o tocar fuera lo cierran.
+   Al profesor no le sale (sí en "Ver como alumno"). */
+const watchTag = (it, big = false) => it && it.watch_video ? `<span class="wtag${big ? ' big' : ''}" title="Vídeo para verlo con atención, no solo escucharlo">🎬 Para ver</span>` : '';
+const watchAttr = it => it && it.watch_video ? ` data-watch="${esc(it.id)}"` : '';
+function watchClose(fromHistory = false) {
+  const b = $('#watchBox'); if (!b) return false;
+  b.remove(); popDone(fromHistory);
+  return true;
+}
+function watchOpen(a) {
+  if ($('#watchBox')) return;
+  const id = a.dataset.watch;
+  const it = ((S.assigns || []).find(x => x.item_id === id) || {}).item || (S.items || []).find(x => x.id === id);
+  const box = document.createElement('div'); box.id = 'watchBox'; box.className = 'watchbox';
+  box.innerHTML = `<div class="wb" role="dialog" aria-modal="true" aria-labelledby="watchT">
+    <h3 id="watchT">🎬 Este vídeo es para verlo</h3>
+    ${it ? `<div class="wb-title">${esc(it.title)}</div>` : ''}
+    <p>No es para ponerlo de fondo: aquí la imagen cuenta tanto como el sonido. Antes de darle al play:</p>
+    <ul>
+      <li><span>📺</span><span>Pon la <b>calidad al máximo</b>, 4K si tu pantalla y tu conexión lo permiten (en YouTube, la rueda ⚙ → Calidad).</span></li>
+      <li><span>🎧</span><span>Ponte los <b>auriculares</b>.</span></li>
+      <li><span>👀</span><span>Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.</span></li>
+    </ul>
+    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(a.getAttribute('href') || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>
+  </div>`;
+  document.body.appendChild(box);
+  popPush();
+  const go = $('[data-watch-go]', box); if (go) go.focus();
+}
+document.addEventListener('click', e => {
+  const t = e.target; if (!t.closest) return;
+  if (t.closest('#watchBox')) {
+    if (t.closest('[data-watch-go]')) setTimeout(() => watchClose(), 0); // se deja abrir el enlace y luego se cierra
+    else if (t.closest('[data-watch-close]') || !t.closest('.wb')) watchClose();
+    return;
+  }
+  const a = t.closest('a[data-watch]');
+  if (!a || isTeacher()) return;
+  e.preventDefault(); e.stopPropagation(); // ni se abre el enlace ni la fila que lo contiene
+  watchOpen(a);
+}, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#watchBox')) { e.stopImmediatePropagation(); watchClose(); } }, true);
 const answersMeter = n => `<span class="meter" title="${n}/6 respuestas"><i style="width:${Math.round(n / 6 * 100)}%"></i></span><span class="meter-n">${n}/6</span>`;
 
 /* Escucha analítica del alumno: como el catálogo del profesor, pero con lo suyo. Pestañas Pendientes / Escuchados / Todos,
@@ -4418,10 +4478,10 @@ function studentCard(a, i = 0) {
   return `<article class="track ${a.listened ? 'done' : ''}" data-action="open-assign" data-id="${a.id}">
     <span class="tnum">${a.listened ? `<span class="tdone" title="Escuchado">${ic('check')}</span>` : i + 1}</span>
     ${coverHtml(it)}
-    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}<span class="tbrief">${it.brief ? esc(it.brief) : esc(KIND[it.kind] || '')}</span></span></div>
     <span class="tans">${answersMeter(n)}</span>
     <span class="tdue ${d.cls}">${a.due_date ? esc(d.cls ? d.text : fmtDate(a.due_date)) : '—'}</span>
-    ${playBtn(it.url)}
+    ${playBtn(it.url, it)}
   </article>`;
 }
 
@@ -4435,8 +4495,8 @@ function studentModal(id) {
       <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2>${itemMetaHtml(it)}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
-    <div class="chips" style="margin-bottom:6px"><span class="chip ${d.cls}">${esc(d.text)}</span></div>
-    <div class="actions" style="margin:10px 0"><a class="btn" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a></div>
+    <div class="chips" style="margin-bottom:6px">${watchTag(it, true)}<span class="chip ${d.cls}">${esc(d.text)}</span></div>
+    <div class="actions" style="margin:10px 0"><a class="btn" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer"${watchAttr(it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a></div>
     <div style="margin:0 0 6px">${rxBar('listening_item', it.id)}</div>
     ${it.brief ? `<div class="callout"><b>Consigna</b>${esc(it.brief)}</div>` : ''}
     ${a.note ? `<div class="callout"><b>Nota para ti</b>${esc(a.note)}</div>` : ''}
@@ -4724,10 +4784,10 @@ function catRow(it, i) {
   return `<article class="track" data-action="open-item" data-id="${it.id}">
     <span class="tnum">${i + 1}</span>
     ${coverHtml(it)}
-    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}</span>${sid ? `<span class="tstat-m">${ans}</span>` : ''}</div>
+    <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}${artistHtml(it)}${genreChips(it.id)}</span>${sid ? `<span class="tstat-m">${ans}</span>` : ''}</div>
     <span class="tans">${ans}</span>
     <span class="tdue">${due}</span>
-    ${playBtn(it.url)}
+    ${playBtn(it.url, it)}
   </article>`;
 }
 function catalogList() {
@@ -4990,6 +5050,7 @@ function itemFormModal(id) {
       </div>
       <div class="f">Géneros <span class="sub">(los que quieras; se eligen de la lista de "Géneros")</span>${genrePicker(it ? it.id : null)}</div>
       <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
+      <label class="chk watchchk"><input type="checkbox" name="watch_video" ${it && it.watch_video ? 'checked' : ''}> <span>🎬 <b>Vídeo para ver</b>, no solo escuchar<span class="sub">Lleva la etiqueta "Para ver" y, al abrir el enlace, el alumno ve un aviso: calidad al máximo, auriculares y atención total.</span></span></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" ${it && itemReturn ? `data-action="open-item" data-keep="1" data-id="${it.id}"` : 'data-action="close"'}>Cancelar</button></div>
     </form>`);
 }
@@ -5034,6 +5095,7 @@ function itemModal(id) {
       <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2>${itemMetaHtml(it)}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
+    ${it.watch_video ? `<div class="chips" style="margin:0 0 8px">${watchTag(it, true)}</div>` : ''}
     <div class="actions" style="margin:0 0 6px">
       <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a>
       <button class="btn sm violet" data-action="edit-item" data-id="${it.id}">Editar</button>
@@ -5113,8 +5175,8 @@ function studentDetailModal(id) {
       const d = dueInfo(a), n = answeredCount(a);
       return `<div class="arow">
         <div class="arow-head"><div class="arow-who sdm-item sdm-open" data-action="sdm-item" data-id="${it.id}" data-sid="${s.id}" title="Abrir y editar esta escucha">${coverHtml(it, 56)}
-            <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
-            ${playBtn(it.url)}</div>
+            <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
+            ${playBtn(it.url, it)}</div>
           <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span data-readchip="${a.id}">${ansReadChip(a)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
         ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
         <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
@@ -6247,7 +6309,7 @@ document.addEventListener('submit', async e => {
     btn.disabled = false; btn.textContent = 'Guardar';
     const title = f.title.value.trim() || meta.title; // vacío → el título de Spotify/YouTube
     if (!title) return toast('No he podido sacar el título de ese enlace. Escríbelo tú', 'bad');
-    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null, folder_id: f.folder.value || null };
+    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null, folder_id: f.folder.value || null, watch_video: f.watch_video.checked };
     const genreIds = $$('input[name=genre]:checked', f).map(x => x.value);
     if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = meta.thumb; // portada de Spotify/YouTube
     // Duración: lo escrito a mano manda; si está vacío, se saca de Spotify/YouTube

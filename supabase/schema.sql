@@ -2256,6 +2256,10 @@ create index if not exists listening_item_genres_genre_idx on public.listening_i
 alter table public.listening_items add column if not exists folder_id uuid references public.listening_folders(id) on delete set null;
 alter table public.listening_items add column if not exists artist text check (artist is null or char_length(artist) <= 200);
 create index if not exists listening_items_folder_idx on public.listening_items (folder_id);
+-- Vídeo para ver (2026-11-26): el profesor marca a mano las escuchas que hay que ver, no solo escuchar.
+-- La app les pone la etiqueta "🎬 Para ver" y avisa al alumno al abrir el enlace. Solo lo cambia el profesor
+-- (listening_items_teacher_all; el alumno solo lee).
+alter table public.listening_items add column if not exists watch_video boolean not null default false;
 
 -- Solo dos niveles: un subgénero no puede tener subgéneros, ni colgar de sí mismo
 create or replace function public.listening_genres_guard()
