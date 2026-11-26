@@ -4366,7 +4366,7 @@ function playBtn(url, it = null) {
    El profesor marca a mano algunas escuchas (videoclips, vídeos) como "para ver", no solo escuchar. Llevan la etiqueta
    "🎬 Para ver" en la lista y en su ventana, y al alumno le sale este aviso cada vez que abre el enlace (▶ de la lista o
    "Ver vídeo" de la ventana). Va por encima de la ventana abierta; Atrás, Esc, "Ahora no" o tocar fuera lo cierran.
-   Al profesor no le sale (sí en "Ver como alumno"). */
+   También le sale al profesor (lo pidió Yuri el 2026-11-26). */
 const watchTag = (it, big = false) => it && it.watch_video ? `<span class="wtag${big ? ' big' : ''}" title="Vídeo para verlo con atención, no solo escucharlo">🎬 Para ver</span>` : '';
 const watchAttr = it => it && it.watch_video ? ` data-watch="${esc(it.id)}"` : '';
 function watchClose(fromHistory = false) {
@@ -4402,7 +4402,7 @@ document.addEventListener('click', e => {
     return;
   }
   const a = t.closest('a[data-watch]');
-  if (!a || isTeacher()) return;
+  if (!a) return;
   e.preventDefault(); e.stopPropagation(); // ni se abre el enlace ni la fila que lo contiene
   watchOpen(a);
 }, true);
@@ -5097,7 +5097,7 @@ function itemModal(id) {
     </div>
     ${it.watch_video ? `<div class="chips" style="margin:0 0 8px">${watchTag(it, true)}</div>` : ''}
     <div class="actions" style="margin:0 0 6px">
-      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a>
+      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer"${watchAttr(it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a>
       <button class="btn sm violet" data-action="edit-item" data-id="${it.id}">Editar</button>
       <button class="btn sm danger" data-action="delete-item" data-id="${it.id}">Eliminar</button>
     </div>

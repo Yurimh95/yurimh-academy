@@ -33,12 +33,17 @@ const path = require('path');
   await t.evaluate(() => { closeModal(); S.section = 'listening'; render(); }); await t.waitForTimeout(150);
   ok(await t.locator('.track[data-id=i1] .wtag').count() === 1, 'En el catálogo sale la etiqueta "Para ver"');
   ok(await t.locator('.track[data-id=i2] .wtag').count() === 0, 'La otra escucha no la lleva');
-  // Al profesor no le sale el aviso
-  await t.evaluate(() => { const a = document.querySelector('.track[data-id=i1] .playbtn'); a.removeAttribute('href'); a.click(); });
-  await t.waitForTimeout(100);
-  ok(await box(t) === 0, 'Al profesor no le sale el aviso');
+  // Al profesor también le sale el aviso
+  await t.click('.track[data-id=i1] .playbtn'); await t.waitForTimeout(100);
+  ok(await box(t) === 1, 'Al profesor también le sale el aviso al pulsar ▶');
+  ok(await t.locator('.modal').count() === 0, 'Pulsar ▶ no abre la ventana de la escucha (profesor)');
+  await t.click('#watchBox [data-watch-close]'); await t.waitForTimeout(100);
   await t.evaluate(() => itemModal('i1')); await t.waitForTimeout(100);
   ok(await t.locator('.modal .wtag').count() === 1, 'En la ventana de la escucha del profesor sale la etiqueta');
+  ok(await t.locator('.modal a[data-watch]').textContent() === 'Ver vídeo ↗', 'Su botón dice "Ver vídeo"');
+  await t.click('.modal a[data-watch]'); await t.waitForTimeout(100);
+  ok(await box(t) === 1, 'Desde su ventana también le sale el aviso');
+  await t.keyboard.press('Escape'); await t.waitForTimeout(100);
   await t.evaluate(() => closeModal());
   // Desmarcar
   await t.evaluate(() => itemFormModal('i1')); await t.waitForTimeout(100);
