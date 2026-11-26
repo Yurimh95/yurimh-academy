@@ -199,7 +199,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.nav button').allTextContents()).join('|').includes('Moderación2 denuncias'), 'Menú profe: "Moderación 2 denuncias"');
   await goto(p,'mod');
   const stats = (await p.locator('.stat').allTextContents()).map(s=>s.replace(/\s+/g,' ').trim());
-  ok(stats.length===5&&stats[4].startsWith('2'), 'Estadística: 2 denuncias pendientes -> '+stats[4]);
+  ok(stats.length===4&&stats[3].startsWith('2'), 'Estadística: 2 denuncias pendientes -> '+stats[3]);
   ok(await p.locator('.dcard.mod .row.rep').count()===2, 'Tarjeta de denuncias con 2 filas');
   const rt = (await p.textContent('.dcard.mod')).replace(/\s+/g,' ');
   ok(rt.includes('Lu (Luis)')&&rt.includes('Marta')&&rt.includes('Qué bueno, lo apunto')&&rt.includes('No me gusta el tono'), 'Denuncia con nombre real + apodo, contenido y motivo');

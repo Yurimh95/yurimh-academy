@@ -383,6 +383,52 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .stat[data-action]:hover{border-color:var(--line-strong);transform:translateY(-1px)}
 .stat.warn{border-color:rgba(var(--warn-rgb),.45)}.stat.warn b{color:var(--warn)}
 .stat.bad{border-color:rgba(var(--bad-rgb),.45)}.stat.bad b{color:var(--bad)}
+/* Moderación (v2, 2026-11-26): fichas con icono, cola de respuestas ancha y columna lateral */
+.mod-stats{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.mod-stats .stat{flex-direction:row;align-items:center;gap:12px;padding:12px 14px}
+.stat-ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(var(--accent-rgb),.12);color:var(--accent)}
+.stat-ic svg{width:20px;height:20px}
+.stat-tx{display:flex;flex-direction:column;min-width:0}
+.mod-stats .stat b{font-size:24px}
+.stat.zero{opacity:.62;box-shadow:none}.stat.zero .stat-ic{background:var(--panel2);color:var(--faint)}
+.stat.acc{border-color:rgba(var(--accent-rgb),.5);box-shadow:var(--glow-sm)}.stat.acc b{color:var(--accent)}
+.stat.warn .stat-ic{background:rgba(var(--warn-rgb),.14);color:var(--warn)}
+.stat.bad .stat-ic{background:rgba(var(--bad-rgb),.14);color:var(--bad)}
+.dcard.wide.mod{margin-bottom:16px}
+.mod-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.mod-side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.mod-revhead{flex-wrap:wrap;align-items:flex-start}
+.mod-revhead .sub{margin-top:2px}
+.tabs.sm{margin:0}.tabs.sm .tab{font-size:13px;padding:5px 12px}
+.mod-rev .catbar{margin:0 0 10px}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mrow{display:flex;align-items:center;gap:12px;width:100%;font:inherit;text-align:left;color:var(--text);cursor:pointer;background:var(--panel2);border:1px solid transparent;border-radius:12px;padding:8px 12px 8px 8px;transition:background .15s,border-color .15s}
+.mrow:hover{background:var(--hover);border-color:var(--line)}
+.mrow.unread{border-color:rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.07)}
+.mrow.unread .mrow-main b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:var(--glow-sm);margin-right:8px;vertical-align:middle}
+.mrow-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.mrow-main b{color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow-who{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;min-width:0;white-space:nowrap;overflow:hidden}
+.mrow-who .sep{color:var(--faint)}
+.mrow-end{display:flex;align-items:center;gap:10px;flex:none}
+.mrow-st .chip{margin:0}
+.adots{display:inline-flex;gap:3px}
+.adots i{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}
+.adots i.on{background:var(--accent)}
+.more-btn{display:block;width:100%;margin-top:10px}
+.mod-empty{padding:28px 10px}
+.mside-who{display:flex;align-items:center;gap:10px;min-width:0}
+.mover{gap:10px;justify-content:flex-start}
+.clip1{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-who{display:flex;align-items:center;gap:12px;min-width:0}
+.rv-item{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px;margin:4px 0 6px}
+.rv-item .tmain{flex:1;min-width:0}
+.rv-nav{position:sticky;bottom:-1px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px -4px 0;padding:10px 4px;background:var(--panel);border-top:1px solid var(--line)}
+.rv-ans .ans-read .btn.primary,.rv-ans .ans-read .btn.primary+.sub{display:none} /* en la revisión, el botón va abajo */
+.rv-foot{display:flex;flex-wrap:wrap;gap:16px;margin-top:8px}
+@media (max-width:980px){ .mod-grid{grid-template-columns:1fr} }
+@media (max-width:560px){ .mod-stats{grid-template-columns:1fr 1fr;gap:8px} .mod-stats .stat{padding:10px} .stat-ic{width:34px;height:34px} .mod-stats .stat b{font-size:20px} .stat-tx span{font-size:12px}
+  .adots{display:none} .mrow{gap:10px} .row.rep{flex-direction:column;align-items:stretch} .row.rep>.actions{justify-content:flex-end} }
 .grid.one{grid-template-columns:1fr}
 .card.post.isnew{border-color:rgba(var(--accent-rgb),.45);background:linear-gradient(180deg,rgba(var(--accent-rgb),.08),transparent 70%),var(--panel)}
 .postbody{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0 4px;font-size:15px}
@@ -3769,51 +3815,104 @@ function forYou() {
   return out.length ? `<section class="foryou"><div class="fy-chips">${out.join('')}</div></section>` : '';
 }
 
-/* ============================ MODERACIÓN (profesor) ============================ */
+/* ============================ MODERACIÓN (profesor) ============================
+   Panel de trabajo del profesor: denuncias (si hay), la cola de respuestas de Escucha analítica y lo que necesita
+   atención (vencidas, por aprobar). S.mod = { tab: 'unread'|'all', stu: '' (alumno), lim: cuántas filas se ven }.
+   Cada respuesta se abre en ansReviewModal, que deja pasar a la siguiente sin volver a la lista. */
+const MOD_PAGE = 20;
+const modState = () => S.mod || (S.mod = { tab: 'unread', stu: '', lim: MOD_PAGE });
+const ansUnread = a => answeredCount(a) > 0 && !a.teacher_read_at;
+const modActive = () => new Set(S.students.filter(s => s.approved).map(s => s.id));
+function modAnswers(tab) { // respuestas según la pestaña y el alumno elegidos, de la más reciente a la más antigua
+  const m = modState(), ok = modActive(), t = tab || m.tab;
+  return S.assigns.filter(a => ok.has(a.student_id) && (a.listened || answeredCount(a) > 0))
+    .filter(a => (t === 'all' || ansUnread(a)) && (!m.stu || a.student_id === m.stu))
+    .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+}
+const ansDots = n => `<span class="adots" title="${n} de 6 respuestas">${QUESTIONS.map((q, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+function modRevRow(a) {
+  const it = S.items.find(i => i.id === a.item_id) || { title: 'Elemento', kind: 'song' }, n = answeredCount(a);
+  return `<button type="button" class="mrow ${ansUnread(a) ? 'unread' : ''}" data-action="mod-review" data-id="${a.id}">
+    ${coverHtml(it, 46)}
+    <span class="mrow-main"><b>${esc(it.title)}</b>
+      <span class="mrow-who">${avatarHtml(a.student_id, 20)}<span>${esc(studentName(a.student_id))}</span><span class="sep">·</span><span>${esc(timeAgo(a.updated_at))}</span></span></span>
+    <span class="mrow-end">${ansDots(n)}<span class="mrow-st">${n ? ansReadChip(a) : '<span class="chip ok">✔ Escuchado</span>'}</span></span>
+  </button>`;
+}
+function modRevCard() {
+  const m = modState(), ok = S.students.filter(s => s.approved).sort((a, b) => a.display_name.localeCompare(b.display_name));
+  const unread = modAnswers('unread'), all = modAnswers('all'), list = m.tab === 'all' ? all : unread, shown = list.slice(0, m.lim);
+  return `<section class="dcard mod-rev" id="modRev">
+    <div class="dhead mod-revhead"><div><h2>Respuestas de ${esc(MODULE_LISTENING)}</h2><div class="sub">Pulsa una para leerla; desde ahí pasas a la siguiente.</div></div>
+      <div class="tabs sm"><button class="tab ${m.tab === 'unread' ? 'on' : ''}" data-action="mod-tab" data-t="unread">Sin leer<span class="n">${unread.length}</span></button><button class="tab ${m.tab === 'all' ? 'on' : ''}" data-action="mod-tab" data-t="all">Todas<span class="n">${all.length}</span></button></div></div>
+    ${ok.length > 1 || (m.tab === 'unread' && unread.length > 1) ? `<div class="catbar">
+      ${ok.length > 1 ? `<select id="modStu" aria-label="Alumno"><option value="">Todos los alumnos</option>${ok.map(s => `<option value="${s.id}" ${m.stu === s.id ? 'selected' : ''}>${esc(s.display_name)}</option>`).join('')}</select>` : ''}
+      ${m.tab === 'unread' && unread.length > 1 ? `<button type="button" class="btn sm primary" data-action="mod-review" data-id="${unread[0].id}">${SEEN_ICON} Revisar las ${unread.length} seguidas</button>` : ''}</div>` : ''}
+    ${list.length ? `<div class="mlist">${shown.map(modRevRow).join('')}</div>
+      ${list.length > shown.length ? `<button type="button" class="btn more-btn" data-action="mod-more">Mostrar ${Math.min(MOD_PAGE, list.length - shown.length)} más <span class="sub">(quedan ${list.length - shown.length})</span></button>` : ''}`
+    : `<div class="empty small mod-empty">${m.tab === 'unread' ? `${SEEN_ICON} Estás al día: no hay respuestas sin leer${m.stu ? ' de este alumno' : ''}.` : 'Aún no hay respuestas.'}</div>`}
+  </section>`;
+}
+function modRevRefresh() { const box = $('#modRev'); if (box) box.outerHTML = modRevCard(); } // solo la cola, sin repintar la página
 function homeTeacher() {
-  const ok = S.students.filter(s => s.approved), pend = S.students.filter(isPending);
-  const over = S.assigns.filter(isOverdue).sort((a, b) => a.due_date.localeCompare(b.due_date));
-  const recent = S.assigns.filter(a => a.listened || answeredCount(a) > 0)
-    .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '')).slice(0, 5);
-  const posts = S.posts.slice().sort(postSort).slice(0, 3);
+  const okIds = modActive(), pend = S.students.filter(isPending);
+  const over = S.assigns.filter(a => okIds.has(a.student_id) && isOverdue(a)).sort((a, b) => a.due_date.localeCompare(b.due_date));
+  const unread = S.assigns.filter(a => okIds.has(a.student_id) && ansUnread(a)).length;
   const reps = S.reports.filter(r => !r.resolved);
-  const itemTitle = id => (S.items.find(i => i.id === id) || {}).title || 'Elemento';
-  return `<div class="stats">
-    <div class="stat"><b>${ok.length}</b><span>Alumnos activos</span></div>
-    <div class="stat ${pend.length ? 'warn' : ''}" ${pend.length ? 'data-action="section" data-s="students"' : ''}><b>${pend.length}</b><span>Por aprobar</span></div>
-    <div class="stat ${over.length ? 'bad' : ''}"><b>${over.length}</b><span>Escuchas vencidas</span></div>
-    <div class="stat" data-action="section" data-s="board"><b>${S.posts.length}</b><span>Avisos publicados</span></div>
-    <div class="stat ${reps.length ? 'warn' : ''}"><b>${reps.length}</b><span>Denuncias pendientes</span></div>
+  const itemOf = id => S.items.find(i => i.id === id) || { title: 'Elemento', kind: 'song' };
+  const showOver = S.modOverAll ? over : over.slice(0, 6);
+  const stat = (n, label, icon, cls, attrs) => `<div class="stat ${n ? cls : 'zero'}" ${n && attrs ? attrs : ''}><span class="stat-ic">${ic(icon)}</span><span class="stat-tx"><b>${n}</b><span>${label}</span></span></div>`;
+  return `<div class="stats mod-stats">
+    ${stat(unread, 'Respuestas sin leer', 'listening', 'acc', 'data-action="mod-tab" data-t="unread" data-go="1"')}
+    ${stat(over.length, 'Escuchas vencidas', 'clock', 'bad', 'data-action="mod-jump" data-to="modOver"')}
+    ${stat(pend.length, 'Por aprobar', 'students', 'warn', 'data-action="section" data-s="students"')}
+    ${stat(reps.length, 'Denuncias', 'shield', 'warn', 'data-action="mod-jump" data-to="modReps"')}
   </div>
-  <div class="dash">
-    ${reps.length ? `<section class="dcard wide mod">
-      <div class="dhead"><h2>Denuncias pendientes</h2></div>
-      <div class="list">${reps.map(reportRow).join('')}</div></section>` : ''}
-    <section class="dcard">
-      <div class="dhead"><h2>Respuestas recientes</h2></div>
-      ${recent.length ? `<div class="list">${recent.map(a => `
-        <div class="row click" data-action="home-open-item" data-id="${a.item_id}">
-          <div><strong>${esc(studentName(a.student_id))}</strong> · ${esc(itemTitle(a.item_id))}
-            <div class="sub">${answeredCount(a)}/6 respuestas${a.listened ? ' · escuchado' : ''} · ${timeAgo(a.updated_at)}</div></div></div>`).join('')}</div>`
-        : `<div class="empty small">Aún no hay respuestas.</div>`}
-    </section>
-    <section class="dcard">
-      <div class="dhead"><h2>Escuchas vencidas</h2></div>
-      ${over.length ? `<div class="list">${over.slice(0, 5).map(a => `
-        <div class="row click" data-action="home-open-item" data-id="${a.item_id}">
-          <div><strong>${esc(studentName(a.student_id))}</strong> · ${esc(itemTitle(a.item_id))}</div>
-          <span class="chip bad">${fmtDate(a.due_date)}</span></div>`).join('')}</div>`
-        : `<div class="empty small">Nadie va retrasado.</div>`}
-    </section>
-    <section class="dcard">
-      <div class="dhead"><h2>Últimos avisos</h2><button class="linkbtn" data-action="section" data-s="board">Ver todos</button></div>
-      ${posts.length ? `<div class="list">${posts.map(p => { const r = postReadInfo(p); return `
-        <div class="row click" data-action="home-open-post" data-id="${p.id}">
-          <div><strong>${esc(p.title)}</strong><div class="sub">${timeAgo(p.created_at)}</div></div>
-          <span class="chip ${r.rec.length && r.read === r.rec.length ? 'ok' : ''}">Leído ${r.read}/${r.rec.length}</span></div>`; }).join('')}</div>`
-        : `<div class="empty small">Todavía no has publicado avisos.</div>`}
-    </section>
+  ${reps.length ? `<section class="dcard wide mod" id="modReps">
+    <div class="dhead"><h2>Denuncias pendientes</h2><span class="chip warn">${reps.length}</span></div>
+    <div class="list">${reps.map(reportRow).join('')}</div></section>` : ''}
+  <div class="mod-grid">
+    ${modRevCard()}
+    <div class="mod-side">
+      ${pend.length ? `<section class="dcard">
+        <div class="dhead"><h2>Por aprobar</h2><button class="linkbtn" data-action="section" data-s="students">Ir a Alumnos</button></div>
+        <div class="list">${pend.map(s => `<div class="row click" data-action="section" data-s="students"><div class="mside-who">${avatarHtml(s.id, 30)}<div style="min-width:0"><strong>${esc(s.display_name)}</strong><div class="sub">${s.created_at ? 'Se registró ' + esc(timeAgo(s.created_at)) : esc(s.email || '')}</div></div></div></div>`).join('')}</div></section>` : ''}
+      <section class="dcard" id="modOver">
+        <div class="dhead"><h2>Escuchas vencidas</h2>${over.length ? `<span class="chip bad">${over.length}</span>` : ''}</div>
+        ${over.length ? `<div class="list">${showOver.map(a => `
+          <div class="row click mover" data-action="mod-open-item" data-id="${a.item_id}">${coverHtml(itemOf(a.item_id), 36)}
+            <div style="min-width:0;flex:1"><strong class="clip1">${esc(itemOf(a.item_id).title)}</strong><div class="sub">${esc(studentName(a.student_id))} · venció el ${fmtDate(a.due_date)}</div></div></div>`).join('')}</div>
+          ${over.length > showOver.length ? `<button type="button" class="linkbtn" style="margin-top:10px" data-action="mod-over-all">Ver las ${over.length}</button>` : ''}`
+          : `<div class="empty small">Nadie va retrasado.</div>`}
+      </section>
+    </div>
   </div>`;
+}
+
+/* Revisión de una respuesta: alumno, escucha, sus 6 respuestas y paso a la anterior o la siguiente de la cola.
+   La cola (S.modQueue) se fija al abrir, para que marcar como leída no la haga desaparecer mientras revisas. */
+function ansReviewModal(aid) {
+  const a = S.assigns.find(x => x.id === aid); if (!a) return closeModal();
+  const it = S.items.find(i => i.id === a.item_id) || { id: a.item_id, title: 'Elemento', kind: 'song', url: '' };
+  const q = S.modQueue && S.modQueue.includes(aid) ? S.modQueue : (S.modQueue = [aid]);
+  const i = q.indexOf(aid), prev = q[i - 1], next = q[i + 1], d = dueInfo(a), n = answeredCount(a);
+  openModal(`
+    <div class="modal-head"><div class="rv-who">${avatarHtml(a.student_id, 44)}<div><h2>${esc(studentName(a.student_id))}</h2><div class="sub">${n}/6 respuestas · ${esc(timeAgo(a.updated_at))}</div></div></div>
+      <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <div class="rv-item">${coverHtml(it, 64)}<div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span>
+        <div class="chips" style="margin-top:6px"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${d.cls}">${esc(d.text)}</span><span data-readchip="${a.id}">${ansReadChip(a)}</span></div></div>
+      ${it.url ? playBtn(it.url, it) : ''}</div>
+    ${a.note ? `<div class="callout"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
+    ${n ? `<div class="rv-ans">${answersHtml(a)}</div>` : '<div class="empty small">La ha marcado como escuchada, pero aún no ha respondido a las preguntas.</div>'}
+    <div class="rv-nav">
+      <button type="button" class="btn sm ghost" data-action="mod-review" data-id="${prev || ''}" ${prev ? '' : 'disabled'}>← Anterior</button>
+      <span class="sub">${q.length > 1 ? `${i + 1} de ${q.length}` : ''}</span>
+      ${ansUnread(a) ? `<button type="button" class="btn sm primary" data-action="rv-read-next" data-id="${a.id}">${SEEN_ICON} ${next ? 'Leído y siguiente' : 'Marcar como leído'}</button>`
+        : `<button type="button" class="btn sm" data-action="mod-review" data-id="${next || ''}" ${next ? '' : 'disabled'}>Siguiente →</button>`}
+    </div>
+    <div class="rv-foot"><button type="button" class="linkbtn" data-action="mod-open-item" data-id="${it.id}">Abrir la escucha completa</button><button type="button" class="linkbtn" data-action="open-student" data-id="${a.student_id}">Ficha de ${esc(studentName(a.student_id))}</button></div>`,
+    async () => { S.modQueue = null; if (S.section === 'mod') softRender(); });
+  const m = $('.modal'); if (m) m.scrollTop = 0;
 }
 
 /* ================================= FEED =============================== */
@@ -5862,6 +5961,7 @@ const actions = {
     el.disabled = false;
     if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
     Object.assign(a, data[0]); updateAnsRead(a.id);
+    if ($('.rv-nav')) ansReviewModal(a.id); // en la revisión rápida, el botón de abajo cambia a "Siguiente"
     if (value) toast(`${studentName(a.student_id)} verá que has leído sus respuestas`, 'ok');
   },
   async 'del-assign'(el) {
@@ -5968,7 +6068,28 @@ const actions = {
     toast('Nombre actualizado', 'ok');
   },
   'home-open-assign'(el) { S.section = 'listening'; render(); studentModal(el.dataset.id); },
-  'home-open-item'(el) { S.section = 'listening'; render(); itemModal(el.dataset.id); },
+  // Moderación: cola de respuestas
+  'mod-tab'(el) { const m = modState(); m.tab = el.dataset.t; m.lim = MOD_PAGE;
+    if (el.dataset.go) { modRevRefresh(); const b = $('#modRev'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else modRevRefresh(); },
+  'mod-more'() { modState().lim += MOD_PAGE; modRevRefresh(); },
+  'mod-jump'(el) { const b = document.getElementById(el.dataset.to); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'mod-over-all'() { S.modOverAll = true; softRender(); },
+  'mod-review'(el) { const id = el.dataset.id; if (!id) return;
+    if (!$('#modalRoot').firstChild) S.modQueue = modAnswers().map(a => a.id); // la cola es la lista que se ve
+    ansReviewModal(id); },
+  async 'rv-read-next'(el) {
+    const a = S.assigns.find(x => x.id === el.dataset.id); if (!a) return;
+    el.disabled = true;
+    const { data, error } = await sb.from('listening_assignments').update({ teacher_read_at: new Date().toISOString() }).eq('id', a.id).select();
+    el.disabled = false;
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
+    Object.assign(a, data[0]);
+    const q = S.modQueue || [], next = q[q.indexOf(a.id) + 1];
+    if (next) return ansReviewModal(next);
+    const stu = modState().stu; closeModal();
+    toast(modAnswers('unread').length ? 'Marcada como leída' : stu ? `Al día con ${studentName(stu)}` : 'Estás al día: todo leído', 'ok');
+  },
+  'mod-open-item'(el) { S.modQueue = null; uiStale = true; itemModal(el.dataset.id); }, // al cerrarla, la Moderación se pone al día
   'home-open-post'(el) { goPost(el.dataset.id); },
   'open-post'(el) { goPost(el.dataset.id); },
   'home-open-fpost'(el) { S.section = 'feed'; render(); feedPostModal(el.dataset.id); },
@@ -6181,6 +6302,7 @@ document.addEventListener('change', e => {
     if (k === 'student') c.status = ''; // los estados posibles cambian con o sin alumno
     catRefresh();
   }
+  if (e.target.id === 'modStu') { const m = modState(); m.stu = e.target.value; m.lim = MOD_PAGE; modRevRefresh(); }
   if (e.target.matches('[data-sl]')) { slState()[e.target.dataset.sl] = e.target.value; slRefresh(); }
   if (e.target.matches('[data-lib-rename]')) libRename(e.target);
   if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
