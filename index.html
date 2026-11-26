@@ -2249,6 +2249,18 @@ function histSync() { // la llama render(): si cambió la sección, añade una e
   if (st.s === want.s && (st.dm || null) === want.dm) return;
   history.pushState(want, '');
 }
+// Al recargar (F5) el navegador conserva history.state: se vuelve a la sección (y al chat) donde estaba.
+// Solo la primera vez: si luego se cierra sesión y entra otra persona, empieza en el Inicio.
+// Las ventanas abiertas no se recuperan, así que se limpia su marca (si no, histSync no apuntaría nada).
+let histBooted = false;
+function histRestoreOnLoad() {
+  if (histBooted) return;
+  histBooted = true;
+  const st = history.state || {};
+  if (!st.app) return;
+  if (st.s) { S.section = st.s; S.dmWith = st.s === 'messages' ? (st.dm || null) : null; }
+  if (st.modal || st.lb || st.pop) history.replaceState({ app: 1, s: st.s, dm: st.dm || null }, '');
+}
 window.addEventListener('popstate', async e => {
   if (histSkip) { // es el "atrás" que hicimos nosotros al cerrar una ventana
     if (--histSkip === 0) {
@@ -3512,6 +3524,7 @@ async function route() {
   $('#app').innerHTML = '<div class="loading">Cargando…</div>';
   const ok = await loadData();
   if (ok) {
+    histRestoreOnLoad();
     render(); rtStart(); backfillThumbs(); avatarLgBackfill();
     setTimeout(goalsCelebrate, 700); // logros nuevos que aún no ha visto
     const fromNotif = new URLSearchParams(location.search).has('n');
