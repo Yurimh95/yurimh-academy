@@ -395,7 +395,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .pickbox.hwcopy-list{grid-template-columns:1fr}
 .pickbox.am-items{grid-template-columns:1fr;max-height:min(300px,40vh);overflow:auto;gap:6px}
 .am-items .chk{display:flex;align-items:center;gap:8px}
-.am-items .chk[hidden]{display:none}
+.am-items .chk[hidden],.am-items [hidden],.am-showall[hidden]{display:none}
+.am-fold{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 0}
+.am-fold:first-child{margin-top:0}
+.am-showall{display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:13px;color:var(--muted)}
+.am-items [data-am-has]:empty{display:none}
 .am-items .chk .cover{flex:none}
 .am-items .chk .sub{margin-left:auto;white-space:nowrap}
 .hwcopy-due{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:6px 0 14px}
@@ -5071,15 +5075,23 @@ function itemFormModal(id) {
 // Asignar varias escuchas a varios alumnos de golpe (catálogo). Fecha y nota comunes, opcionales;
 // luego se ajustan una a una en cada escucha. Las parejas que ya existen se saltan.
 // La base de datos manda un solo aviso por alumno (trigger listening_assignments_notify).
+// Primero se elige a quién; la lista de escuchas esconde las que ya tienen TODOS los marcados
+// (casilla "Mostrar también las que ya tienen") y va por carpetas, en el mismo orden que el catálogo.
 function assignManyModal() {
-  const ok = S.students.filter(s => s.approved);
+  const ok = S.students.filter(s => s.approved), pre = catState().student; // si el catálogo está filtrado por un alumno, viene marcado
+  const list = S.items.slice().sort(itemSort);
+  const groups = [...foldersSorted().map(f => ({ name: f.name, items: list.filter(it => it.folder_id === f.id) })),
+    { name: S.folders.length ? 'Sin carpeta' : '', items: list.filter(it => !folderName(it.folder_id)) }].filter(g => g.items.length);
+  const row = it => `<label class="chk" data-am-id="${it.id}" data-am-hay="${esc(itemHay(it))}"><input type="checkbox" name="item" value="${it.id}"> ${coverHtml(it, 30)}<span>${esc(it.title)}${it.artist ? ` <span class="sub">· ${esc(it.artist)}</span>` : ''}</span><span class="sub" data-am-has></span><span class="sub">${esc(KIND[it.kind] || '')}</span></label>`;
   openModal(`<div class="modal-head"><h2>Asignar varias escuchas</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="assignManyForm">
-      <div class="f">Qué escuchas <span class="sub" data-am-count></span>
-        <input type="text" id="amFilter" data-no-emoji autocomplete="off" placeholder="Buscar por título…" aria-label="Buscar escucha" style="margin-top:6px">
-        <div class="pickbox am-items">${S.items.map(it => `<label class="chk" data-am-title="${esc((it.title || '').toLowerCase())}"><input type="checkbox" name="item" value="${it.id}"> ${coverHtml(it, 30)}<span>${esc(it.title)}</span><span class="sub">${esc(KIND[it.kind] || '')}</span></label>`).join('')}</div></div>
       <div class="f">A quién <button type="button" class="linkbtn" data-action="am-all" style="margin-left:8px">Marcar todos</button>
-        <div class="pickbox">${ok.length ? ok.map(s => `<label class="chk"><input type="checkbox" name="pick" value="${s.id}"> ${avatarHtml(s.id, 22)}${esc(s.display_name)}</label>`).join('') : '<span class="sub">No hay alumnos aprobados.</span>'}</div></div>
+        <div class="pickbox">${ok.length ? ok.map(s => `<label class="chk"><input type="checkbox" name="pick" value="${s.id}" ${s.id === pre ? 'checked' : ''}> ${avatarHtml(s.id, 22)}${esc(s.display_name)}</label>`).join('') : '<span class="sub">No hay alumnos aprobados.</span>'}</div></div>
+      <div class="f">Qué escuchas <span class="sub" data-am-count></span>
+        <input type="text" id="amFilter" data-no-emoji autocomplete="off" placeholder="Buscar por título, artista, género o carpeta…" aria-label="Buscar escucha" style="margin-top:6px">
+        <label class="chk am-showall"><input type="checkbox" id="amShowAll"> Mostrar también las que ya tienen</label>
+        <div class="pickbox am-items">${groups.map(g => (g.name ? `<div class="am-fold" data-am-fold>${esc(g.name)}</div>` : '') + g.items.map(row).join('')).join('')}
+          <p class="sub am-empty" data-am-empty hidden></p></div></div>
       <div class="grid2">
         <label class="f">Fecha límite (opcional)<input type="date" name="due_date"></label>
         <label class="f">Nota para todas (opcional)<input type="text" name="note" maxlength="2000" placeholder="Ej.: Fíjate sobre todo en las guitarras"></label>
@@ -5087,11 +5099,38 @@ function assignManyModal() {
       <p class="sub" style="margin:0 0 12px">Si un alumno ya tiene alguna de esas escuchas, se deja como está. A cada alumno le llega un solo aviso con todas.</p>
       <div class="actions"><button class="btn" type="submit">Asignar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
-  amCount();
+  amRefresh();
 }
 function amCount() {
   const n = $$('#assignManyForm input[name=item]:checked').length, el = $('[data-am-count]');
   if (el) el.textContent = n ? `(${n} marcada${n > 1 ? 's' : ''})` : '';
+}
+// Qué escuchas se ven: buscador + alumnos marcados. Las marcadas nunca se esconden.
+function amRefresh() {
+  const box = $('#assignManyForm .am-items'); if (!box) return;
+  const q = amNorm(($('#amFilter') || {}).value?.trim() || ''), showAll = $('#amShowAll')?.checked;
+  const ids = $$('#assignManyForm input[name=pick]:checked').map(x => x.value);
+  const has = new Set(S.assigns.map(a => a.item_id + '|' + a.student_id));
+  let shown = 0, owned = 0;
+  $$('.chk', box).forEach(l => {
+    const id = l.dataset.amId, n = ids.filter(s => has.has(id + '|' + s)).length, all = ids.length > 0 && n === ids.length;
+    const tag = l.querySelector('[data-am-has]');
+    tag.textContent = !n ? '' : ids.length === 1 ? 'Ya la tiene' : all ? 'Ya la tienen todos' : `La tiene${n > 1 ? 'n' : ''} ${n} de ${ids.length}`;
+    if (all) owned++;
+    l.hidden = !l.querySelector('input').checked && ((!!q && !l.dataset.amHay.includes(q)) || (all && !showAll));
+    if (!l.hidden) shown++;
+  });
+  // Cabeceras de carpeta: solo si tienen algo visible debajo
+  $$('[data-am-fold]', box).forEach(h => {
+    let el = h.nextElementSibling, any = false;
+    while (el && el.matches('.chk')) { if (!el.hidden) any = true; el = el.nextElementSibling; }
+    h.hidden = !any;
+  });
+  const empty = box.querySelector('[data-am-empty]');
+  empty.hidden = shown > 0;
+  empty.textContent = q ? 'Ninguna escucha coincide con la búsqueda.' : ids.length === 1 ? 'Ya tiene todas las escuchas del catálogo.' : 'Ya las tienen todas.';
+  const sa = $('#amShowAll')?.closest('label'); if (sa) sa.hidden = !owned; // la casilla solo aparece si hay algo escondido por eso
+  amCount();
 }
 
 let itemReturn = null; // alumno cuya ficha estaba abierta al pulsar una de sus escuchas (para volver a ella)
@@ -5786,7 +5825,7 @@ const actions = {
     if (ids.includes(catState().genre)) catState().genre = '';
     genresModal(); toast('Género borrado', 'ok');
   },
-  'am-all'() { const boxes = $$('#assignManyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
+  'am-all'() { const boxes = $$('#assignManyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); amRefresh(); },
   'open-item'(el) { if (!el.dataset.keep) itemReturn = null; itemModal(el.dataset.id); },
   'sdm-item'(el) { itemReturn = el.dataset.sid; itemModal(el.dataset.id); }, // desde la ficha del alumno
   'item-back'() { const r = itemReturn; itemReturn = null; if (r) studentDetailModal(r); else closeModal(); },
@@ -6103,10 +6142,7 @@ document.addEventListener('input', e => {
   if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
   if (e.target.id === 'catQ') { catState().q = e.target.value; const l = $('#catList'); if (l) l.innerHTML = catalogList(); }
   if (e.target.id === 'slQ') { const had = slActive(); slState().q = e.target.value; if (had !== slActive()) slRefresh(); else { const l = $('#slList'); if (l) l.innerHTML = studentListList(); } }
-  if (e.target.id === 'amFilter') { // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
-    const q = amNorm(e.target.value.trim());
-    $$('#assignManyForm .am-items .chk').forEach(l => { l.hidden = !!q && !l.querySelector('input').checked && !amNorm(l.dataset.amTitle).includes(q); });
-  }
+  if (e.target.id === 'amFilter') amRefresh(); // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
 });
 // Carpetas plegadas del catálogo (se recuerdan mientras dura la sesión). 'toggle' no burbujea: se escucha en captura.
 document.addEventListener('toggle', e => {
@@ -6139,6 +6175,7 @@ document.addEventListener('change', e => {
   if (cur && e.target.id === 'chkListened') { markDirty(); clearTimeout(cur.timer); saveNow(); }
   if (e.target.id === 'avatarFile') { const f0 = e.target.files[0]; e.target.value = ''; processAvatar(f0); }
   if (e.target.matches('#assignManyForm input[name=item]')) amCount();
+  if (e.target.matches('#assignManyForm input[name=pick], #amShowAll')) amRefresh();
   if (e.target.matches('[data-cat]')) { // filtros del catálogo
     const c = catState(), k = e.target.dataset.cat; c[k] = e.target.value;
     if (k === 'student') c.status = ''; // los estados posibles cambian con o sin alumno

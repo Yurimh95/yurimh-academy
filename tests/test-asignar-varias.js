@@ -23,6 +23,21 @@ const path = require('path');
   await t.click('[data-action=assign-many]'); await t.waitForTimeout(200);
   ok(await t.locator('#assignManyForm input[name=item]').count() === 3, 'Salen las 3 escuchas');
   ok(await t.locator('#assignManyForm input[name=pick]').count() === 2, 'Salen solo los alumnos aprobados (2)');
+  ok(await t.evaluate(() => { const f = $('#assignManyForm'); return f.querySelector('input[name=pick]').compareDocumentPosition(f.querySelector('input[name=item]')) & Node.DOCUMENT_POSITION_FOLLOWING; }), 'Primero se elige a quién y luego qué');
+  ok((await t.$$eval('#assignManyForm .am-items .chk', ls => ls.map(l => l.dataset.amId))).join() === 'i3,i2,i1', 'Ordenadas como el catálogo (no por fecha de creación)');
+  ok(!(await t.isVisible('#amShowAll')), 'Sin alumnos marcados no sale "Mostrar también las que ya tienen"');
+
+  // Al marcar un alumno se esconden las que ya tiene
+  await t.check('#assignManyForm input[name=pick][value=s1]'); await t.waitForTimeout(100);
+  const vis = () => t.$$eval('#assignManyForm .am-items .chk', ls => ls.filter(l => !l.hidden).map(l => l.dataset.amId).sort().join());
+  ok(await vis() === 'i2,i3', 'Con Marta marcada solo salen las que aún no tiene');
+  await t.check('#amShowAll'); await t.waitForTimeout(100);
+  ok(await vis() === 'i1,i2,i3' && (await t.textContent('[data-am-id=i1] [data-am-has]')) === 'Ya la tiene', '"Mostrar también" las enseña con la etiqueta "Ya la tiene"');
+  await t.uncheck('#amShowAll');
+  await t.check('#assignManyForm input[name=pick][value=s2]'); await t.waitForTimeout(100);
+  ok(await vis() === 'i2,i3' && (await t.textContent('[data-am-id=i2] [data-am-has]')) === 'La tiene 1 de 2', 'Con dos alumnos: se esconde solo si la tienen todos y se dice cuántos la tienen');
+  await t.uncheck('#assignManyForm input[name=pick][value=s1]'); await t.uncheck('#assignManyForm input[name=pick][value=s2]'); await t.waitForTimeout(100);
+  ok(await vis() === 'i1,i2,i3', 'Sin alumnos marcados vuelven a salir todas');
 
   // Buscar sin tildes
   await t.fill('#amFilter', 'agape'); await t.waitForTimeout(100);
