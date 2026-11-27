@@ -1935,6 +1935,7 @@ function updateRx(type, id) {
    Si el raíz se borra, sus respuestas se quedan bajo "Comentario eliminado". */
 const cmOpen = new Set();   // hilos abiertos (id del comentario raíz)
 let cmReplyTo = null;       // hilo con la caja de respuesta abierta (id del raíz)
+let cmReplyRid = null;      // respuesta concreta a la que se contesta (reply_to): su autor recibe aviso, con @ o sin ella
 const cmByDate = (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || ''));
 function cmGroups(kind, pid) {
   const c = CM[kind], all = cmList(kind).filter(x => x[c.key] === pid);
@@ -1954,7 +1955,7 @@ function commentRow(kind, x, root = null, canReply = true) {
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
     ${x.body ? `<div class="cmt-body">${richText(x.body)}</div>` : ''}</div>${phOf(c.type, x, 'cm')}${mediaLinkCard(x.body)}
     <div class="cmt-foot">${rxBar(c.type, x.id)}
-      ${canReply ? `<button class="linkbtn mute" data-action="comment-reply" data-kind="${kind}" data-pid="${pid}" data-root="${rootId}"${root && !mine ? ` data-to="${x.author_id}"` : ''}>Responder</button>` : ''}
+      ${canReply ? `<button class="linkbtn mute" data-action="comment-reply" data-kind="${kind}" data-pid="${pid}" data-root="${rootId}"${root ? ` data-rid="${x.id}"` : ''}${root && !mine ? ` data-to="${x.author_id}"` : ''}>Responder</button>` : ''}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="${c.type}" data-id="${x.id}">Denunciar</button>`) : ''}
     </div></div></div>`;
@@ -1963,8 +1964,9 @@ function cmThreadHtml(kind, pid, g) {
   const n = g.replies.length, replying = cmReplyTo === g.id && !!g.top, open = cmOpen.has(g.id) || replying;
   const btn = (act, label) => `<button class="linkbtn cm-tbtn" data-action="${act}" data-kind="${kind}" data-pid="${pid}" data-root="${g.id}">${label}</button>`;
   let h = '';
-  if (n && !open) h += btn('cm-thread', `${ic('chat')}Ver ${cmRepliesLabel(n)}`);
-  if (open) h += g.replies.map(r => commentRow(kind, r, g.id, !!g.top)).join('') + (n && !replying ? btn('cm-thread', 'Ocultar respuestas') : '');
+  // Plegado: la primera respuesta se ve como adelanto y debajo "Ver N respuestas más" (Yuri, 2026-11-27)
+  if (n && !open) h += commentRow(kind, g.replies[0], g.id, !!g.top) + (n > 1 ? btn('cm-thread', `${ic('chat')}Ver ${n - 1 === 1 ? '1 respuesta más' : `${n - 1} respuestas más`}`) : '');
+  if (open) h += g.replies.map(r => commentRow(kind, r, g.id, !!g.top)).join('') + (n > 1 && !replying ? btn('cm-thread', 'Ocultar respuestas') : '');
   if (replying) {
     const key = `cmr-${kind}-${g.id}`, to = g.top.author_id === S.user.id ? 'tu comentario' : whoName(g.top.author_id);
     h += `${phStrip(key)}<div class="cm-new cm-reply"><textarea id="cmReply-${kind}-${pid}-${g.id}" maxlength="1000" rows="1" placeholder="Responde a ${esc(to)}…"></textarea>
@@ -2238,6 +2240,10 @@ async function rtHandle(t, p) {
     if (ev === 'DELETE') {
       const x = cmList(kind).find(y => y.id === old.id); if (!x) return;
       dropTargetLocal(c.type, old.id); updateComments(kind, x[c.key]); return;
+    }
+    if (ev === 'UPDATE') { // p. ej. un comentario que se pasa a un hilo desde la base de datos
+      const x = cmList(kind).find(y => y.id === row.id); if (!x) return;
+      Object.assign(x, row); updateComments(kind, x[c.key]); return;
     }
     return;
   }
@@ -6224,20 +6230,20 @@ const actions = {
     const id = phUuid(); // el id se crea aquí para subir antes la foto
     const up = await phUpload(key, pk, id, el);
     if (!up) { el.disabled = false; return; }
-    const { data, error } = await sb.from(c.table).insert({ id, [c.key]: pid, author_id: S.user.id, body, photos: up.photos, ...(root ? { parent_id: root } : {}) }).select().single();
+    const { data, error } = await sb.from(c.table).insert({ id, [c.key]: pid, author_id: S.user.id, body, photos: up.photos, ...(root ? { parent_id: root, reply_to: (cmReplyTo === root && cmReplyRid) || root } : {}) }).select().single();
     el.disabled = false;
     if (error) { phRemove(up.paths); return toast((root ? 'No se pudo responder: ' : 'No se pudo comentar: ') + errEs(error), 'bad'); }
     phCommit(key, pk, id);
     addUnique(cmList(kind), data, c.table); // el tiempo real puede haberlo traído ya
     ta.value = ''; ta._mentions = [];
-    if (root) { cmOpen.add(root); cmReplyTo = null; }
+    if (root) { cmOpen.add(root); cmReplyTo = null; cmReplyRid = null; }
     updateComments(kind, pid);
   },
   // Responder: abre el hilo con su caja. En una respuesta ajena, empieza con la @mención de su autor.
   'comment-reply'(el) {
     const { kind, pid, root, to } = el.dataset;
     if (cmReplyTo && cmReplyTo !== root) phClear(`cmr-${kind}-${cmReplyTo}`);
-    cmReplyTo = root; cmOpen.add(root);
+    cmReplyTo = root; cmReplyRid = el.dataset.rid || root; cmOpen.add(root);
     updateComments(kind, pid);
     const ta = (el.isConnected && el.closest('.cm') || document).querySelector(`#cmReply-${kind}-${pid}-${root}`)
       || $(`#cmReply-${kind}-${pid}-${root}`);
@@ -6251,7 +6257,7 @@ const actions = {
   },
   'cm-reply-cancel'(el) {
     const { kind, pid, root } = el.dataset;
-    phClear(`cmr-${kind}-${root}`); cmReplyTo = null;
+    phClear(`cmr-${kind}-${root}`); cmReplyTo = null; cmReplyRid = null;
     updateComments(kind, pid);
   },
   'cm-thread'(el) {

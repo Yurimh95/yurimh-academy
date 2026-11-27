@@ -220,16 +220,18 @@
     if(table==='feed_posts') approvedIds(mentionIds(row.body)).filter(u=>!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.id,mentionPlain(row.body).slice(0,120)));
     // Respuestas en hilo: 'reply_feed' / 'reply_listening' al autor del comentario raíz (si no ha bloqueado y, en escuchas, si aún la ve)
     const canSeeItem=(u,item)=>teachers().includes(u)||DB.listening_assignments.some(a=>a.item_id===item&&a.student_id===u);
-    const repOf=(t,row)=>{ if(!row.parent_id) return null; const c=DB[t].find(x=>x.id===row.parent_id); const u=c&&c.author_id;
-      return u && approvedIds([u]).length && !blockedBy(u,row.author_id) && (t!=='listening_comments'||canSeeItem(u,row.item_id)) ? u : null; };
-    const rep = (table==='feed_comments'||table==='listening_comments') ? repOf(table,row) : null;
-    if(rep) notify(rep, table==='feed_comments'?'reply_feed':'reply_listening', row.author_id, row.post_id||row.item_id, mentionPlain(row.body).slice(0,80));
-    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; approvedIds(mentionIds(row.body)).filter(u=>u!==fp.author_id&&u!==rep&&!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.post_id,mentionPlain(row.body).slice(0,120))); }
-    if(table==='listening_comments') approvedIds(mentionIds(row.body)).filter(u=>u!==rep&&!blockedBy(u,row.author_id)&&canSeeItem(u,row.item_id)).forEach(u=>notify(u,'mention_listening',row.author_id,row.item_id,mentionPlain(row.body).slice(0,120)));
+    // avisa al autor del principal (parent_id) y al de la respuesta concreta (reply_to), con @ o sin ella
+    const repsOf=(t,row)=>{ if(!row.parent_id) return []; return [...new Set(DB[t].filter(x=>x.id===row.parent_id||x.id===row.reply_to).map(c=>c.author_id))]
+      .filter(u=>approvedIds([u]).length && !blockedBy(u,row.author_id) && (t!=='listening_comments'||canSeeItem(u,row.item_id))); };
+    const reps = (table==='feed_comments'||table==='listening_comments') ? repsOf(table,row) : [];
+    reps.forEach(u=>notify(u, table==='feed_comments'?'reply_feed':'reply_listening', row.author_id, row.post_id||row.item_id, mentionPlain(row.body).slice(0,80)));
+    const rep = reps[0] || null;
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; approvedIds(mentionIds(row.body)).filter(u=>u!==fp.author_id&&!reps.includes(u)&&!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.post_id,mentionPlain(row.body).slice(0,120))); }
+    if(table==='listening_comments') approvedIds(mentionIds(row.body)).filter(u=>!reps.includes(u)&&!blockedBy(u,row.author_id)&&canSeeItem(u,row.item_id)).forEach(u=>notify(u,'mention_listening',row.author_id,row.item_id,mentionPlain(row.body).slice(0,120)));
     if(table==='listening_assignments'){ const it=DB.listening_items.find(i=>i.id===row.item_id)||{}; notify(row.student_id,'assignment',null,row.item_id,it.title); }
     if(table==='listening_answer_reactions') feedbackNotify(row.assignment_id,row.user_id);
     if(table==='dm_messages') notify(row.recipient_id,'dm',row.sender_id,row.sender_id,null);
-    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; if(fp.author_id!==rep) notify(fp.author_id,'comment',row.author_id,row.post_id,mentionPlain(row.body).slice(0,80)); }
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; if(!reps.includes(fp.author_id)) notify(fp.author_id,'comment',row.author_id,row.post_id,mentionPlain(row.body).slice(0,80)); }
     if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));

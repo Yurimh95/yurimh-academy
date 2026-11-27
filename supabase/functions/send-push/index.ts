@@ -37,6 +37,8 @@ function texts(kind: string, actor: string, extra: string | null, target: string
     case "mention_feed": return { title: `${actor} te ha mencionado`, body: extra ?? "" };
     case "mention_board": return { title: `📣 ${actor} te ha mencionado en un aviso`, body: extra ?? "" };
     case "mention_listening": return { title: `🎧 ${actor} te ha mencionado en una escucha`, body: extra ?? "" };
+    case "reply_feed": return { title: `${actor} ha respondido a tu comentario`, body: extra || "📷 Foto" };
+    case "reply_listening": return { title: `🎧 ${actor} ha respondido a tu comentario en una escucha`, body: extra || "📷 Foto" };
     case "lesson": return { title: "🎸 Recordatorio de clase", body: `Tienes clase ${extra ?? "hoy"}` };
     case "homework": return { title: "📝 Deberes nuevos", body: extra ?? "Tienes deberes nuevos para practicar" };
     case "classmate_request": return { title: "Solicitud de compañero", body: `${actor} te ha enviado una solicitud para ser compañeros` };

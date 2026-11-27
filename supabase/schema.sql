@@ -1068,7 +1068,7 @@ $$;
 
 create or replace function public.notify_trg()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare r record; owner uuid; mid uuid;
+declare r record; owner uuid; mid uuid; reps uuid[] := '{}';
 begin
   -- En los avisos, a quien se menciona le llega "te ha mencionado" en vez de "nuevo aviso" (solo si el aviso es para él)
   if tg_table_name = 'board_posts' then            -- aviso para todos
@@ -1088,8 +1088,19 @@ begin
       perform public.notify(mid, 'mention_feed', new.author_id, new.id, left(public.mention_plain(new.body), 120));
     end loop;
   elsif tg_table_name = 'listening_comments' then  -- menciones en una escucha: solo a quien la puede ver
+    -- Respuesta en un hilo (2026-11-27): avisa al autor del comentario principal (parent_id) y al de la respuesta
+    -- concreta a la que se contesta (reply_to), lleve @mención o no, si aún ven la escucha y no han bloqueado
+    if new.parent_id is not null then
+      for mid in select distinct c.author_id from public.listening_comments c join public.profiles p on p.id = c.author_id
+                 where c.id in (new.parent_id, new.reply_to) and p.approved
+                   and (p.role = 'teacher' or exists (select 1 from public.listening_assignments a where a.item_id = new.item_id and a.student_id = c.author_id))
+                   and not exists (select 1 from public.user_blocks b where b.blocker_id = c.author_id and b.blocked_id = new.author_id) loop
+        perform public.notify(mid, 'reply_listening', new.author_id, new.item_id, left(public.mention_plain(new.body), 80));
+        reps := reps || mid;
+      end loop;
+    end if;
     for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
-               where p.approved and (p.role = 'teacher' or exists (select 1 from public.listening_assignments a where a.item_id = new.item_id and a.student_id = u))
+               where not (u = any(reps)) and p.approved and (p.role = 'teacher' or exists (select 1 from public.listening_assignments a where a.item_id = new.item_id and a.student_id = u))
                  and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
       perform public.notify(mid, 'mention_listening', new.author_id, new.item_id, left(public.mention_plain(new.body), 120));
     end loop;
@@ -1100,10 +1111,22 @@ begin
     perform public.notify(new.recipient_id, 'dm', new.sender_id, new.sender_id, null);
   elsif tg_table_name = 'feed_comments' then
     select author_id into owner from public.feed_posts where id = new.post_id;
-    perform public.notify(owner, 'comment', new.author_id, new.post_id, left(public.mention_plain(new.body), 80));
-    -- los mencionados (menos el dueño, que ya recibe "ha comentado tu publicación")
+    -- Respuesta en un hilo (2026-11-27): "ha respondido a tu comentario" al autor del comentario principal
+    -- (parent_id) y al de la respuesta concreta a la que se contesta (reply_to), lleve @mención o no
+    if new.parent_id is not null then
+      for mid in select distinct c.author_id from public.feed_comments c join public.profiles p on p.id = c.author_id
+                 where c.id in (new.parent_id, new.reply_to) and p.approved
+                   and not exists (select 1 from public.user_blocks b where b.blocker_id = c.author_id and b.blocked_id = new.author_id) loop
+        perform public.notify(mid, 'reply_feed', new.author_id, new.post_id, left(public.mention_plain(new.body), 80));
+        reps := reps || mid;
+      end loop;
+    end if;
+    if owner is null or not (owner = any(reps)) then
+      perform public.notify(owner, 'comment', new.author_id, new.post_id, left(public.mention_plain(new.body), 80));
+    end if;
+    -- los mencionados (menos el dueño, que ya recibe "ha comentado tu publicación", y el respondido)
     for mid in select u from public.mention_ids(new.body) u join public.profiles p on p.id = u
-               where u is distinct from owner and p.approved
+               where u is distinct from owner and not (u = any(reps)) and p.approved
                  and not exists (select 1 from public.user_blocks b where b.blocker_id = u and b.blocked_id = new.author_id) loop
       perform public.notify(mid, 'mention_feed', new.author_id, new.post_id, left(public.mention_plain(new.body), 120));
     end loop;
@@ -3227,3 +3250,56 @@ revoke execute on function public.stories_mention_notify() from public, anon, au
 drop trigger if exists stories_mention_trg on public.stories;
 create trigger stories_mention_trg after insert on public.stories
   for each row execute function public.stories_mention_notify();
+
+-- =====================================================================
+--  RESPUESTAS EN HILO A LOS COMENTARIOS (2026-11-27)
+--  Un solo nivel, como Facebook: parent_id apunta a un comentario raíz
+--  (sin parent_id) de la misma publicación o escucha. Sin clave foránea
+--  a propósito: si se borra el comentario raíz, sus respuestas se quedan
+--  y la app pinta "Comentario eliminado" en su lugar.
+--  Avisos 'reply_feed' / 'reply_listening' en notify_trg.
+-- =====================================================================
+alter table public.feed_comments      add column if not exists parent_id uuid;
+alter table public.listening_comments add column if not exists parent_id uuid;
+-- reply_to: la respuesta concreta (o el principal) a la que se contesta dentro del hilo, para avisar a su autor
+alter table public.feed_comments      add column if not exists reply_to uuid;
+alter table public.listening_comments add column if not exists reply_to uuid;
+create index if not exists feed_comments_parent_idx      on public.feed_comments (parent_id) where parent_id is not null;
+create index if not exists listening_comments_parent_idx on public.listening_comments (parent_id) where parent_id is not null;
+
+-- Se comprueba con los permisos de quien escribe (invoker): solo se responde a lo que se puede ver.
+create or replace function public.comments_parent_check()
+returns trigger language plpgsql set search_path = public as $$
+declare ok boolean;
+begin
+  if new.parent_id is null then new.reply_to := null; return new; end if;
+  if tg_table_name = 'feed_comments' then
+    select c.post_id = new.post_id and c.parent_id is null into ok from public.feed_comments c where c.id = new.parent_id;
+  else
+    select c.item_id = new.item_id and c.parent_id is null into ok from public.listening_comments c where c.id = new.parent_id;
+  end if;
+  if ok is not true then raise exception 'bad_parent' using errcode = '23514'; end if;
+  -- reply_to (opcional): el principal o una respuesta de ese mismo hilo
+  if new.reply_to is not null and new.reply_to <> new.parent_id then
+    if tg_table_name = 'feed_comments' then
+      select c.parent_id = new.parent_id into ok from public.feed_comments c where c.id = new.reply_to;
+    else
+      select c.parent_id = new.parent_id into ok from public.listening_comments c where c.id = new.reply_to;
+    end if;
+    if ok is not true then new.reply_to := null; end if; -- si ya no existe, se responde al hilo sin más
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.comments_parent_check() from public, anon, authenticated;
+create or replace trigger feed_comments_parent_trg before insert on public.feed_comments
+  for each row execute function public.comments_parent_check();
+create or replace trigger listening_comments_parent_trg before insert on public.listening_comments
+  for each row execute function public.comments_parent_check();
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
+                  'story_reaction', 'video_quota', 'mention_story', 'reply_feed', 'reply_listening'));
