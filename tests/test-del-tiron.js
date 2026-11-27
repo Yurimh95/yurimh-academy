@@ -73,12 +73,26 @@ const path = require('path');
   ok(!!tab && await box(s) === 0 && await s.locator('.modal').count() === 1, '"Entendido" abre el enlace y cierra el aviso, no la ventana');
   await s.evaluate(() => closeModal());
 
-  // Con las dos marcas: aviso del vídeo con el punto de escucharlo entero
+  // Con las dos marcas: dos avisos seguidos, primero el del vídeo y luego el del álbum
   await setFlags(s, { play_through: true, watch_video: true }); await s.waitForTimeout(150);
   ok(await s.locator('.track .wtag').count() === 2, 'Con las dos marcas salen las dos etiquetas');
   await s.click('.track .playbtn'); await s.waitForTimeout(150);
   const t2 = await s.locator('#watchBox').textContent();
-  ok(/4K/.test(t2) && /entero y sin pausas/.test(t2), 'Con las dos, el aviso del vídeo incluye escucharlo entero');
+  ok(/4K/.test(t2) && !/fundido/.test(t2), 'Primero sale solo el aviso del vídeo');
+  ok(await s.locator('#watchBox [data-watch-go]').count() === 0 && await s.locator('#watchBox [data-watch-next]').count() === 1, 'Sin enlace todavía: botón "Siguiente →"');
+  await s.screenshot({ path: path.join(__dirname, 'shots', 'del-tiron-5-dos-1.png') });
+  await s.click('#watchBox [data-watch-next]'); await s.waitForTimeout(100);
+  const t3 = await s.locator('#watchBox').textContent();
+  ok(await box(s) === 1 && /del tirón/.test(t3) && /fundido/.test(t3) && !/4K/.test(t3), 'Después sale el aviso del álbum, aparte');
+  ok((await s.locator('#watchBox [data-watch-go]').textContent()).trim() === 'Entendido, abrir álbum', 'El segundo es el que abre el enlace');
+  await s.screenshot({ path: path.join(__dirname, 'shots', 'del-tiron-5-dos-2.png') });
+  await s.evaluate(() => history.back()); await s.waitForTimeout(250);
+  ok(await box(s) === 0, 'Atrás cierra los avisos de una vez');
+  await s.click('.track .playbtn'); await s.waitForTimeout(150);
+  await s.click('#watchBox [data-watch-close]'); await s.waitForTimeout(100);
+  ok(await box(s) === 0, '"Ahora no" en el primero cierra sin pasar al segundo');
+  await s.click('.track .playbtn'); await s.waitForTimeout(150);
+  ok(/4K/.test(await s.locator('#watchBox').textContent()), 'Al volver a abrir, empieza otra vez por el del vídeo');
   await s.keyboard.press('Escape'); await s.waitForTimeout(100);
   // Sin marcas: enlace normal
   await setFlags(s, { play_through: false, watch_video: false }); await s.waitForTimeout(150);

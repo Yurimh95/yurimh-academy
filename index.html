@@ -4596,49 +4596,55 @@ function watchClose(fromHistory = false) {
 }
 /* "Escuchar del tirón" (listening_items.play_through, 2026-11-27): álbumes conceptuales en los que un tema enlaza con el
    siguiente. Mismo mecanismo que "Para ver" (sin href, aviso cada vez, también al profesor). Si una escucha tiene las
-   dos marcas, sale el aviso del vídeo con el punto de escucharlo entero añadido. */
-function watchBody(it, href) {
-  const vid = !it || it.watch_video, thru = it && it.play_through;
+   dos marcas, salen los dos avisos uno detrás de otro (Yuri): primero el del vídeo con "Siguiente →" y luego el del
+   álbum, cuyo "Entendido" abre el enlace. Una sola entrada en el historial: Atrás cierra los dos. */
+const watchSteps = it => !it ? ['video'] : [...(it.watch_video ? ['video'] : []), ...(it.play_through ? ['album'] : [])];
+function watchBody(it, href, step, last) {
   const li = (e, t) => `<li><span>${e}</span><span>${t}</span></li>`;
   const dur = it && it.duration_sec ? fmtSecs(Number(it.duration_sec)) + (it.duration_partial ? '+' : '') : '';
-  const whole = `Busca un rato para escucharlo <b>entero y sin pausas</b>${dur ? ` (dura ${esc(dur)})` : ''}, en orden y sin aleatorio.`;
+  const vid = step === 'video';
   const items = vid ? [
     li('📺', 'Pon la <b>calidad al máximo</b>, 4K si tu pantalla y tu conexión lo permiten (en YouTube, la rueda ⚙ → Calidad).'),
     li('🎧', 'Ponte los <b>auriculares</b>.'),
-    li('👀', 'Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.'),
-    ...(thru ? [li('⏱️', whole)] : [])
+    li('👀', 'Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.')
   ] : [
-    li('⏱️', whole),
+    li('⏱️', `Busca un rato para escucharlo <b>entero y sin pausas</b>${dur ? ` (dura ${esc(dur)})` : ''}, en orden y sin aleatorio.`),
     li('🚫', '<b>Sin anuncios ni interrupciones</b>: un corte entre dos temas rompe la transición. Silencia las notificaciones del móvil.'),
     li('🔀', 'Si tienes activado el <b>fundido entre canciones</b> (crossfade o Automix en Spotify), quítalo: las transiciones ya vienen hechas en el disco.'),
     li('🎧', 'Ponte los <b>auriculares</b>.')
   ];
-  return vid ? `
-    <h3 id="watchT">🎬 Este vídeo es para verlo</h3>
+  const go = last
+    ? `<a class="btn primary" href="${esc(href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir ${vid ? 'vídeo' : 'álbum'}</a>`
+    : `<button type="button" class="btn primary" data-watch-next>Siguiente →</button>`;
+  return `
+    <h3 id="watchT">${vid ? '🎬 Este vídeo es para verlo' : '💿 Este álbum se escucha del tirón'}</h3>
     ${it ? `<div class="wb-title">${esc(it.title)}</div>` : ''}
-    <p>No es para ponerlo de fondo: aquí la imagen cuenta tanto como el sonido. Antes de darle al play:</p>
+    <p>${vid ? 'No es para ponerlo de fondo: aquí la imagen cuenta tanto como el sonido.' : 'Es un álbum conceptual: cada tema enlaza con el siguiente y tiene sentido escuchado de principio a fin.'} Antes de darle al play:</p>
     <ul>${items.join('')}</ul>
-    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>` : `
-    <h3 id="watchT">💿 Este álbum se escucha del tirón</h3>
-    <div class="wb-title">${esc(it.title)}</div>
-    <p>Es un álbum conceptual: cada tema enlaza con el siguiente y tiene sentido escuchado de principio a fin. Antes de darle al play:</p>
-    <ul>${items.join('')}</ul>
-    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir álbum</a></div>`;
+    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button>${go}</div>`;
+}
+function watchShow(box, i) {
+  const steps = box._steps, wb = $('.wb', box);
+  wb.innerHTML = watchBody(box._it, box._href, steps[i], i === steps.length - 1);
+  box._i = i; wb.scrollTop = 0;
+  const f = $('[data-watch-go],[data-watch-next]', box); if (f) f.focus();
 }
 function watchOpen(a) {
   if ($('#watchBox')) return;
   const id = a.dataset.watch;
   const it = ((S.assigns || []).find(x => x.item_id === id) || {}).item || (S.items || []).find(x => x.id === id);
   const box = document.createElement('div'); box.id = 'watchBox'; box.className = 'watchbox';
-  box.innerHTML = `<div class="wb" role="dialog" aria-modal="true" aria-labelledby="watchT">${watchBody(it, a.dataset.href)}</div>`;
+  box.innerHTML = `<div class="wb" role="dialog" aria-modal="true" aria-labelledby="watchT"></div>`;
+  Object.assign(box, { _it: it, _href: a.dataset.href, _steps: watchSteps(it) });
   document.body.appendChild(box);
   popPush();
-  const go = $('[data-watch-go]', box); if (go) go.focus();
+  watchShow(box, 0);
 }
 document.addEventListener('click', e => {
   const t = e.target; if (!t.closest) return;
   if (t.closest('#watchBox')) {
     if (t.closest('[data-watch-go]')) setTimeout(() => watchClose(), 0); // se deja abrir el enlace y luego se cierra
+    else if (t.closest('[data-watch-next]')) { const b = $('#watchBox'); watchShow(b, b._i + 1); }
     else if (t.closest('[data-watch-close]') || !t.closest('.wb')) watchClose();
     return;
   }
