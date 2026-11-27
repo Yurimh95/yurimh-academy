@@ -4,7 +4,7 @@
   // __DB_OVERRIDE: para que una prueba continúe con el estado que dejó otra sesión (otra persona)
   const DB = window.__DB = JSON.parse(JSON.stringify(window.__DB_OVERRIDE || window.__DB_SEED));
   DB.blocked_emails = DB.blocked_emails || [];
-  let me = window.__ME || null;
+  let me = window.__ME || new URLSearchParams(location.search).get('me') || null; // ?me=t1 en el navegador integrado
   // blocked_emails: email_norm() y la comprobación del trigger auth_users_block_trg
   const emailNorm = e => { const x=String(e||'').trim().toLowerCase(); const i=x.indexOf('@'); if(i<1) return null;
     let l=x.slice(0,i).split('+')[0], d=x.slice(i+1); if(d==='googlemail.com') d='gmail.com'; if(d==='gmail.com') l=l.replace(/\./g,''); return l+'@'+d; };
@@ -180,8 +180,9 @@
     stories: r => (!!r.video !== !!r.photo) && (!r.video || videoOk(r.video)) && (!r.photo || photosOk([r.photo],1)) && overlayOk(r.overlay), // stories_media_check + story_overlay_ok
     story_reactions: r => r.emoji && String(r.emoji).length>=1 && String(r.emoji).length<=32,
     board_posts: r => r.title && String(r.title).length<=150 && bodyOk(r,5000) && photosOk(r.photos??[],10),
-    feed_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
-    listening_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1),
+    // comments_parent_check: la respuesta va a un comentario raíz (visible) de la misma publicación o escucha
+    feed_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1) && (!r.parent_id || DB.feed_comments.some(c=>c.id===r.parent_id&&c.post_id===r.post_id&&!c.parent_id&&!isArchived(c.author_id))),
+    listening_comments: r => bodyOk(r,1000) && photosOk(r.photos??[],1) && (!r.parent_id || DB.listening_comments.some(c=>c.id===r.parent_id&&c.item_id===r.item_id&&!c.parent_id&&!isArchived(c.author_id))),
     dm_messages: r => bodyOk(r,2000) && photosOk(r.photos??[],10) && r.sender_id!==r.recipient_id,
     goals_items: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (r.student_id || r.stage),
     homework_tasks: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (!r.details || r.details.length<=1500),
@@ -217,12 +218,18 @@
     if(table==='board_posts' && row.audience==='all') DB.profiles.filter(p=>p.role==='student'&&p.approved).forEach(p=>notify(p.id,mentionIds(row.body).includes(p.id)?'mention_board':'board_post',row.author_id,row.id,row.title));
     if(table==='board_recipients'){ const bp=DB.board_posts.find(p=>p.id===row.post_id)||{}; notify(row.student_id,mentionIds(bp.body).includes(row.student_id)?'mention_board':'board_post',bp.author_id,bp.id,bp.title); }
     if(table==='feed_posts') approvedIds(mentionIds(row.body)).filter(u=>!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.id,mentionPlain(row.body).slice(0,120)));
-    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; approvedIds(mentionIds(row.body)).filter(u=>u!==fp.author_id&&!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.post_id,mentionPlain(row.body).slice(0,120))); }
-    if(table==='listening_comments') approvedIds(mentionIds(row.body)).filter(u=>!blockedBy(u,row.author_id)&&(teachers().includes(u)||DB.listening_assignments.some(a=>a.item_id===row.item_id&&a.student_id===u))).forEach(u=>notify(u,'mention_listening',row.author_id,row.item_id,mentionPlain(row.body).slice(0,120)));
+    // Respuestas en hilo: 'reply_feed' / 'reply_listening' al autor del comentario raíz (si no ha bloqueado y, en escuchas, si aún la ve)
+    const canSeeItem=(u,item)=>teachers().includes(u)||DB.listening_assignments.some(a=>a.item_id===item&&a.student_id===u);
+    const repOf=(t,row)=>{ if(!row.parent_id) return null; const c=DB[t].find(x=>x.id===row.parent_id); const u=c&&c.author_id;
+      return u && approvedIds([u]).length && !blockedBy(u,row.author_id) && (t!=='listening_comments'||canSeeItem(u,row.item_id)) ? u : null; };
+    const rep = (table==='feed_comments'||table==='listening_comments') ? repOf(table,row) : null;
+    if(rep) notify(rep, table==='feed_comments'?'reply_feed':'reply_listening', row.author_id, row.post_id||row.item_id, mentionPlain(row.body).slice(0,80));
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; approvedIds(mentionIds(row.body)).filter(u=>u!==fp.author_id&&u!==rep&&!blockedBy(u,row.author_id)).forEach(u=>notify(u,'mention_feed',row.author_id,row.post_id,mentionPlain(row.body).slice(0,120))); }
+    if(table==='listening_comments') approvedIds(mentionIds(row.body)).filter(u=>u!==rep&&!blockedBy(u,row.author_id)&&canSeeItem(u,row.item_id)).forEach(u=>notify(u,'mention_listening',row.author_id,row.item_id,mentionPlain(row.body).slice(0,120)));
     if(table==='listening_assignments'){ const it=DB.listening_items.find(i=>i.id===row.item_id)||{}; notify(row.student_id,'assignment',null,row.item_id,it.title); }
     if(table==='listening_answer_reactions') feedbackNotify(row.assignment_id,row.user_id);
     if(table==='dm_messages') notify(row.recipient_id,'dm',row.sender_id,row.sender_id,null);
-    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; notify(fp.author_id,'comment',row.author_id,row.post_id,mentionPlain(row.body).slice(0,80)); }
+    if(table==='feed_comments'){ const fp=DB.feed_posts.find(p=>p.id===row.post_id)||{}; if(fp.author_id!==rep) notify(fp.author_id,'comment',row.author_id,row.post_id,mentionPlain(row.body).slice(0,80)); }
     if(table==='reactions' && row.target_type==='feed_post'){ const fp=DB.feed_posts.find(p=>p.id===row.target_id)||{}; notify(fp.author_id,'reaction',row.user_id,row.target_id,row.emoji); }
     if(table==='profiles') teachers().forEach(t=>notify(t,'signup',row.id,row.id,row.display_name));
     if(table==='moderation_reports') teachers().forEach(t=>notify(t,'report',null,row.id,null));

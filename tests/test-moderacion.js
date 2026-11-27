@@ -77,6 +77,20 @@ const path = require('path');
   const over = await m.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   ok(!over, 'Móvil: sin desbordar a lo ancho');
   await shot(m, 'mod-3-movil');
+  // Móvil estrecho con títulos largos: antes la cola se salía por la derecha (462 px en 375) y las ventanas quedaban fuera de la vista
+  const n = await open('t1', { width: 360, height: 780 });
+  await seed(n);
+  await n.evaluate(() => { __DB.listening_items.forEach(i => { if (/^im/.test(i.id)) i.title = 'Un título de disco larguísimo que no cabe en una línea ' + i.id; }); render(); });
+  await n.waitForTimeout(150);
+  const wide = await n.evaluate(() => [...document.querySelectorAll('.shell *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && r.right > innerWidth + 1; }).map(e => e.className).slice(0, 3));
+  ok(!wide.length, 'Móvil 360 px con títulos largos: nada se sale por la derecha ' + JSON.stringify(wide));
+  await n.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await n.waitForTimeout(100);
+  await n.locator('#modRev .mrow').last().click(); await n.waitForTimeout(200);
+  const box = await n.evaluate(() => { const r = document.querySelector('.modal').getBoundingClientRect(), b = document.querySelector('.backdrop'); return { top: r.top, left: r.left, right: r.right, bsw: b.scrollWidth, bw: b.clientWidth }; });
+  ok(box.top >= 0 && box.top < 40 && box.left >= 0 && box.right <= 360, 'Móvil: la ventana se abre arriba y a la vista aunque la página esté bajada ' + JSON.stringify(box));
+  ok(box.bsw <= box.bw, 'Móvil: la ventana no se desplaza a los lados');
+  ok(await n.locator('.modal .rv-nav [data-action=rv-read-next]').isVisible(), 'Móvil: "Leído y siguiente" se ve sin bajar');
+  await shot(n, 'mod-5-movil-ventana');
   await t.evaluate(() => { document.documentElement.dataset.theme = 'dark'; }); await t.waitForTimeout(400); await shot(t, 'mod-4-oscuro');
 
   console.log(errors.length ? 'ERRORES:\n' + errors.join('\n') : 'Sin errores en consola');

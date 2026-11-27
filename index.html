@@ -67,7 +67,7 @@ html[data-theme="light"]{
   --overlay:rgba(15,26,51,.42);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;overflow-x:clip} /* nunca scroll lateral: en el móvil movería las ventanas fuera de la vista */
 body{
   margin:0;color:var(--text);min-height:100vh;
   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -371,7 +371,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .chip.new{color:var(--on-accent);border-color:transparent;background:var(--accent);box-shadow:var(--glow-sm)}
 .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
 .dcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
-.dhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.dhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .dhead h2{font-size:15.5px}
 .dcard .row{background:var(--panel2);box-shadow:none}
 .empty.small{padding:22px 12px;font-size:14px}
@@ -396,6 +396,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .stat.bad .stat-ic{background:rgba(var(--bad-rgb),.14);color:var(--bad)}
 .dcard.wide.mod{margin-bottom:16px}
 .mod-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.mod-grid>*{min-width:0}
 .mod-side{display:flex;flex-direction:column;gap:16px;min-width:0}
 .mod-revhead{flex-wrap:wrap;align-items:flex-start}
 .mod-revhead .sub{margin-top:2px}
@@ -426,9 +427,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .rv-nav{position:sticky;bottom:-1px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px -4px 0;padding:10px 4px;background:var(--panel);border-top:1px solid var(--line)}
 .rv-ans .ans-read .btn.primary,.rv-ans .ans-read .btn.primary+.sub{display:none} /* en la revisión, el botón va abajo */
 .rv-foot{display:flex;flex-wrap:wrap;gap:16px;margin-top:8px}
-@media (max-width:980px){ .mod-grid{grid-template-columns:1fr} }
+@media (max-width:980px){ .mod-grid{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:560px){ .mod-stats{grid-template-columns:1fr 1fr;gap:8px} .mod-stats .stat{padding:10px} .stat-ic{width:34px;height:34px} .mod-stats .stat b{font-size:20px} .stat-tx span{font-size:12px}
-  .adots{display:none} .mrow{gap:10px} .row.rep{flex-direction:column;align-items:stretch} .row.rep>.actions{justify-content:flex-end} }
+  .adots{display:none} .mrow{gap:10px} .mrow-main b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3} .mrow.unread .mrow-st{display:none} /* el punto azul ya dice "sin leer" */
+  .mod-rev .catbar select{flex:1 1 100%;min-width:0} .mod-rev .catbar .btn{flex:1 1 100%;justify-content:center} .row.rep{flex-direction:column;align-items:stretch} .row.rep>.actions{justify-content:flex-end} }
 .grid.one{grid-template-columns:1fr}
 .card.post.isnew{border-color:rgba(var(--accent-rgb),.45);background:linear-gradient(180deg,rgba(var(--accent-rgb),.08),transparent 70%),var(--panel)}
 .postbody{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0 4px;font-size:15px}
@@ -614,6 +616,22 @@ label.f>.emo-wrap{margin-top:6px}
 .peek-input{flex:1;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--faint);font-size:14px;transition:border-color .15s}
 .peek-new:hover .peek-input{border-color:rgba(var(--accent-rgb),.5)}
 .cmt.flash .cmt-bubble{animation:cmtFlash 1.6s ease}
+/* Hilos de respuestas (un nivel): metidos bajo el comentario, con una línea guía a la izquierda */
+.cm-thread{margin:0 0 4px 42px;padding-left:10px;border-left:2px solid var(--line)}
+.cmt.reply{padding:6px 0}
+.cmt.reply .cmt-bubble{padding:6px 11px}
+.cm-tbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);padding:4px 0}
+.cm-tbtn:hover{color:var(--accent-hi)}
+.cm-tbtn .i{width:15px;height:15px}
+.cm-reply{margin:4px 0 8px;flex-wrap:wrap}
+.cm-reply textarea{flex:1 1 180px;min-height:38px}
+.cmt.gone{align-items:center}
+.cmt.gone .av-gone{width:32px;height:32px;border-radius:50%;flex:none;border:1px dashed var(--line-strong)}
+.cmt.gone .cmt-bubble{background:transparent;border-style:dashed;color:var(--faint);font-style:italic;font-size:13.5px}
+.peek-rep{display:flex;align-items:center;gap:6px;margin:-2px 0 2px 36px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.peek-rep:hover{color:var(--accent-hi)}
+.peek-rep .i{width:14px;height:14px}
+@media (max-width:560px){ .cm-thread{margin-left:20px;padding-left:8px} }
 @keyframes cmtFlash{0%,40%{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.25)}100%{box-shadow:none}}
 @media (prefers-reduced-motion:reduce){.cmt.flash .cmt-bubble{animation:none;border-color:var(--accent)}}
 .avrow{display:flex;gap:18px;align-items:center;margin-bottom:12px}
@@ -667,9 +685,10 @@ label.f>.emo-wrap{margin-top:6px}
 .h2{font-size:16px;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
 
 /* ---------- Modal ---------- */
-.backdrop{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:28px 14px;overflow-y:auto;z-index:50}
-.modal{width:100%;max-width:760px;background:var(--panel);border:1px solid var(--line-strong);border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.35),var(--glow-sm);animation:min .18s ease-out}
+.backdrop{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:28px 14px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;z-index:50}
+.modal{width:100%;max-width:760px;min-width:0;overflow-wrap:break-word;background:var(--panel);border:1px solid var(--line-strong);border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.35),var(--glow-sm);animation:min .18s ease-out}
 .modal.narrow{max-width:420px}
+@media (max-width:560px){.backdrop{padding:12px 8px 24px}.modal{padding:16px;border-radius:16px}} /* en el móvil la ventana aprovecha el ancho y empieza arriba */
 @keyframes min{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
 .modal-head h2{font-size:20px;margin-top:6px}
@@ -711,6 +730,7 @@ label.f>.emo-wrap{margin-top:6px}
 .tnum{text-align:center;color:var(--faint);font-variant-numeric:tabular-nums;font-size:14px}
 .tdone{color:var(--ok);display:inline-grid}.tdone svg{width:18px;height:18px}
 .tmain{min-width:0}
+.rv-item .tmain b{white-space:normal;overflow-wrap:anywhere} /* en la revisión, el título entero */
 .tmain b{display:block;color:var(--strong);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tsub{display:flex;align-items:center;gap:6px;color:var(--faint);font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .kicon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:rgba(var(--accent-rgb),.14);color:var(--accent-hi);flex:none}
@@ -1305,6 +1325,7 @@ const ERR_CODES = {
   'PGRST301': 'Tu sesión ha caducado. Vuelve a entrar.',
 };
 const ERR_TEXTS = [
+  [/bad_parent/, 'Ese comentario ya no existe. No se puede responder.'],
   [/email rate limit|rate limit exceeded.*email/i, ERR_CODES.over_email_send_rate_limit],
   [/rate limit|too many requests/i, ERR_CODES.over_request_rate_limit],
   [/for security purposes, you can only request this after (\d+) seconds?/i, m => `Por seguridad, espera ${m[1]} segundos antes de volver a intentarlo.`],
@@ -1474,7 +1495,7 @@ function mentionPeople(ta) {
   if (isTeacher()) return Object.keys(S.dir).filter(id => id !== S.user.id);
   const ids = new Set(myMates());
   Object.values(S.dir).forEach(d => { if (d.role === 'teacher') ids.add(d.id); });
-  const m = ta && ta.id && ta.id.match(/^cmInput-(feed|listening)-(.+)$/);
+  const m = ta && ta.id && ta.id.match(/^cm(?:Input|Reply)-(feed|listening)-([0-9a-f-]{36}|[^-]+)/); // en una respuesta: cmReply-<tipo>-<pub>-<raíz>
   if (m) {
     const kind = m[1], pid = m[2], c = CM[kind];
     cmList(kind).filter(x => x[c.key] === pid).forEach(x => ids.add(x.author_id));
@@ -1907,22 +1928,55 @@ function updateRx(type, id) {
   if (type === 'feed_comment') { const c = S.fcomments.find(x => x.id === id); if (c) updateCmPeek(c.post_id); }
 }
 
-/* ---- Comentarios: el mismo bloque sirve para el feed y para la escucha ---- */
-function commentRow(kind, x) {
-  const c = CM[kind], mine = x.author_id === S.user.id, t = isTeacher();
+/* ---- Comentarios: el mismo bloque sirve para el feed y para la escucha ----
+   Hilos de un nivel, como Facebook (2026-11-27): una respuesta lleva parent_id = comentario raíz.
+   Responder a una respuesta la deja en el mismo hilo con la @mención de su autor.
+   Los hilos van plegados ("Ver N respuestas"); se abren al pulsar, al responder o desde un aviso.
+   Si el raíz se borra, sus respuestas se quedan bajo "Comentario eliminado". */
+const cmOpen = new Set();   // hilos abiertos (id del comentario raíz)
+let cmReplyTo = null;       // hilo con la caja de respuesta abierta (id del raíz)
+const cmByDate = (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || ''));
+function cmGroups(kind, pid) {
+  const c = CM[kind], all = cmList(kind).filter(x => x[c.key] === pid);
+  const tops = all.filter(x => !x.parent_id), topIds = new Set(tops.map(x => x.id)), reps = {};
+  all.filter(x => x.parent_id).forEach(x => (reps[x.parent_id] = reps[x.parent_id] || []).push(x));
+  Object.values(reps).forEach(l => l.sort(cmByDate));
+  const groups = tops.map(x => ({ id: x.id, top: x, replies: reps[x.id] || [], created_at: x.created_at }));
+  Object.keys(reps).filter(id => !topIds.has(id)).forEach(id => groups.push({ id, top: null, replies: reps[id], created_at: reps[id][0].created_at }));
+  return groups.sort(cmByDate);
+}
+const cmRepliesLabel = n => n === 1 ? '1 respuesta' : `${n} respuestas`;
+function commentRow(kind, x, root = null, canReply = true) {
+  const c = CM[kind], mine = x.author_id === S.user.id, t = isTeacher(), pid = x[c.key];
   const reported = S.reports.some(r => r.target_type === c.type && r.target_id === x.id && r.reporter_id === S.user.id);
-  return `<div class="cmt" data-cmt-id="${x.id}">${whoLink(x.author_id, avatarHtml(x.author_id, 32))}<div class="cmt-main">
+  const rootId = root || x.id, size = root ? 26 : 32;
+  return `<div class="cmt${root ? ' reply' : ''}" data-cmt-id="${x.id}">${whoLink(x.author_id, avatarHtml(x.author_id, size))}<div class="cmt-main">
     <div class="cmt-bubble"><div class="cmt-head">${whoLink(x.author_id, `<b>${esc(whoName(x.author_id))}</b>`)}${teacherTag(x.author_id)}<span class="sub">${timeAgo(x.created_at)}</span></div>
     ${x.body ? `<div class="cmt-body">${richText(x.body)}</div>` : ''}</div>${phOf(c.type, x, 'cm')}${mediaLinkCard(x.body)}
     <div class="cmt-foot">${rxBar(c.type, x.id)}
+      ${canReply ? `<button class="linkbtn mute" data-action="comment-reply" data-kind="${kind}" data-pid="${pid}" data-root="${rootId}"${root && !mine ? ` data-to="${x.author_id}"` : ''}>Responder</button>` : ''}
       ${(mine || t) ? `<button class="linkbtn mute" data-action="comment-delete" data-kind="${kind}" data-id="${x.id}">Eliminar</button>` : ''}
       ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="${c.type}" data-id="${x.id}">Denunciar</button>`) : ''}
     </div></div></div>`;
 }
+function cmThreadHtml(kind, pid, g) {
+  const n = g.replies.length, replying = cmReplyTo === g.id && !!g.top, open = cmOpen.has(g.id) || replying;
+  const btn = (act, label) => `<button class="linkbtn cm-tbtn" data-action="${act}" data-kind="${kind}" data-pid="${pid}" data-root="${g.id}">${label}</button>`;
+  let h = '';
+  if (n && !open) h += btn('cm-thread', `${ic('chat')}Ver ${cmRepliesLabel(n)}`);
+  if (open) h += g.replies.map(r => commentRow(kind, r, g.id, !!g.top)).join('') + (n && !replying ? btn('cm-thread', 'Ocultar respuestas') : '');
+  if (replying) {
+    const key = `cmr-${kind}-${g.id}`, to = g.top.author_id === S.user.id ? 'tu comentario' : whoName(g.top.author_id);
+    h += `${phStrip(key)}<div class="cm-new cm-reply"><textarea id="cmReply-${kind}-${pid}-${g.id}" maxlength="1000" rows="1" placeholder="Responde a ${esc(to)}…"></textarea>
+      ${phPicker(key, 1)}<button class="btn sm" data-action="comment-send" data-kind="${kind}" data-pid="${pid}" data-root="${g.id}">Responder</button>
+      <button class="linkbtn mute" data-action="cm-reply-cancel" data-kind="${kind}" data-pid="${pid}" data-root="${g.id}">Cancelar</button></div>`;
+  }
+  return h ? `<div class="cm-thread" data-thread="${g.id}">${h}</div>` : '';
+}
 function commentsInner(kind, pid) {
-  const c = CM[kind];
-  const list = cmList(kind).filter(x => x[c.key] === pid).sort((a, b) => a.created_at.localeCompare(b.created_at));
-  return `${list.length ? list.map(x => commentRow(kind, x)).join('') : '<div class="sub" style="margin:6px 0 10px">Aún no hay comentarios.</div>'}
+  const groups = cmGroups(kind, pid);
+  const gone = g => `<div class="cmt gone" data-cmt-id="${g.id}"><span class="av-gone" aria-hidden="true"></span><div class="cmt-main"><div class="cmt-bubble">Comentario eliminado</div></div></div>`;
+  return `${groups.length ? groups.map(g => (g.top ? commentRow(kind, g.top) : gone(g)) + cmThreadHtml(kind, pid, g)).join('') : '<div class="sub" style="margin:6px 0 10px">Aún no hay comentarios.</div>'}
     ${phStrip(`cm-${kind}-${pid}`)}
     <div class="cm-new"><textarea id="cmInput-${kind}-${pid}" maxlength="1000" rows="2" placeholder="Escribe un comentario… (@ para mencionar)"></textarea>
     ${phPicker(`cm-${kind}-${pid}`, 1)}<button class="btn sm" data-action="comment-send" data-kind="${kind}" data-pid="${pid}">Comentar</button></div>`;
@@ -1930,11 +1984,28 @@ function commentsInner(kind, pid) {
 const commentsBlock = (kind, pid) => `<div class="cm" data-cm="${kind}:${pid}">${commentsInner(kind, pid)}</div>`;
 function updateComments(kind, pid) {
   $$(`[data-cm="${kind}:${pid}"]`).forEach(n => {
-    const ta = n.querySelector('textarea'), v = ta ? ta.value : '', mm = ta && ta._mentions;
+    // conserva lo que estabas escribiendo (comentario nuevo y respuesta) y el cursor
+    const keep = [...n.querySelectorAll('textarea')].map(t => ({ id: t.id, v: t.value, mm: t._mentions, f: document.activeElement === t, s: t.selectionStart }));
     n.innerHTML = commentsInner(kind, pid);
-    const t2 = n.querySelector('textarea'); if (t2 && v) { t2.value = v; t2._mentions = mm; } // conserva lo que estabas escribiendo
+    keep.forEach(k => {
+      const t = k.id && n.querySelector('#' + CSS.escape(k.id)); if (!t) return;
+      if (k.v) { t.value = k.v; t._mentions = k.mm; }
+      if (k.f) { t.focus(); try { t.setSelectionRange(k.s, k.s); } catch (_) {} }
+    });
   });
   if (kind === 'feed') updateCmPeek(pid);
+}
+// Desde un aviso de respuesta: abre el hilo de la última respuesta de esa persona a un comentario mío y la resalta
+function cmFocusReply(kind, pid, actor) {
+  const c = CM[kind], L = cmList(kind).filter(x => x[c.key] === pid);
+  const mine = new Set(L.filter(x => x.author_id === S.user.id && !x.parent_id).map(x => x.id));
+  const r = L.filter(x => mine.has(x.parent_id) && (!actor || x.author_id === actor)).sort(cmByDate).pop();
+  if (!r) return;
+  cmOpen.add(r.parent_id); updateComments(kind, pid);
+  requestAnimationFrame(() => {
+    const el = $(`#modalRoot [data-cmt-id="${r.id}"]`) || $(`[data-cmt-id="${r.id}"]`);
+    if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  });
 }
 // Vista previa de comentarios en la tarjeta del Inicio: los 2 más relevantes a la vista
 // (más reacciones; a igualdad, los del profesor y luego los más nuevos) y una caja de "Escribe un comentario…".
@@ -1942,7 +2013,7 @@ function updateComments(kind, pid) {
 const CM_PEEK = 2;
 function cmPeekPick(pid) {
   const nrx = id => S.reactions.filter(r => r.target_type === 'feed_comment' && r.target_id === id).length;
-  return S.fcomments.filter(c => c.post_id === pid)
+  return S.fcomments.filter(c => c.post_id === pid && !c.parent_id) // solo comentarios raíz; sus respuestas se cuentan aparte
     .map(c => ({ c, n: nrx(c.id), t: isTeacherId(c.author_id) ? 1 : 0 }))
     .sort((a, b) => b.n - a.n || b.t - a.t || String(b.c.created_at || '').localeCompare(String(a.c.created_at || '')))
     .slice(0, CM_PEEK);
@@ -1960,7 +2031,8 @@ function cmPeekInner(pid) {
     ${pick.map(({ c }) => `<div class="peek-cmt" data-action="fpost-peek" data-id="${pid}" data-cmt="${c.id}">
       ${whoLink(c.author_id, avatarHtml(c.author_id, 28))}
       <div class="peek-bubble"><div class="cmt-head">${whoLink(c.author_id, `<b>${esc(whoName(c.author_id))}</b>`)}${teacherTag(c.author_id)}<span class="sub">${timeAgo(c.created_at)}</span></div>
-        ${c.body ? `<div class="peek-body">${richText(c.body)}</div>` : ''}${phOf('feed_comment', c, 'peek')}${cmPeekRx(c.id)}</div></div>`).join('')}
+        ${c.body ? `<div class="peek-body">${richText(c.body)}</div>` : ''}${phOf('feed_comment', c, 'peek')}${cmPeekRx(c.id)}</div></div>
+      ${(n => n ? `<div class="peek-rep" data-action="fpost-peek" data-id="${pid}" data-cmt="${c.id}" data-thread="1">${ic('chat')}${cmRepliesLabel(n)}</div>` : '')(S.fcomments.filter(x => x.parent_id === c.id).length)}`).join('')}
     <div class="peek-new" data-action="fpost-peek" data-id="${pid}" data-focus="1">${avatarHtml(S.user.id, 28)}
       <span class="peek-input">${total ? 'Escribe un comentario…' : 'Sé el primero en comentar…'}</span></div>`;
 }
@@ -5729,6 +5801,8 @@ function notifText(n) {
     case 'homework': return `Deberes nuevos: <b>${esc(n.extra || '')}</b>`;
     case 'lesson': return `🎸 Tienes clase <b>${esc(n.extra || '')}</b>`;
     case 'mention_feed': return `${who} te ha mencionado${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'reply_feed': return `${who} ha respondido a tu comentario${n.extra ? `: “${esc(n.extra)}”` : ''}`;
+    case 'reply_listening': return `${who} ha respondido a tu comentario en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'mention_board': return `${who} te ha mencionado en un aviso: <b>${esc(n.extra || '')}</b>`;
     case 'mention_listening': return `${who} te ha mencionado en una escucha${n.extra ? `: “${esc(n.extra)}”` : ''}`;
     case 'story_reaction': return `${who} ha reaccionado ${esc(n.extra || '')} a tu story`;
@@ -5739,7 +5813,7 @@ function notifText(n) {
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart', mention_story: 'chat' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart', mention_story: 'chat', reply_feed: 'chat', reply_listening: 'listening' }[kind] || 'bell'; }
 function notifsModal() {
   const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -5771,6 +5845,8 @@ async function openNotif(n) {
   switch (n.kind) {
     case 'board_post': case 'mention_board': goPost(n.target_id); break;
     case 'mention_listening': case 'listening_feedback': openMentionItem(n.target_id); break;
+    case 'reply_listening': openMentionItem(n.target_id); cmFocusReply('listening', n.target_id, n.actor_id); break;
+    case 'reply_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) { feedPostModal(n.target_id); cmFocusReply('feed', n.target_id, n.actor_id); } break;
     case 'assignment': S.section = 'listening'; render(); break;
     case 'dm': await openDm(n.actor_id); break;
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
@@ -6108,6 +6184,7 @@ const actions = {
   'fpost-peek'(el, e) {
     if (e && e.target.closest('a')) return;
     const id = el.dataset.id, cid = el.dataset.cmt, focus = el.dataset.focus;
+    if (cid && el.dataset.thread) cmOpen.add(cid); // "N respuestas" de la vista previa: el hilo ya abierto
     feedPostModal(id);
     requestAnimationFrame(() => {
       const root = $('#modalRoot');
@@ -6136,8 +6213,10 @@ const actions = {
     updateRx(t, i);
   },
   async 'comment-send'(el) {
-    const { kind, pid } = el.dataset, c = CM[kind];
-    const ta = $(`#cmInput-${kind}-${pid}`), body = mentionEncode(ta), key = `cm-${kind}-${pid}`, pk = PH_KIND_OF[c.type];
+    const { kind, pid, root } = el.dataset, c = CM[kind];
+    const box = el.closest('.cm') || document;
+    const ta = box.querySelector(root ? `#cmReply-${kind}-${pid}-${root}` : `#cmInput-${kind}-${pid}`), body = mentionEncode(ta);
+    const key = root ? `cmr-${kind}-${root}` : `cm-${kind}-${pid}`, pk = PH_KIND_OF[c.type];
     if (phBusy(key)) return toast('Espera un momento: la foto aún se está preparando', 'bad');
     if (!body && !phDraft(key).length) return toast('Escribe algo o añade una foto', 'bad');
     if (body.length > 1000) return toast('El comentario es demasiado largo', 'bad');
@@ -6145,18 +6224,46 @@ const actions = {
     const id = phUuid(); // el id se crea aquí para subir antes la foto
     const up = await phUpload(key, pk, id, el);
     if (!up) { el.disabled = false; return; }
-    const { data, error } = await sb.from(c.table).insert({ id, [c.key]: pid, author_id: S.user.id, body, photos: up.photos }).select().single();
+    const { data, error } = await sb.from(c.table).insert({ id, [c.key]: pid, author_id: S.user.id, body, photos: up.photos, ...(root ? { parent_id: root } : {}) }).select().single();
     el.disabled = false;
-    if (error) { phRemove(up.paths); return toast('No se pudo comentar: ' + errEs(error), 'bad'); }
+    if (error) { phRemove(up.paths); return toast((root ? 'No se pudo responder: ' : 'No se pudo comentar: ') + errEs(error), 'bad'); }
     phCommit(key, pk, id);
     addUnique(cmList(kind), data, c.table); // el tiempo real puede haberlo traído ya
     ta.value = ''; ta._mentions = [];
+    if (root) { cmOpen.add(root); cmReplyTo = null; }
+    updateComments(kind, pid);
+  },
+  // Responder: abre el hilo con su caja. En una respuesta ajena, empieza con la @mención de su autor.
+  'comment-reply'(el) {
+    const { kind, pid, root, to } = el.dataset;
+    if (cmReplyTo && cmReplyTo !== root) phClear(`cmr-${kind}-${cmReplyTo}`);
+    cmReplyTo = root; cmOpen.add(root);
+    updateComments(kind, pid);
+    const ta = (el.isConnected && el.closest('.cm') || document).querySelector(`#cmReply-${kind}-${pid}-${root}`)
+      || $(`#cmReply-${kind}-${pid}-${root}`);
+    if (!ta) return;
+    if (to && to !== S.user.id && S.dir[to]) {
+      const tok = `<@${to}>`, already = (ta._mentions || []).some(m => m.token === tok);
+      if (!already) { const prev = ta.value.trim(); mentionSeed(ta, tok); const mm = ta._mentions; ta.value = (ta.value.trim() + ' ' + prev).trim() + ' '; ta._mentions = mm; }
+    }
+    ta.scrollIntoView({ block: 'center' }); ta.focus();
+    try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (_) {}
+  },
+  'cm-reply-cancel'(el) {
+    const { kind, pid, root } = el.dataset;
+    phClear(`cmr-${kind}-${root}`); cmReplyTo = null;
+    updateComments(kind, pid);
+  },
+  'cm-thread'(el) {
+    const { kind, pid, root } = el.dataset;
+    if (cmOpen.has(root)) cmOpen.delete(root); else cmOpen.add(root);
     updateComments(kind, pid);
   },
   async 'comment-delete'(el) {
     const { kind, id } = el.dataset, c = CM[kind];
     const x = cmList(kind).find(y => y.id === id);
-    if (!x || !confirm('¿Eliminar este comentario?')) return;
+    const nrep = x && !x.parent_id ? cmList(kind).filter(y => y.parent_id === id).length : 0;
+    if (!x || !confirm(nrep ? `¿Eliminar este comentario? ${nrep === 1 ? 'Su respuesta se quedará' : `Sus ${nrep} respuestas se quedarán`} bajo «Comentario eliminado».` : '¿Eliminar este comentario?')) return;
     const { error } = await sb.from(c.table).delete().eq('id', id);
     if (error) return toast('Error: ' + errEs(error), 'bad');
     phDropRow(PH_KIND_OF[c.type], x.author_id, x);
