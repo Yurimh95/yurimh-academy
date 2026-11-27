@@ -31,6 +31,7 @@ function texts(kind: string, actor: string, extra: string | null, target: string
     case "reaction": return { title: "Yurimh Music Academy", body: `${actor} ha reaccionado ${EMOJI[extra ?? ""] ?? ""} a tu publicación` };
     case "signup": return { title: "Nuevo alumno", body: `${extra ?? "Alguien"} se ha registrado y espera tu aprobación` };
     case "goal": return { title: "🏆 ¡Objetivo conseguido!", body: extra ?? "Has conseguido un objetivo nuevo" };
+    case "streak": return { title: `🔥 ${actor} lleva ${extra ?? ""} días seguidos`, body: "Terminando escuchas: felicítale" }; // extra = días del hito
     case "listening_feedback": return { title: `🎧 ${actor} ha revisado tus respuestas`, body: extra ?? "Mira sus reacciones en Escucha analítica" }; // extra = título de la escucha
     case "account_deleted":return { title: "Cuenta borrada", body: `${extra ?? "Un alumno"} ha borrado su cuenta` };
     case "report": return { title: "Denuncia nueva", body: "Hay contenido denunciado para revisar" };

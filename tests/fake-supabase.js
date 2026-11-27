@@ -33,6 +33,24 @@
   const storyVisible = r => !!r && isApproved() && !isArchived(r.author_id) && (storyAlive(r) || (isTeacher() && openReport('story', r.id)));
   const storyOf = id => DB.stories.find(s => s.id === id && storyVisible(s));
   DB.listening_answer_reactions = DB.listening_answer_reactions || [];
+  DB.listening_streak_awards = DB.listening_streak_awards || [];
+  // Racha (2026-11-27): imita listening_answers_full, listening_streak() y listening_streak_award()
+  const QK = ['highlights','likes','dislikes','learned','would_use','would_never_use'];
+  const answersFull = a => QK.every(k => String((a||{})[k]||'').trim().length>0);
+  const dk = iso => { const d=new Date(iso); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const dAdd = (k,n) => { const d=new Date(k+'T12:00:00'); d.setDate(d.getDate()+n); return dk(d); };
+  function streakCur(sid){
+    const rows=DB.listening_assignments.filter(a=>a.student_id===sid&&a.assigned_at).map(a=>({from:dk(a.assigned_at),done:a.completed_at?dk(a.completed_at):null}));
+    const today=dk(new Date()); if(!rows.length) return 0;
+    let d=rows.reduce((m,r)=>r.from<m?r.from:m,today), cur=0;
+    for(;d<=today;d=dAdd(d,1)){ if(rows.some(r=>r.done===d)) cur++; else if(d<today && rows.some(r=>r.from<d&&(!r.done||r.done>=d))) cur=0; }
+    return cur;
+  }
+  function streakAward(sid){
+    const cur=streakCur(sid), got=[];
+    [3,5,7,10,15,20,30,50,75,100,150,200,365].filter(m=>m<=cur).forEach(m=>{ if(!DB.listening_streak_awards.some(w=>w.student_id===sid&&w.days===m)){ DB.listening_streak_awards.push({student_id:sid,days:m,reached_at:new Date().toISOString(),seen_at:null}); got.push(m); } });
+    if(got.length) DB.profiles.filter(x=>x.role==='teacher'&&x.approved).forEach(tp=>{ const n={id:uid('nt'),user_id:tp.id,kind:'streak',actor_id:sid,target_id:sid,extra:String(Math.max(...got)),created_at:new Date().toISOString(),read_at:null,pushed_at:null}; DB.notifications.push(n); emit('notifications','INSERT',n); });
+  }
   DB.listening_folders = DB.listening_folders || []; DB.listening_genres = DB.listening_genres || []; DB.listening_item_genres = DB.listening_item_genres || [];
   // Carpetas: el alumno solo ve las de sus escuchas (listening_folders_select)
   const folderMine = fid => DB.listening_items.some(i=>i.folder_id===fid && assigned(i.id));
@@ -84,7 +102,8 @@
     stories: r => storyVisible(r),
     story_views: r => r.user_id===me || DB.stories.some(s => s.id===r.story_id && s.author_id===me),
     story_reactions: r => r.user_id===me || DB.stories.some(s => s.id===r.story_id && s.author_id===me),
-    video_plays: () => false
+    video_plays: () => false,
+    listening_streak_awards: r => isTeacher() || (r.student_id===me && isApproved())
   };
   function canSee(type,id){
     if(type==='dm_message') return DB.dm_messages.some(r=>r.id===id && r.recipient_id===me);
@@ -127,7 +146,8 @@
     stories: (op,r) => op==='delete' && (r.author_id===me || isTeacher()),
     story_views: () => false,
     story_reactions: (op,r) => r.user_id===me && (op==='delete' || (isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me)),
-    video_plays: () => false
+    video_plays: () => false,
+    listening_streak_awards: (op,r) => op==='update' && r.student_id===me && isApproved()
   };
   const canInsert = {
     profiles: () => false,
@@ -161,7 +181,8 @@
     stories: r => r.author_id===me && isApproved(),
     story_views: r => r.user_id===me && isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me,
     story_reactions: r => r.user_id===me && isApproved() && !!storyOf(r.story_id) && storyOf(r.story_id).author_id!==me,
-    video_plays: () => false
+    video_plays: () => false,
+    listening_streak_awards: () => false
   };
   // Fotos (photos_ok del SQL): [{k: uuid, w, h}], sin repetir, hasta maxn. Con fotos, el texto es opcional.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -317,6 +338,8 @@
       nw.teacher_read_at = JSON.stringify(nw.answers)!==JSON.stringify(old.answers) ? null : (old.teacher_read_at||null);
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
+    if (table==='listening_assignments') nw.completed_at = old.completed_at ? old.completed_at : (nw.listened && answersFull(nw.answers) ? new Date().toISOString() : null);
+    if (table==='listening_streak_awards' && (nw.student_id!==old.student_id||nw.days!==old.days||nw.reached_at!==old.reached_at)) throw new Error('Solo se puede marcar como vista');
     if (table==='board_posts'){ nw.updated_at=new Date().toISOString(); if(!checks.board_posts(nw)) throw new Error('new row for relation "board_posts" violates check constraint'); }
     if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
       nw.id=old.id; nw.author_id=old.author_id; nw.created_at=old.created_at;
@@ -329,7 +352,8 @@
       nw.accepted_at=new Date().toISOString();
     }
     if ((table==='listening_folders'||table==='listening_genres'||table==='listening_items') && !checks[table](nw)) throw new Error('duplicate key value violates unique constraint (o check)');
-    if (table==='homework_tasks' && !isTeacher() && (nw.title!==old.title||nw.details!==old.details||nw.due_date!==old.due_date||nw.student_id!==old.student_id)) throw new Error('Solo puedes marcar tus deberes como practicados');
+    if (table==='homework_tasks' && !isTeacher() && (nw.title!==old.title||nw.details!==old.details||nw.due_date!==old.due_date||nw.student_id!==old.student_id||(nw.goal_id||null)!==(old.goal_id||null))) throw new Error('Solo puedes marcar tus deberes como practicados');
+    if (table==='homework_tasks' && nw.goal_id && nw.goal_id!==old.goal_id && !DB.goals_items.some(g=>g.id===nw.goal_id&&(!g.student_id||g.student_id===nw.student_id))) throw new Error('Ese objetivo no es de este alumno');
   }
   function q(table){
     const st={op:'select',filters:[],order:null,payload:null,embed:false,single:false,maybe:false,opts:null,lim:null};
@@ -372,9 +396,10 @@
       }
       if(st.op==='update'){
         const rows=DB[table].filter(canRead[table]).filter(match).filter(r=>canWriteRow[table]('update',r));
-        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status, oldBody=r.body, wasRead=r.teacher_read_at; Object.assign(r,nw); emit(table,'UPDATE',r);
+        try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status, oldBody=r.body, wasRead=r.teacher_read_at, wasDone=r.completed_at; Object.assign(r,nw); emit(table,'UPDATE',r);
           if(table==='feed_posts' && r.body!==oldBody){ const before=mentionIds(oldBody); mentionIds(r.body).filter(u=>!before.includes(u)&&DB.profiles.some(p=>p.id===u&&p.approved)&&!blockedBy(u,r.author_id)).forEach(u=>notify(u,'mention_feed',r.author_id,r.id,mentionPlain(r.body).slice(0,120))); }
           if(table==='listening_assignments' && nw.teacher_read_at && !wasRead) feedbackNotify(r.id,me);
+          if(table==='listening_assignments' && r.completed_at && !wasDone) streakAward(r.student_id);
           if(table==='classmates' && was==='pending' && r.status==='accepted') notify(r.requester_id,'classmate_accept',r.addressee_id,r.addressee_id,null); }); }catch(e){ return finish([],e.message); }
         return st.sel?finish(rows):{data:null,error:null};
       }
@@ -389,7 +414,9 @@
             if(mateBetween(row.requester_id,row.addressee_id)) return finish([],'duplicate key value violates unique constraint "classmates_pair_uq"'); }
           if(table==='goals_items'){ row.student_id=row.student_id||null; row.stage=row.stage||null; row.details=row.details||null; row.sort=row.sort||0; }
           if(table==='goals_done'){ row.done_at=row.done_at||new Date().toISOString(); row.seen_at=null; if(DB.goals_done.some(e=>e.goal_id===row.goal_id&&e.student_id===row.student_id)) return finish([],'duplicate key value violates unique constraint'); }
-          if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; }
+          if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; row.goal_id=row.goal_id||null;
+            if(row.goal_id && !DB.goals_items.some(g=>g.id===row.goal_id&&(!g.student_id||g.student_id===row.student_id))) return finish([],'Ese objetivo no es de este alumno'); }
+          if(table==='listening_assignments') row.completed_at=null;
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }

@@ -85,9 +85,9 @@ const path = require('path');
   const f2 = p.locator('[data-fpost=f2]');
   const peekIds = await f2.locator('.peek-cmt').evaluateAll(n => n.map(x => x.dataset.cmt));
   ok(!peekIds.includes('fr2') && peekIds.includes('fc2'), 'La vista previa enseña comentarios, no respuestas');
-  ok((await f2.locator('.peek-rep').innerText()).includes('4 respuestas'), 'Y debajo "4 respuestas"');
+  ok((await f2.locator('.peek-rep[data-cmt=fc2]').innerText()).includes('4 respuestas'), 'Y debajo "4 respuestas"');
   await p.evaluate(() => cmOpen.clear());
-  await f2.locator('.peek-rep').click(); await p.waitForTimeout(250);
+  await f2.locator('.peek-rep[data-cmt=fc2]').click(); await p.waitForTimeout(250);
   ok(await p.locator('.modal [data-thread=fc2] .cmt.reply').count() === 4, 'Pulsar "4 respuestas" abre la publicación con el hilo abierto');
   await p.click('.modal [data-action=close]'); await p.waitForTimeout(200);
 
