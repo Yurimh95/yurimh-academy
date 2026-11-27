@@ -5474,7 +5474,10 @@ function studentDetailModal(id) {
         <div class="rename"><input type="text" id="calNameInput" maxlength="80" value="${esc(cn)}" placeholder="Nombre en Google Calendar (si no es &quot;${esc(s.display_name)}&quot;)" aria-label="Nombre en Google Calendar"><button class="btn sm" data-action="cal-name" data-id="${s.id}">Guardar</button></div>`; })()}
     ${(() => { const pl = planOf(s.id);
       return `<div class="chips" style="margin:8px 0 4px">
-        <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button></div>`; })()}
+        <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button>
+        ${pl && pl.mode === 'monthly' && calSynced() ? (() => { const ps = packState(s.id);
+          return !ps ? '<span class="chip warn">Sin pagos apuntados</span>' : ps.dueNow ? `<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span>`
+            : `<span class="chip">${ps.used} de ${ps.n} clases pagadas${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`; })() : ''}</div>`; })()}
     ${goalsFichaHtml(s.id)}
     ${streakFichaHtml(s.id)}
     ${(() => { // Deberes de este alumno: se gestionan aquí mismo (la sección Deberes es la vista de todos)
@@ -6892,7 +6895,35 @@ function relDay(iso) { // hoy / mañana / jueves 27 de noviembre
 const calSynced = () => !!(S.lessonSync && S.lessonSync.last_ok_at);
 const nextLesson = id => S.lessons.filter(l => l.student_id === id && new Date(l.ends_at || l.starts_at) > new Date()).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] || null;
 // ¿Ha tenido ya alguna clase este mes? (para Pagos: se cobra tras la primera clase del mes)
-const hadClassThisMonth = id => { const now = new Date(); return S.lessons.some(l => { const d = new Date(l.starts_at); return l.student_id === id && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d <= now; }); }; // en hora local, no UTC
+/* Bonos de clases (2026-11-27): el pago "mensual" cubre N clases (trato: classes_per_payment; se copia
+   en el pago como `classes`). Se paga al acabar la primera clase (paid_on = día de esa clase) y vuelve
+   a tocar el día de la clase N+1. Las clases salen de Google Calendar (S.lessons), en hora local. */
+const PACK_DEF = 4;
+const packN = (r, pl) => (r && r.classes) || (pl && pl.classes_per_payment) || PACK_DEF;
+const lastPack = (id, upTo) => S.payRecords.filter(r => r.student_id === id && r.kind === 'monthly' && (!upTo || r.paid_on <= upTo))
+  .sort((a, b) => b.paid_on.localeCompare(a.paid_on) || (b.created_at || '').localeCompare(a.created_at || ''))[0] || null;
+const lessonsFrom = (id, key) => S.lessons.filter(l => l.student_id === id && dayKey(new Date(l.starts_at)) >= key).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+const shortDay = key => { const [y, m, d] = key.split('-').map(Number); return `${d} ${MONTHS[m - 1].slice(0, 3)}.`; };
+function packState(id) { // null = sin pagos apuntados
+  const r = lastPack(id); if (!r) return null;
+  const n = packN(r, planOf(id)), ls = lessonsFrom(id, r.paid_on), today = dayKey(new Date());
+  const used = Math.min(n, ls.filter(l => new Date(l.starts_at) <= new Date()).length);
+  const due = ls[n] ? dayKey(new Date(ls[n].starts_at)) : null;
+  return { r, n, used, due, dueNow: !!due && due <= today };
+}
+function lessonPayTag(id, l) { // Agenda: qué clase del bono es esta o si toca cobrar en ella
+  const key = dayKey(new Date(l.starts_at)), r = lastPack(id, key);
+  if (!r) return 'Sin pago apuntado';
+  const n = packN(r, planOf(id)), i = lessonsFrom(id, r.paid_on).findIndex(x => x.id === l.id);
+  return i >= 0 && i < n ? `Clase ${i + 1}/${n}` : '💶 Toca cobrar';
+}
+function packSuggestDay(id) { // fecha propuesta al apuntar: la clase en la que tocaba cobrar, si ya pasó; si no, hoy
+  const ps = packState(id), today = dayKey(new Date());
+  if (ps && ps.dueNow) return ps.due;
+  if (!ps) { const past = S.lessons.filter(l => l.student_id === id && new Date(l.starts_at) <= new Date()).sort((a, b) => b.starts_at.localeCompare(a.starts_at))[0];
+    if (past && dayKey(new Date(past.starts_at)).slice(0, 7) === today.slice(0, 7)) return dayKey(new Date(past.starts_at)); }
+  return today;
+}
 function nextLessonHtml() { // alumno
   const l = nextLesson(S.user.id); if (!l) return '';
   return `<div class="fy-row lesson-row"><span class="ic">${ic('calendar')}</span><div class="t"><b>Tu próxima clase: ${esc(relDay(l.starts_at))}</b><span class="sub">a las ${hhmm(l.starts_at)}${l.ends_at ? ' – ' + hhmm(l.ends_at) : ''}</span></div></div>`;
@@ -6968,8 +6999,8 @@ function agendaGrid(days, list) {
     const height = Math.max(24, (Math.min(e, new Date(s.getFullYear(), s.getMonth(), s.getDate(), h1)) - s) / 3600000 * H - 3);
     const st = l.student_id && S.students.find(x => x.id === l.student_id);
     const pend = st ? S.homework.filter(h => h.student_id === st.id && !h.done_at).length : 0;
-    const pl = st ? planOf(st.id) : null, paid = st && S.payRecords.some(r => r.student_id === st.id && r.period === per && r.kind === 'monthly');
-    const extra = st ? [pend ? `📝 ${pend}` : '', pl && pl.mode === 'monthly' ? (paid ? 'Pagado' : 'Mes sin cobrar') : ''].filter(Boolean).join(' · ') : 'Sin alumno en la app';
+    const pl = st ? planOf(st.id) : null;
+    const extra = st ? [pend ? `📝 ${pend}` : '', pl && pl.mode === 'monthly' ? lessonPayTag(st.id, l) : ''].filter(Boolean).join(' · ') : 'Sin alumno en la app';
     const w = 100 / cols;
     return `<div class="cev ${st ? '' : 'unk'} ${e < now ? 'past' : ''}" style="top:${top}px;height:${height}px;left:calc(${col * w}% + 2px);width:calc(${w}% - 4px)"
       ${st ? `data-action="open-student" data-id="${st.id}"` : ''} title="${esc(l.title)} · ${hhmm(l.starts_at)}–${hhmm(e.toISOString())}">
@@ -7002,7 +7033,7 @@ function agendaGrid(days, list) {
     </div></div></div>`;
 }
 async function loadLessons() {
-  const from = new Date(); from.setDate(1); from.setDate(from.getDate() - 7);
+  const from = new Date(); from.setDate(from.getDate() - 150); // de sobra para contar las clases de los bonos de Pagos
   const to = new Date(); to.setDate(to.getDate() + 60);
   if (isTeacher()) {
     const [l, ls, sy] = await Promise.all([
@@ -7134,11 +7165,16 @@ function paymentsView() {
     let status = '';
     if (!pl) status = `<button class="btn sm" data-action="pay-plan" data-id="${s.id}">Configurar trato</button>`;
     else if (pl.mode === 'free') status = '<span class="chip">Gratis</span>';
-    else if (pl.mode === 'monthly') {
-      const r = mine.find(x => x.kind === 'monthly');
-      if (r) status = `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}</span><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
-      else if (isNow && calSynced() && !hadClassThisMonth(s.id)) status = `<span class="chip">Aún sin clase este mes</span><button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
-      else { pendN++; status = `${!isNow && !future ? '<span class="chip warn">No pagado</span>' : isNow && calSynced() ? '<span class="chip warn">Ya tuvo clase: toca cobrar</span>' : ''}<button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
+    else if (pl.mode === 'monthly') { // bono de N clases (ver packState)
+      const paidHere = mine.filter(x => x.kind === 'monthly').map(r => `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}${r.classes ? ` · ${r.classes} clases` : ''}</span><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`).join('');
+      if (!isNow) status = paidHere || '<span class="sub">Sin pagos este mes</span>';
+      else {
+        const ps = packState(s.id);
+        if (!ps) { pendN++; status = `${paidHere}<span class="chip warn">Sin pagos apuntados</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
+        else if (!calSynced()) status = `${paidHere || `<span class="chip ok">✓ Último pago · ${fmtDate(ps.r.paid_on)}</span>`}<button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
+        else if (ps.dueNow) { pendN++; status = `${paidHere}<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
+        else status = `${paidHere || `<span class="chip ok">✓ Pagado el ${fmtDate(ps.r.paid_on)}</span>`}<span class="chip">${ps.used} de ${ps.n} clases${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`;
+      }
     } else { // por clase
       const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
       status = `<span class="chip ${n ? 'ok' : ''}">${n} clase${n === 1 ? '' : 's'} pagada${n === 1 ? '' : 's'}${n ? ' · ' + money(sum) : ''}</span>
@@ -7153,20 +7189,36 @@ function paymentsView() {
       <h2>${monthLabel(per)}</h2><button class="iconbtn" data-action="pay-month" data-n="1" aria-label="Mes siguiente">›</button>
       ${isNow ? '' : '<button class="btn sm ghost" data-action="pay-month" data-n="0">Mes actual</button>'}</div>
     <div class="stats"><div class="stat"><b>${money(total) || '0 €'}</b><span>Cobrado en ${MONTHS[Number(per.slice(5, 7)) - 1]}</span></div>
-      <div class="stat ${pendN && !isNow && !future ? 'warn' : ''}"><b>${pendN}</b><span>${isNow ? (calSynced() ? 'Toca cobrar (ya tuvieron clase)' : 'Mensuales por pagar') : future ? 'Mensuales' : 'Sin pagar ese mes'}</span></div>
+      <div class="stat ${pendN ? 'warn' : ''}"><b>${isNow ? pendN : recs.filter(r => r.kind === 'monthly').length}</b><span>${isNow ? 'Toca cobrar' : 'Bonos cobrados ese mes'}</span></div>
       <div class="stat"><b>${ok.filter(s => (planOf(s.id) || {}).mode === 'free').length}</b><span>Con clases gratis</span></div></div>
     ${ok.length ? `<div class="paylist">${rows}</div>` : '<div class="empty">Aún no tienes alumnos aprobados.</div>'}
-    <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Cada mes empieza sin pagos marcados; los meses anteriores quedan guardados (usa las flechas).</p>`;
+    <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Los mensuales pagan un bono de clases: el aviso sale el día de la clase siguiente a la última pagada (se cuentan con Google Calendar, así que una clase cancelada retrasa el cobro sola). Con las flechas ves lo cobrado cada mes.</p>`;
 }
 function planModal(id) {
-  const pl = planOf(id) || { mode: 'monthly', amount: null, note: '' };
+  const pl = planOf(id) || { mode: 'monthly', amount: null, note: '', classes_per_payment: PACK_DEF };
   openModal(`<div class="modal-head"><h2>Trato con ${esc(studentName(id))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="planForm" data-id="${id}">
       <div class="f">Cómo paga<div class="radios">${Object.entries(PAY_MODE).map(([k, v]) => `<label class="chk"><input type="radio" name="mode" value="${k}" ${pl.mode === k ? 'checked' : ''}> ${v}</label>`).join('')}</div></div>
-      <label class="f" style="max-width:220px">Precio (€) <span class="sub">${'· al mes o por clase'}</span><input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${pl.amount != null ? esc(String(pl.amount)) : ''}" placeholder="Ej.: 60"></label>
+      <label class="f" style="max-width:220px">Precio (€) <span class="sub">${'· por pago mensual o por clase'}</span><input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${pl.amount != null ? esc(String(pl.amount)) : ''}" placeholder="Ej.: 60"></label>
+      <label class="f" style="max-width:260px">Clases que cubre cada pago <span class="sub">· solo mensual</span><input type="number" name="classes" min="1" max="30" step="1" inputmode="numeric" value="${esc(String(pl.classes_per_payment || PACK_DEF))}"></label>
+      <p class="sub" style="margin:-6px 0 12px">Mensual: te paga al acabar la primera clase y la app te avisa el día de la clase siguiente a la última pagada.</p>
       <label class="f">Nota privada (opcional)<input type="text" name="note" maxlength="300" value="${esc(pl.note || '')}" placeholder="Ej.: paga por Bizum; descuento por hermanos"></label>
       <p class="sub" style="margin:0 0 12px">Si cambias el precio, los pagos ya apuntados conservan su importe.</p>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+    </form>`);
+  $('.modal').classList.add('narrow');
+}
+function payPackModal(id) { // apuntar un pago mensual (bono de N clases)
+  const pl = planOf(id), day = packSuggestDay(id), today = dayKey(new Date());
+  openModal(`<div class="modal-head"><h2>Pago de ${esc(studentName(id))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="payPackForm" data-id="${id}">
+      <label class="f" style="max-width:220px">Día de la clase en la que te pagó<input type="date" name="day" max="${today}" value="${day}" required></label>
+      <p class="sub" style="margin:-6px 0 12px">Esa clase cuenta como la primera del bono. Si ya te había pagado antes de usar la app, pon la fecha de su primera clase pagada.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <label class="f" style="max-width:160px">Clases que cubre<input type="number" name="classes" min="1" max="30" step="1" inputmode="numeric" value="${packN(null, pl)}" required></label>
+        <label class="f" style="max-width:160px">Importe (€)<input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${pl && pl.amount != null ? esc(String(pl.amount)) : ''}"></label>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Apuntar pago</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
   $('.modal').classList.add('narrow');
 }
@@ -7232,11 +7284,11 @@ Object.assign(actions, {
   },
   'pay-month'(el) { const n = Number(el.dataset.n); S.payMonth = n === 0 ? monthStart() : shiftMonth(S.payMonth || monthStart(), n); render(); },
   'pay-plan'(el) { planModal(el.dataset.id); },
-  'pay-mark'(el) { payInsert(el.dataset.id, 'monthly'); },
+  'pay-mark'(el) { payPackModal(el.dataset.id); },
   'pay-class'(el) { payInsert(el.dataset.id, 'class'); },
   async 'pay-undo'(el) {
     const r = S.payRecords.find(x => x.id === el.dataset.id); if (!r) return;
-    if (!confirm(`¿Desmarcar el pago de ${studentName(r.student_id)} de ${monthLabel(r.period)}?`)) return;
+    if (!confirm(`¿Desmarcar el pago de ${studentName(r.student_id)} del ${fmtDate(r.paid_on)}?`)) return;
     const { error } = await sb.from('payments_records').delete().eq('id', r.id);
     if (error) return toast('No se pudo desmarcar: ' + errEs(error), 'bad');
     S.payRecords = S.payRecords.filter(x => x !== r); render();
@@ -7706,13 +7758,26 @@ document.addEventListener('submit', async e => {
     const id = f.dataset.id, mode = (f.querySelector('input[name=mode]:checked') || {}).value || 'monthly';
     const raw = f.amount.value.trim(), amount = raw === '' || mode === 'free' ? null : Math.round(Number(raw.replace(',', '.')) * 100) / 100;
     if (amount != null && !(amount >= 0 && amount < 100000)) return toast('El precio no es válido', 'bad');
-    const row = { mode, amount, note: f.note.value.trim() || null, updated_at: new Date().toISOString() };
+    const classes = Math.round(Number(f.classes.value));
+    if (!(classes >= 1 && classes <= 30)) return toast('Las clases por pago deben ir de 1 a 30', 'bad');
+    const row = { mode, amount, classes_per_payment: classes, note: f.note.value.trim() || null, updated_at: new Date().toISOString() };
     const ex = planOf(id);
     const { data, error } = ex ? await sb.from('payments_plans').update(row).eq('student_id', id).select()
       : await sb.from('payments_plans').insert({ student_id: id, ...row }).select();
     if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
     S.payPlans = S.payPlans.filter(p => p.student_id !== id).concat(data[0]);
     await closeModal(); render(); toast('Trato guardado', 'ok');
+  } else if (f.id === 'payPackForm') {
+    e.preventDefault();
+    const id = f.dataset.id, day = f.day.value, classes = Math.round(Number(f.classes.value));
+    const raw = f.amount.value.trim(), amount = raw === '' ? null : Math.round(Number(raw.replace(',', '.')) * 100) / 100;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return toast('Elige la fecha de la clase', 'bad');
+    if (!(classes >= 1 && classes <= 30)) return toast('Las clases deben ir de 1 a 30', 'bad');
+    if (amount != null && !(amount >= 0 && amount < 100000)) return toast('El importe no es válido', 'bad');
+    const row = { student_id: id, period: day.slice(0, 8) + '01', kind: 'monthly', amount, classes, paid_on: day };
+    const { data, error } = await sb.from('payments_records').insert(row).select();
+    if (error || !data || !data.length) return toast('No se pudo apuntar' + (error ? ': ' + errEs(error) : ''), 'bad');
+    S.payRecords.push(data[0]); await closeModal(); render(); toast('Pago apuntado', 'ok');
   }
 });
 

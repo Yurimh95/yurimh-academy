@@ -29,7 +29,7 @@ const { chromium } = require('playwright');
   ok((await t.textContent('#app')).includes('Sincronizado con Google Calendar'), 'Dice cuándo se sincronizó');
   ok((await t.locator('.cev.unk:has-text("Clase Pedro")').count())===1 && (await t.textContent('.cev.unk')).includes('Sin alumno en la app') && (await t.locator('.callout').count())===1, 'Avisa del evento que no corresponde a ningún alumno');
   ok((await t.textContent('.cev:has-text("Marta")')).includes('📝 2'), 'En cada clase ve los deberes pendientes del alumno');
-  ok((await t.textContent('.cev:has-text("Marta")')).includes('Mes sin cobrar'), 'Y si ese mes ya ha cobrado o no');
+  ok((await t.textContent('.cev:has-text("Marta")')).includes('Sin pago apuntado'), 'Y si tiene el bono de clases pagado o no');
   await t.click('.cev:has-text("Luis")'); await wait(t,300);
   ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Pulsar una clase abre la ficha del alumno');
   ok((await t.textContent('.modal')).includes('Próxima clase: mañana'), 'La ficha dice cuándo es su próxima clase');
@@ -40,11 +40,22 @@ const { chromium } = require('playwright');
   ok((await t.textContent('#app')).includes('Esta semana'), 'Navega a la semana siguiente (con botón para volver)');
   await shot(t,'agenda.png');
 
-  // Pagos: solo "toca cobrar" a quien ya tuvo su primera clase del mes
+  // Pagos: bonos de N clases contados con las clases del calendario
   await goto(t,'payments');
-  ok((await t.textContent('.payrow:has-text("Marta")')).includes('Ya tuvo clase: toca cobrar'), 'Pagos: Marta ya tuvo su primera clase del mes → toca cobrar');
-  const noClass = await t.evaluate(()=>{ S.lessons = S.lessons.filter(l=>l.id!=='l3'); render(); return document.querySelector('.payrow:last-child').innerText; });
-  ok(noClass.includes('Aún sin clase este mes'), 'Sin clase todavía este mes → no sale como pendiente de cobro');
+  ok((await t.textContent('.payrow:has-text("Marta")')).includes('Sin pagos apuntados'), 'Pagos: Marta sin ningún pago apuntado → aviso');
+  const l3day = await t.evaluate(()=>dayKey(new Date(S.lessons.find(l=>l.id==='l3').starts_at)));
+  await t.click('.payrow:has-text("Marta") [data-action=pay-mark]'); await wait(t,300);
+  ok((await t.inputValue('#payPackForm [name=day]'))===l3day, 'Propone como fecha su última clase de este mes');
+  await t.fill('#payPackForm [name=classes]','1'); await t.click('#payPackForm button[type=submit]'); await wait(t,350);
+  let row = await t.textContent('.payrow:has-text("Marta")');
+  ok(row.includes('1 de 1 clases') && row.includes('le toca el') && !(await t.locator('.payrow:has-text("Marta") .chip.warn').count()), 'Bono de 1 clase ya usada: dice cuándo le toca (su próxima clase), sin aviso');
+  await goto(t,'agenda');
+  await t.evaluate(()=>{ const l=S.lessons.filter(x=>x.student_id==='s1' && new Date(x.starts_at)>new Date()).sort((a,b)=>a.starts_at.localeCompare(b.starts_at))[0]; S.agendaWeek = weekStart(new Date(l.starts_at)).toISOString(); render(); });
+  ok((await t.textContent('.cev:has-text("Marta"):not(.past)')).includes('Toca cobrar'), 'Agenda: en la clase siguiente al bono pone "Toca cobrar"');
+  await goto(t,'payments');
+  row = await t.evaluate(()=>{ const d=new Date(); d.setHours(0,5,0,0); S.lessons.push({id:'lx',student_id:'s1',title:'Marta',starts_at:d.toISOString(),ends_at:new Date(d.getTime()+3600000).toISOString()}); render(); return document.querySelector('.payrow:last-child').innerText; });
+  ok(row.includes('Toca cobrar') , 'Cuando llega el día de la clase siguiente al bono → toca cobrar');
+  await t.evaluate(()=>{ S.lessons = S.lessons.filter(l=>l.id!=='lx'); render(); });
 
   // Copia de seguridad
   await goto(t,'settings');

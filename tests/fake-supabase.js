@@ -207,8 +207,8 @@
     dm_messages: r => bodyOk(r,2000) && photosOk(r.photos??[],10) && r.sender_id!==r.recipient_id,
     goals_items: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (r.student_id || r.stage),
     homework_tasks: r => r.title && String(r.title).trim().length>=1 && String(r.title).length<=200 && (!r.details || r.details.length<=1500),
-    payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
-    payments_plans: r => ['monthly','per_class','free'].includes(r.mode) && (r.amount==null || (r.amount>=0 && r.amount<100000)),
+    payments_records: r => /^\d{4}-\d{2}-01$/.test(r.period) && ['monthly','class'].includes(r.kind) && (r.amount==null || (r.amount>=0 && r.amount<100000)) && (r.classes==null || (r.classes>=1 && r.classes<=30)),
+    payments_plans: r => ['monthly','per_class','free'].includes(r.mode) && (r.amount==null || (r.amount>=0 && r.amount<100000)) && (r.classes_per_payment==null || (r.classes_per_payment>=1 && r.classes_per_payment<=30)),
     listening_answer_reactions: r => ['highlights','likes','dislikes','learned','would_use','would_never_use'].includes(r.question) && r.emoji && r.emoji.length<=32 && DB.listening_assignments.some(a=>a.id===r.assignment_id),
     listening_folders: r => r.name && String(r.name).trim().length>=1 && String(r.name).length<=60 && !DB.listening_folders.some(f=>f.id!==r.id && f.name.trim().toLowerCase()===String(r.name).trim().toLowerCase()),
     listening_genres: r => r.name && String(r.name).trim().length>=1 && String(r.name).length<=60
@@ -417,7 +417,7 @@
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; row.goal_id=row.goal_id||null;
             if(row.goal_id && !DB.goals_items.some(g=>g.id===row.goal_id&&(!g.student_id||g.student_id===row.student_id))) return finish([],'Ese objetivo no es de este alumno'); }
           if(table==='listening_assignments') row.completed_at=null;
-          if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.kind==='monthly' && DB.payments_records.some(e=>e.kind==='monthly'&&e.student_id===row.student_id&&e.period===row.period)) return finish([],'duplicate key value violates unique constraint "payments_records_monthly_uq"'); }
+          if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.classes===undefined) row.classes=null; }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
           if(table==='stories'){ row.created_at=new Date().toISOString(); row.expires_at=new Date(Date.now()+86400000).toISOString(); row.video=row.video||null; row.photo=row.photo||null; row.overlay=row.overlay||{}; } // stories_ins

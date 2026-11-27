@@ -1401,10 +1401,11 @@ end $$;
 -- =====================================================================
 --  MÓDULO: PAGOS  (prefijo payments_)  ·  SOLO EL PROFESOR
 --   payments_plans:   el trato de cada alumno (mensual, por clase o gratis) y su precio.
---   payments_records: cada pago apuntado. Mensual = uno por mes (period = día 1 del mes);
---                     por clase = tantos como clases pagadas en el mes.
---   "Se desmarca al terminar el mes" sin borrar nada: cada mes empieza sin pago apuntado,
---   y los meses anteriores quedan como historial.
+--   payments_records: cada pago apuntado. Por clase = tantos como clases pagadas en el mes.
+--                     Mensual (2026-11-27) = un "bono" de N clases: se paga al acabar la primera
+--                     clase (paid_on = día de esa clase) y vuelve a tocar en la clase N+1, que la
+--                     app cuenta con las clases de Google Calendar (lessons). classes = N copiado del
+--                     trato al apuntarlo; period = día 1 del mes de paid_on (para los totales).
 --   Los alumnos no pueden leer nada de esto (ni lo suyo).
 -- =====================================================================
 create table if not exists public.payments_plans (
@@ -1425,8 +1426,19 @@ create table if not exists public.payments_records (
   created_at  timestamptz not null default now()
 );
 create index if not exists payments_records_period_idx on public.payments_records (period, student_id);
--- Un solo pago mensual por alumno y mes (por clase, los que hagan falta)
-create unique index if not exists payments_records_monthly_uq on public.payments_records (student_id, period) where kind = 'monthly';
+-- Bonos de clases (2026-11-27): dos pagos mensuales pueden caer en el mismo mes natural
+drop index if exists public.payments_records_monthly_uq;
+alter table public.payments_plans add column if not exists classes_per_payment smallint not null default 4;
+alter table public.payments_records add column if not exists classes smallint;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'payments_plans_classes_chk') then
+    alter table public.payments_plans add constraint payments_plans_classes_chk check (classes_per_payment between 1 and 30);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'payments_records_classes_chk') then
+    alter table public.payments_records add constraint payments_records_classes_chk check (classes is null or classes between 1 and 30);
+  end if;
+end $$;
+create index if not exists payments_records_student_paid_idx on public.payments_records (student_id, paid_on desc);
 
 grant select, insert, update, delete on public.payments_plans, public.payments_records to authenticated;
 revoke all on public.payments_plans, public.payments_records from anon;
