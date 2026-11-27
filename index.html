@@ -7166,14 +7166,15 @@ function paymentsView() {
     if (!pl) status = `<button class="btn sm" data-action="pay-plan" data-id="${s.id}">Configurar trato</button>`;
     else if (pl.mode === 'free') status = '<span class="chip">Gratis</span>';
     else if (pl.mode === 'monthly') { // bono de N clases (ver packState)
-      const paidHere = mine.filter(x => x.kind === 'monthly').map(r => `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}${r.classes ? ` · ${r.classes} clases` : ''}</span><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`).join('');
+      const paidChip = r => `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}${r.classes ? ` · ${r.classes} clases` : ''}</span><button class="iconbtn sm" data-action="pay-edit" data-id="${r.id}" title="Editar el pago" aria-label="Editar el pago">✎</button><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
+      const paidHere = mine.filter(x => x.kind === 'monthly').map(paidChip).join('');
       if (!isNow) status = paidHere || '<span class="sub">Sin pagos este mes</span>';
       else {
         const ps = packState(s.id);
         if (!ps) { pendN++; status = `${paidHere}<span class="chip warn">Sin pagos apuntados</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
-        else if (!calSynced()) status = `${paidHere || `<span class="chip ok">✓ Último pago · ${fmtDate(ps.r.paid_on)}</span>`}<button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
+        else if (!calSynced()) status = `${paidHere || paidChip(ps.r)}<button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
         else if (ps.dueNow) { pendN++; status = `${paidHere}<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
-        else status = `${paidHere || `<span class="chip ok">✓ Pagado el ${fmtDate(ps.r.paid_on)}</span>`}<span class="chip">${ps.used} de ${ps.n} clases${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`;
+        else status = `${paidHere || paidChip(ps.r)}<span class="chip">${ps.used} de ${ps.n} clases${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`;
       }
     } else { // por clase
       const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
@@ -7208,17 +7209,18 @@ function planModal(id) {
     </form>`);
   $('.modal').classList.add('narrow');
 }
-function payPackModal(id) { // apuntar un pago mensual (bono de N clases)
-  const pl = planOf(id), day = packSuggestDay(id), today = dayKey(new Date());
-  openModal(`<div class="modal-head"><h2>Pago de ${esc(studentName(id))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <form id="payPackForm" data-id="${id}">
+function payPackModal(id, rec = null) { // apuntar (o, con rec, corregir) un pago mensual (bono de N clases)
+  const pl = planOf(id), day = rec ? rec.paid_on : packSuggestDay(id), today = dayKey(new Date());
+  const n = rec ? packN(rec, pl) : packN(null, pl), amt = rec ? rec.amount : pl && pl.amount;
+  openModal(`<div class="modal-head"><h2>${rec ? 'Editar el pago' : 'Pago'} de ${esc(studentName(id))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <form id="payPackForm" data-id="${id}"${rec ? ` data-rid="${rec.id}"` : ''}>
       <label class="f" style="max-width:220px">Día de la clase en la que te pagó<input type="date" name="day" max="${today}" value="${day}" required></label>
       <p class="sub" style="margin:-6px 0 12px">Esa clase cuenta como la primera del bono. Si ya te había pagado antes de usar la app, pon la fecha de su primera clase pagada.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <label class="f" style="max-width:160px">Clases que cubre<input type="number" name="classes" min="1" max="30" step="1" inputmode="numeric" value="${packN(null, pl)}" required></label>
-        <label class="f" style="max-width:160px">Importe (€)<input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${pl && pl.amount != null ? esc(String(pl.amount)) : ''}"></label>
+        <label class="f" style="max-width:160px">Clases que cubre<input type="number" name="classes" min="1" max="30" step="1" inputmode="numeric" value="${n}" required></label>
+        <label class="f" style="max-width:160px">Importe (€)<input type="number" name="amount" min="0" max="99999" step="0.01" inputmode="decimal" value="${amt != null ? esc(String(amt)) : ''}"></label>
       </div>
-      <div class="actions"><button class="btn" type="submit">Apuntar pago</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
+      <div class="actions"><button class="btn" type="submit">${rec ? 'Guardar' : 'Apuntar pago'}</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
     </form>`);
   $('.modal').classList.add('narrow');
 }
@@ -7285,6 +7287,7 @@ Object.assign(actions, {
   'pay-month'(el) { const n = Number(el.dataset.n); S.payMonth = n === 0 ? monthStart() : shiftMonth(S.payMonth || monthStart(), n); render(); },
   'pay-plan'(el) { planModal(el.dataset.id); },
   'pay-mark'(el) { payPackModal(el.dataset.id); },
+  'pay-edit'(el) { const r = S.payRecords.find(x => x.id === el.dataset.id); if (r) payPackModal(r.student_id, r); },
   'pay-class'(el) { payInsert(el.dataset.id, 'class'); },
   async 'pay-undo'(el) {
     const r = S.payRecords.find(x => x.id === el.dataset.id); if (!r) return;
@@ -7774,10 +7777,11 @@ document.addEventListener('submit', async e => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return toast('Elige la fecha de la clase', 'bad');
     if (!(classes >= 1 && classes <= 30)) return toast('Las clases deben ir de 1 a 30', 'bad');
     if (amount != null && !(amount >= 0 && amount < 100000)) return toast('El importe no es válido', 'bad');
-    const row = { student_id: id, period: day.slice(0, 8) + '01', kind: 'monthly', amount, classes, paid_on: day };
-    const { data, error } = await sb.from('payments_records').insert(row).select();
-    if (error || !data || !data.length) return toast('No se pudo apuntar' + (error ? ': ' + errEs(error) : ''), 'bad');
-    S.payRecords.push(data[0]); await closeModal(); render(); toast('Pago apuntado', 'ok');
+    const row = { period: day.slice(0, 8) + '01', amount, classes, paid_on: day }, rid = f.dataset.rid;
+    const { data, error } = rid ? await sb.from('payments_records').update(row).eq('id', rid).select()
+      : await sb.from('payments_records').insert({ student_id: id, kind: 'monthly', ...row }).select();
+    if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
+    S.payRecords = S.payRecords.filter(r => r.id !== data[0].id).concat(data[0]); await closeModal(); render(); toast(rid ? 'Pago corregido' : 'Pago apuntado', 'ok');
   }
 });
 

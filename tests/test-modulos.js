@@ -141,6 +141,13 @@ const { chromium } = require('playwright');
   ok((await t.locator('.payrow:has-text("Marta") [data-action=pay-mark]').count())===0 && (await t.textContent('.payrow:has-text("Marta")')).includes('Sin pagos este mes'), 'Otros meses solo enseñan lo cobrado (sin avisos)');
   await t.click('[data-action=pay-month][data-n="0"]'); await wait(t,250);
   ok((await t.locator('.payrow:has-text("Marta") .chip.ok').count())===1, 'Volviendo al mes actual, sigue pagado (historial)');
+  await t.click('.payrow:has-text("Marta") [data-action=pay-edit]'); await wait(t,300);
+  ok((await t.textContent('.modal h2')).includes('Editar el pago') && (await t.inputValue('#payPackForm [name=classes]'))==='4', 'El ✎ abre el pago con sus datos');
+  const ayer = await t.evaluate(()=>{ const d=new Date(); d.setDate(1); return dayKey(d); });
+  await t.fill('#payPackForm [name=day]', ayer); await t.fill('#payPackForm [name=classes]','8'); await t.fill('#payPackForm [name=amount]','110'); await t.click('#payPackForm button[type=submit]'); await wait(t,350);
+  recs = await db(t,()=>window.__DB.payments_records);
+  ok(recs.length===1 && recs[0].paid_on===ayer && recs[0].classes===8 && recs[0].amount===110 && recs[0].period===ayer.slice(0,8)+'01', 'Corrige fecha, clases e importe sin duplicar el pago');
+  ok((await t.textContent('.payrow:has-text("Marta")')).includes('8 clases'), 'La fila enseña el pago corregido');
   await t.click('.payrow:has-text("Marta") [data-action=pay-undo]'); await wait(t,300);
   ok((await db(t,()=>window.__DB.payments_records.length))===0, 'Puede desmarcar un pago por error');
   // Cambiar el trato de Luis a "por clase" (25 €) y apuntar 2 clases
