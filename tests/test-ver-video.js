@@ -76,6 +76,24 @@ const path = require('path');
   await s.click('#watchBox [data-watch-close]'); await s.waitForTimeout(100);
   ok(await box(s) === 0, '"Ahora no" lo cierra');
 
+  // "Abrir en una pestaña nueva" no se lo puede saltar: el botón no lleva enlace directo
+  ok(await s.locator('a[data-watch][href]').count() === 0, 'Los botones de un vídeo para ver no llevan enlace directo (sin "Abrir en pestaña nueva")');
+  ok(await s.locator('a[data-watch]').first().getAttribute('data-href') === 'https://open.spotify.com/album/x', 'El enlace va guardado aparte');
+  const pages0 = sc.pages().length;
+  await s.click('.track .playbtn', { button: 'middle' }); await s.waitForTimeout(300);
+  ok(sc.pages().length === pages0, 'La rueda del ratón no abre el vídeo en otra pestaña');
+  await s.click('.track .playbtn', { modifiers: ['Control'] }); await s.waitForTimeout(300);
+  ok(sc.pages().length === pages0 && await box(s) === 1, 'Ctrl+clic no lo abre: sale el aviso');
+  await s.keyboard.press('Escape'); await s.waitForTimeout(100);
+  await s.focus('.track .playbtn'); await s.keyboard.press('Enter'); await s.waitForTimeout(100);
+  ok(await box(s) === 1, 'Con el teclado (Enter) también sale el aviso');
+  ok(await s.locator('#watchBox [data-watch-go]').getAttribute('href') === 'https://open.spotify.com/album/x', '"Entendido, abrir vídeo" lleva el enlace bueno');
+  await s.keyboard.press('Escape'); await s.waitForTimeout(100);
+  // Las escuchas normales siguen siendo enlaces de toda la vida
+  await s.evaluate(() => { S.assigns.forEach(a => { if (a.item_id === 'i1') a.item.watch_video = false; }); render(); }); await s.waitForTimeout(100);
+  ok(await s.locator('.track .playbtn[href]').count() === 1 && await s.locator('a[data-watch]').count() === 0, 'Una escucha normal sigue con su enlace directo');
+  await s.evaluate(() => { S.assigns.forEach(a => { if (a.item_id === 'i1') a.item.watch_video = true; }); render(); }); await s.waitForTimeout(100);
+
   // En la ventana de la escucha
   await s.evaluate(() => studentModal('a1')); await s.waitForTimeout(150);
   ok(await s.locator('.modal .wtag').count() === 1, 'En la ventana sale la etiqueta antes de abrir el enlace');

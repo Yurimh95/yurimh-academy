@@ -721,6 +721,7 @@ label.f>.emo-wrap{margin-top:6px}
 .tdur{flex:none;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
 /* Vídeo para ver: etiqueta y aviso al abrir el enlace */
 .wtag{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;line-height:1.5;color:var(--accent-hi);background:rgba(var(--accent-rgb),.13);border:1px solid rgba(var(--accent-rgb),.35);border-radius:6px;padding:0 7px;white-space:nowrap}
+a[data-watch]{cursor:pointer;-webkit-touch-callout:none}
 .wtag.big{font-size:12.5px;border-radius:999px;padding:2px 10px}
 .watchchk{display:flex;align-items:flex-start;margin:4px 0 12px}
 .watchchk .sub{display:block;font-weight:400;margin-top:2px}
@@ -4475,7 +4476,7 @@ async function fetchDuration(url) {
 const kindIcon = k => `<span class="kicon" title="${esc(KIND[k] || k)}" aria-label="${esc(KIND[k] || k)}">${ic(k in KIND ? k : 'song')}</span>`;
 function playBtn(url, it = null) {
   const sv = linkService(url);
-  return `<a class="playbtn ${sv}" href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer" data-action="noop"${watchAttr(it)} title="${sv === 'sp' ? 'Escuchar en Spotify' : sv === 'yt' ? 'Ver en YouTube' : 'Abrir enlace'}" aria-label="Abrir enlace">${ic('play')}</a>`;
+  return `<a class="playbtn ${sv}" ${linkAttrs(url, it)} data-action="noop" title="${sv === 'sp' ? 'Escuchar en Spotify' : sv === 'yt' ? 'Ver en YouTube' : 'Abrir enlace'}" aria-label="Abrir enlace">${ic('play')}</a>`;
 }
 
 /* ---------- Vídeo para ver (listening_items.watch_video) ----------
@@ -4484,7 +4485,11 @@ function playBtn(url, it = null) {
    "Ver vídeo" de la ventana). Va por encima de la ventana abierta; Atrás, Esc, "Ahora no" o tocar fuera lo cierran.
    También le sale al profesor (lo pidió Yuri el 2026-11-26). */
 const watchTag = (it, big = false) => it && it.watch_video ? `<span class="wtag${big ? ' big' : ''}" title="Vídeo para verlo con atención, no solo escucharlo">🎬 Para ver</span>` : '';
-const watchAttr = it => it && it.watch_video ? ` data-watch="${esc(it.id)}"` : '';
+// Los de "para ver" no llevan href: así el navegador no ofrece "Abrir en una pestaña nueva" (clic derecho, rueda,
+// mantener pulsado) y la única forma de abrirlos es pasando por el aviso. El enlace va en data-href.
+const linkAttrs = (url, it) => it && it.watch_video
+  ? `role="link" tabindex="0" data-watch="${esc(it.id)}" data-href="${esc(safeUrl(url))}"`
+  : `href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer"`;
 function watchClose(fromHistory = false) {
   const b = $('#watchBox'); if (!b) return false;
   b.remove(); popDone(fromHistory);
@@ -4504,7 +4509,7 @@ function watchOpen(a) {
       <li><span>🎧</span><span>Ponte los <b>auriculares</b>.</span></li>
       <li><span>👀</span><span>Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.</span></li>
     </ul>
-    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(a.getAttribute('href') || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>
+    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(a.dataset.href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>
   </div>`;
   document.body.appendChild(box);
   popPush();
@@ -4522,7 +4527,11 @@ document.addEventListener('click', e => {
   e.preventDefault(); e.stopPropagation(); // ni se abre el enlace ni la fila que lo contiene
   watchOpen(a);
 }, true);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#watchBox')) { e.stopImmediatePropagation(); watchClose(); } }, true);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#watchBox')) { e.stopImmediatePropagation(); watchClose(); return; }
+  const a = (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('a[data-watch]'); // sin href, el teclado no lo "pulsa" solo
+  if (a && !$('#watchBox')) { e.preventDefault(); e.stopPropagation(); watchOpen(a); }
+}, true);
 const answersMeter = n => `<span class="meter" title="${n}/6 respuestas"><i style="width:${Math.round(n / 6 * 100)}%"></i></span><span class="meter-n">${n}/6</span>`;
 
 /* Escucha analítica del alumno: como el catálogo del profesor, pero con lo suyo. Pestañas Pendientes / Escuchados / Todos,
@@ -4612,7 +4621,7 @@ function studentModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="chips" style="margin-bottom:6px">${watchTag(it, true)}<span class="chip ${d.cls}">${esc(d.text)}</span></div>
-    <div class="actions" style="margin:10px 0"><a class="btn" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer"${watchAttr(it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a></div>
+    <div class="actions" style="margin:10px 0"><a class="btn" ${linkAttrs(it.url, it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a></div>
     <div style="margin:0 0 6px">${rxBar('listening_item', it.id)}</div>
     ${it.brief ? `<div class="callout"><b>Consigna</b>${esc(it.brief)}</div>` : ''}
     ${a.note ? `<div class="callout"><b>Nota para ti</b>${esc(a.note)}</div>` : ''}
@@ -5248,7 +5257,7 @@ function itemModal(id) {
     </div>
     ${it.watch_video ? `<div class="chips" style="margin:0 0 8px">${watchTag(it, true)}</div>` : ''}
     <div class="actions" style="margin:0 0 6px">
-      <a class="btn sm" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener noreferrer"${watchAttr(it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a>
+      <a class="btn sm" ${linkAttrs(it.url, it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a>
       <button class="btn sm violet" data-action="edit-item" data-id="${it.id}">Editar</button>
       <button class="btn sm danger" data-action="delete-item" data-id="${it.id}">Eliminar</button>
     </div>
