@@ -2283,6 +2283,9 @@ create index if not exists listening_items_folder_idx on public.listening_items 
 -- La app les pone la etiqueta "🎬 Para ver" y avisa al alumno al abrir el enlace. Solo lo cambia el profesor
 -- (listening_items_teacher_all; el alumno solo lee).
 alter table public.listening_items add column if not exists watch_video boolean not null default false;
+-- Escuchar del tirón (2026-11-27): álbumes conceptuales cuyos temas enlazan entre sí. Etiqueta "💿 Del tirón" y aviso
+-- al abrir el enlace: entero, en orden, sin anuncios ni fundido entre canciones. Igual que watch_video, solo el profesor.
+alter table public.listening_items add column if not exists play_through boolean not null default false;
 
 -- Solo dos niveles: un subgénero no puede tener subgéneros, ni colgar de sí mismo
 create or replace function public.listening_genres_guard()
@@ -3303,3 +3306,195 @@ alter table public.notifications add constraint notifications_kind_check
                   'mention_feed', 'mention_board', 'mention_listening', 'lesson',
                   'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
                   'story_reaction', 'video_quota', 'mention_story', 'reply_feed', 'reply_listening'));
+
+-- =====================================================================
+-- Deberes ligados a un objetivo y racha de escuchas (2026-11-27)
+--   · homework_tasks.goal_id: el objetivo al que acerca ese deber (opcional).
+--     Lo pone el profesor; al marcarlo como practicado, el alumno ve
+--     "Esto te acerca a…". Solo un objetivo de la lista general o uno
+--     personal de ese mismo alumno.
+--   · listening_assignments.completed_at: cuándo quedó TERMINADA (escuchada
+--     y con las 6 respuestas). La pone la base de datos la primera vez y no
+--     cambia nunca (así no se puede desmarcar y volver a marcar para sumar).
+--   · Racha (días seguidos, hora de Madrid): un día con alguna escucha
+--     terminada suma 1. Un día que acaba con escuchas pendientes y ninguna
+--     terminada la rompe. Un día sin nada pendiente no la toca. Una escucha
+--     cuenta como pendiente desde el día siguiente a asignarla. Hoy nunca
+--     rompe (aún no ha acabado).
+--   · listening_streak_awards: hitos conseguidos (insignias). Privadas: el
+--     alumno ve las suyas y el profesor las de todos. Las crea un trigger.
+-- =====================================================================
+alter table public.homework_tasks add column if not exists goal_id uuid references public.goals_items(id) on delete set null;
+create index if not exists homework_tasks_goal_idx on public.homework_tasks (goal_id) where goal_id is not null;
+
+create or replace function public.homework_tasks_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and auth.uid() is not null and not public.is_teacher() then
+    if new.id is distinct from old.id or new.student_id is distinct from old.student_id
+    or new.title is distinct from old.title or new.details is distinct from old.details
+    or new.due_date is distinct from old.due_date or new.created_by is distinct from old.created_by
+    or new.created_at is distinct from old.created_at or new.goal_id is distinct from old.goal_id then
+      raise exception 'Solo puedes marcar tus deberes como practicados';
+    end if;
+  end if;
+  if new.goal_id is not null and (tg_op = 'INSERT' or new.goal_id is distinct from old.goal_id or new.student_id is distinct from old.student_id)
+     and not exists (select 1 from public.goals_items g where g.id = new.goal_id
+                     and (g.student_id is null or g.student_id = new.student_id)) then
+    raise exception 'Ese objetivo no es de este alumno';
+  end if;
+  new.title = trim(new.title);
+  new.details = nullif(trim(coalesce(new.details, '')), '');
+  return new;
+end;
+$$;
+revoke execute on function public.homework_tasks_guard() from public, anon, authenticated;
+
+alter table public.listening_assignments add column if not exists completed_at timestamptz;
+create index if not exists listening_assignments_completed_idx on public.listening_assignments (student_id, completed_at);
+
+create or replace function public.listening_answers_full(a jsonb)
+returns boolean language sql immutable set search_path = public as $$
+  select coalesce(bool_and(length(trim(coalesce(a ->> k, ''))) > 0), false)
+  from unnest(array['highlights', 'likes', 'dislikes', 'learned', 'would_use', 'would_never_use']) k;
+$$;
+
+-- Las escuchas que ya estaban terminadas antes de existir la columna
+update public.listening_assignments
+   set completed_at = coalesce(listened_at, updated_at)
+ where completed_at is null and listened and public.listening_answers_full(answers);
+
+create or replace function public.listening_assignments_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_teacher() then
+    if new.item_id     is distinct from old.item_id
+    or new.student_id  is distinct from old.student_id
+    or new.note        is distinct from old.note
+    or new.due_date    is distinct from old.due_date
+    or new.assigned_at is distinct from old.assigned_at then
+      raise exception 'Solo el profesor puede modificar esos campos';
+    end if;
+    -- "Leído" solo lo pone el profesor; si el alumno cambia sus respuestas, deja de estar leído
+    new.teacher_read_at := case when new.answers is distinct from old.answers then null else old.teacher_read_at end;
+  end if;
+  -- updated_at solo cambia cuando el ALUMNO toca su progreso (respuestas o check),
+  -- no cuando el profesor edita fecha o nota. Así "respuestas recientes" es fiable.
+  if new.answers is distinct from old.answers or new.listened is distinct from old.listened then
+    new.updated_at = now();
+  end if;
+  -- Terminada (para la racha): la primera vez que está escuchada y con las 6 respuestas. Nadie la cambia a mano.
+  new.completed_at := case when old.completed_at is not null then old.completed_at
+                           when new.listened and public.listening_answers_full(new.answers) then now()
+                           else null end;
+  return new;
+end;
+$$;
+
+-- Racha de un alumno. Invoker: el alumno solo puede calcular la suya y el profesor la de cualquiera (RLS).
+create or replace function public.listening_streak(p_student uuid)
+returns table (current_days integer, best_days integer, today_done boolean, at_risk boolean)
+language plpgsql stable set search_path = public as $$
+declare
+  tz constant text := 'Europe/Madrid';
+  today date := (now() at time zone tz)::date;
+  first_day date; d date; act boolean := false; cur integer := 0; bst integer := 0;
+begin
+  select min((assigned_at at time zone tz)::date) into first_day
+    from public.listening_assignments where student_id = p_student;
+  if first_day is null then
+    return query select 0, 0, false, false; return;
+  end if;
+  for d in select g::date from generate_series(first_day, today, interval '1 day') g loop
+    act := exists (select 1 from public.listening_assignments
+                   where student_id = p_student and completed_at is not null
+                     and (completed_at at time zone tz)::date = d);
+    if act then
+      cur := cur + 1; bst := greatest(bst, cur);
+    elsif d < today and exists (select 1 from public.listening_assignments
+                                where student_id = p_student
+                                  and (assigned_at at time zone tz)::date < d
+                                  and (completed_at is null or (completed_at at time zone tz)::date >= d)) then
+      cur := 0;
+    end if;
+  end loop;
+  return query select cur, bst, act,
+    (not act and exists (select 1 from public.listening_assignments
+                         where student_id = p_student and completed_at is null
+                           and (assigned_at at time zone tz)::date < today));
+end;
+$$;
+revoke execute on function public.listening_streak(uuid) from public, anon;
+grant execute on function public.listening_streak(uuid) to authenticated;
+
+create table if not exists public.listening_streak_awards (
+  student_id  uuid not null references public.profiles(id) on delete cascade,
+  days        integer not null check (days in (3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365)),
+  reached_at  timestamptz not null default now(),
+  seen_at     timestamptz,
+  primary key (student_id, days)
+);
+grant select, update on public.listening_streak_awards to authenticated;
+revoke all on public.listening_streak_awards from anon;
+alter table public.listening_streak_awards enable row level security;
+drop policy if exists listening_streak_awards_select on public.listening_streak_awards;
+create policy listening_streak_awards_select on public.listening_streak_awards for select to authenticated
+  using (public.is_teacher() or (student_id = (select auth.uid()) and public.is_approved()));
+drop policy if exists listening_streak_awards_update_seen on public.listening_streak_awards;
+create policy listening_streak_awards_update_seen on public.listening_streak_awards for update to authenticated
+  using (student_id = (select auth.uid()) and public.is_approved()) with check (student_id = (select auth.uid()));
+
+-- El alumno solo marca seen_at (ya vio la celebración)
+create or replace function public.listening_streak_awards_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.student_id is distinct from old.student_id or new.days is distinct from old.days
+  or new.reached_at is distinct from old.reached_at then
+    raise exception 'Solo se puede marcar como vista';
+  end if;
+  return new;
+end;
+$$;
+create or replace trigger listening_streak_awards_guard_trg before update on public.listening_streak_awards
+  for each row execute function public.listening_streak_awards_guard();
+
+-- Al terminar una escucha: hitos nuevos y aviso al profesor (solo el hito más alto de esa vez)
+create or replace function public.listening_streak_award()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare cur integer; top integer;
+begin
+  select s.current_days into cur from public.listening_streak(new.student_id) s;
+  with ins as (
+    insert into public.listening_streak_awards (student_id, days)
+    select new.student_id, m from unnest(array[3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365]) m
+    where m <= coalesce(cur, 0)
+    on conflict do nothing
+    returning days
+  ) select max(days) into top from ins;
+  if top is not null then
+    begin -- un fallo del aviso nunca debe impedir que el alumno guarde su escucha
+      insert into public.notifications (user_id, kind, actor_id, target_id, extra)
+      select p.id, 'streak', new.student_id, new.student_id, top::text
+      from public.profiles p where p.role = 'teacher' and p.approved;
+    exception when others then
+      raise warning 'listening_streak_award: %', sqlerrm;
+    end;
+  end if;
+  return null;
+end;
+$$;
+create or replace trigger listening_streak_award_trg after update on public.listening_assignments
+  for each row when (old.completed_at is null and new.completed_at is not null)
+  execute function public.listening_streak_award();
+revoke execute on function public.listening_streak_awards_guard(), public.listening_streak_award()
+  from public, anon, authenticated;
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
+                  'story_reaction', 'video_quota', 'mention_story', 'reply_feed', 'reply_listening', 'streak'));

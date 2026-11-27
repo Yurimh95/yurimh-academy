@@ -246,6 +246,22 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .cev.unk em{color:var(--warn)}
 .cev.past{opacity:.55}
 .cal-now{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:1}
+.cal-dues{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.cal-dues .cal-tz{padding:6px 0;align-items:center;text-align:center;line-height:1.15}
+.cal-dd{border-left:1px solid var(--line);padding:4px 3px;display:flex;flex-direction:column;gap:3px;min-height:30px}
+.cal-dd.today{background-color:rgba(var(--accent-rgb),.04)}
+.cal-due{all:unset;box-sizing:border-box;cursor:pointer;font-size:11.5px;line-height:1.25;padding:3px 6px;border-radius:7px;background:rgba(var(--accent-rgb),.12);color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.cal-due.ls{background:rgba(var(--violet-rgb),.16)}
+.cal-due.bad{background:rgba(var(--bad-rgb),.16);color:var(--bad)}
+.cal-due:hover,.cal-due:focus-visible{outline:1px solid var(--accent)}
+.chip.goalchip{background:rgba(var(--ok-rgb),.14);color:var(--ok);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hwgoal-t{display:flex;flex-direction:column;gap:2px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:rgba(var(--ok-rgb),.12)}
+.hwgoal-t b{color:var(--strong);font-size:16px}
+.adue-list{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
+.adue-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.adue-row:hover,.adue-row:focus-visible{border-color:var(--accent)}
+.adue-row .t{display:flex;flex-direction:column;min-width:0}
+.adue-row .t b{font-weight:600;color:var(--strong)}
 .cal-now::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--bad)}
 /* ---- Pagos ---- */
 .monthnav{display:flex;align-items:center;gap:10px;margin:0 0 16px}
@@ -4562,10 +4578,15 @@ function playBtn(url, it = null) {
    "🎬 Para ver" en la lista y en su ventana, y al alumno le sale este aviso cada vez que abre el enlace (▶ de la lista o
    "Ver vídeo" de la ventana). Va por encima de la ventana abierta; Atrás, Esc, "Ahora no" o tocar fuera lo cierran.
    También le sale al profesor (lo pidió Yuri el 2026-11-26). */
-const watchTag = (it, big = false) => it && it.watch_video ? `<span class="wtag${big ? ' big' : ''}" title="Vídeo para verlo con atención, no solo escucharlo">🎬 Para ver</span>` : '';
+const watchTag = (it, big = false) => !it ? '' :
+  (it.watch_video ? `<span class="wtag${big ? ' big' : ''}" title="Vídeo para verlo con atención, no solo escucharlo">🎬 Para ver</span>` : '') +
+  (it.play_through ? `<span class="wtag${big ? ' big' : ''}" title="Álbum conceptual: se escucha entero, en orden y sin interrupciones">💿 Del tirón</span>` : '');
+const hasNotice = it => !!(it && (it.watch_video || it.play_through));
+// Texto del botón grande de la ventana de la escucha
+const openLabel = it => it && it.watch_video ? 'Ver vídeo ↗' : it && it.play_through ? 'Escuchar del tirón ↗' : 'Abrir enlace ↗';
 // Los de "para ver" no llevan href: así el navegador no ofrece "Abrir en una pestaña nueva" (clic derecho, rueda,
 // mantener pulsado) y la única forma de abrirlos es pasando por el aviso. El enlace va en data-href.
-const linkAttrs = (url, it) => it && it.watch_video
+const linkAttrs = (url, it) => hasNotice(it)
   ? `role="link" tabindex="0" data-watch="${esc(it.id)}" data-href="${esc(safeUrl(url))}"`
   : `href="${esc(safeUrl(url))}" target="_blank" rel="noopener noreferrer"`;
 function watchClose(fromHistory = false) {
@@ -4573,22 +4594,43 @@ function watchClose(fromHistory = false) {
   b.remove(); popDone(fromHistory);
   return true;
 }
+/* "Escuchar del tirón" (listening_items.play_through, 2026-11-27): álbumes conceptuales en los que un tema enlaza con el
+   siguiente. Mismo mecanismo que "Para ver" (sin href, aviso cada vez, también al profesor). Si una escucha tiene las
+   dos marcas, sale el aviso del vídeo con el punto de escucharlo entero añadido. */
+function watchBody(it, href) {
+  const vid = !it || it.watch_video, thru = it && it.play_through;
+  const li = (e, t) => `<li><span>${e}</span><span>${t}</span></li>`;
+  const dur = it && it.duration_sec ? fmtSecs(Number(it.duration_sec)) + (it.duration_partial ? '+' : '') : '';
+  const whole = `Busca un rato para escucharlo <b>entero y sin pausas</b>${dur ? ` (dura ${esc(dur)})` : ''}, en orden y sin aleatorio.`;
+  const items = vid ? [
+    li('📺', 'Pon la <b>calidad al máximo</b>, 4K si tu pantalla y tu conexión lo permiten (en YouTube, la rueda ⚙ → Calidad).'),
+    li('🎧', 'Ponte los <b>auriculares</b>.'),
+    li('👀', 'Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.'),
+    ...(thru ? [li('⏱️', whole)] : [])
+  ] : [
+    li('⏱️', whole),
+    li('🚫', '<b>Sin anuncios ni interrupciones</b>: un corte entre dos temas rompe la transición. Silencia las notificaciones del móvil.'),
+    li('🔀', 'Si tienes activado el <b>fundido entre canciones</b> (crossfade o Automix en Spotify), quítalo: las transiciones ya vienen hechas en el disco.'),
+    li('🎧', 'Ponte los <b>auriculares</b>.')
+  ];
+  return vid ? `
+    <h3 id="watchT">🎬 Este vídeo es para verlo</h3>
+    ${it ? `<div class="wb-title">${esc(it.title)}</div>` : ''}
+    <p>No es para ponerlo de fondo: aquí la imagen cuenta tanto como el sonido. Antes de darle al play:</p>
+    <ul>${items.join('')}</ul>
+    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>` : `
+    <h3 id="watchT">💿 Este álbum se escucha del tirón</h3>
+    <div class="wb-title">${esc(it.title)}</div>
+    <p>Es un álbum conceptual: cada tema enlaza con el siguiente y tiene sentido escuchado de principio a fin. Antes de darle al play:</p>
+    <ul>${items.join('')}</ul>
+    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir álbum</a></div>`;
+}
 function watchOpen(a) {
   if ($('#watchBox')) return;
   const id = a.dataset.watch;
   const it = ((S.assigns || []).find(x => x.item_id === id) || {}).item || (S.items || []).find(x => x.id === id);
   const box = document.createElement('div'); box.id = 'watchBox'; box.className = 'watchbox';
-  box.innerHTML = `<div class="wb" role="dialog" aria-modal="true" aria-labelledby="watchT">
-    <h3 id="watchT">🎬 Este vídeo es para verlo</h3>
-    ${it ? `<div class="wb-title">${esc(it.title)}</div>` : ''}
-    <p>No es para ponerlo de fondo: aquí la imagen cuenta tanto como el sonido. Antes de darle al play:</p>
-    <ul>
-      <li><span>📺</span><span>Pon la <b>calidad al máximo</b>, 4K si tu pantalla y tu conexión lo permiten (en YouTube, la rueda ⚙ → Calidad).</span></li>
-      <li><span>🎧</span><span>Ponte los <b>auriculares</b>.</span></li>
-      <li><span>👀</span><span>Dale <b>toda tu atención</b>: nada de verlo mientras haces otra cosa.</span></li>
-    </ul>
-    <div class="actions"><button type="button" class="btn ghost" data-watch-close>Ahora no</button><a class="btn primary" href="${esc(a.dataset.href || '#')}" target="_blank" rel="noopener noreferrer" data-watch-go>Entendido, abrir vídeo</a></div>
-  </div>`;
+  box.innerHTML = `<div class="wb" role="dialog" aria-modal="true" aria-labelledby="watchT">${watchBody(it, a.dataset.href)}</div>`;
   document.body.appendChild(box);
   popPush();
   const go = $('[data-watch-go]', box); if (go) go.focus();
@@ -4699,7 +4741,7 @@ function studentModal(id) {
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="chips" style="margin-bottom:6px">${watchTag(it, true)}<span class="chip ${d.cls}">${esc(d.text)}</span></div>
-    <div class="actions" style="margin:10px 0"><a class="btn" ${linkAttrs(it.url, it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a></div>
+    <div class="actions" style="margin:10px 0"><a class="btn" ${linkAttrs(it.url, it)}>${openLabel(it)}</a></div>
     <div style="margin:0 0 6px">${rxBar('listening_item', it.id)}</div>
     ${it.brief ? `<div class="callout"><b>Consigna</b>${esc(it.brief)}</div>` : ''}
     ${a.note ? `<div class="callout"><b>Nota para ti</b>${esc(a.note)}</div>` : ''}
@@ -5254,6 +5296,7 @@ function itemFormModal(id) {
       <div class="f">Géneros <span class="sub">(los que quieras; se eligen de la lista de "Géneros")</span>${genrePicker(it ? it.id : null)}</div>
       <label class="f">Consigna general (opcional, la ven todos los alumnos que lo tengan asignado)<textarea name="brief" maxlength="2000">${esc(it ? it.brief || '' : '')}</textarea></label>
       <label class="chk watchchk"><input type="checkbox" name="watch_video" ${it && it.watch_video ? 'checked' : ''}> <span>🎬 <b>Vídeo para ver</b>, no solo escuchar<span class="sub">Lleva la etiqueta "Para ver" y, al abrir el enlace, el alumno ve un aviso: calidad al máximo, auriculares y atención total.</span></span></label>
+      <label class="chk watchchk"><input type="checkbox" name="play_through" ${it && it.play_through ? 'checked' : ''}> <span>💿 <b>Escuchar del tirón</b> (álbum conceptual)<span class="sub">Lleva la etiqueta "Del tirón" y, al abrir el enlace, el alumno ve un aviso: entero y en orden, sin anuncios, sin interrupciones y sin fundido entre canciones.</span></span></label>
       <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" ${it && itemReturn ? `data-action="open-item" data-keep="1" data-id="${it.id}"` : 'data-action="close"'}>Cancelar</button></div>
     </form>`);
 }
@@ -5333,9 +5376,9 @@ function itemModal(id) {
       <div class="mhead-cover">${coverHtml(it, 84)}<div><span class="badge">${kindIcon(it.kind)} ${esc(KIND[it.kind] || it.kind)}${durText(it) ? ` · ${esc(durText(it))}` : ''}</span><h2>${esc(it.title)}</h2>${itemMetaHtml(it)}</div></div>
       <button class="x" data-action="close" aria-label="Cerrar">×</button>
     </div>
-    ${it.watch_video ? `<div class="chips" style="margin:0 0 8px">${watchTag(it, true)}</div>` : ''}
+    ${hasNotice(it) ? `<div class="chips" style="margin:0 0 8px">${watchTag(it, true)}</div>` : ''}
     <div class="actions" style="margin:0 0 6px">
-      <a class="btn sm" ${linkAttrs(it.url, it)}>${it.watch_video ? 'Ver vídeo ↗' : 'Abrir enlace ↗'}</a>
+      <a class="btn sm" ${linkAttrs(it.url, it)}>${openLabel(it)}</a>
       <button class="btn sm violet" data-action="edit-item" data-id="${it.id}">Editar</button>
       <button class="btn sm danger" data-action="delete-item" data-id="${it.id}">Eliminar</button>
     </div>
@@ -6427,6 +6470,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'modStu') { const m = modState(); m.stu = e.target.value; m.lim = MOD_PAGE; modRevRefresh(); }
   if (e.target.matches('[data-sl]')) { slState()[e.target.dataset.sl] = e.target.value; slRefresh(); }
   if (e.target.matches('[data-lib-rename]')) libRename(e.target);
+  if (e.target.matches('#hwForm input[name=pick]')) hwGoalRefresh();
   if (e.target.matches('#hwCopyForm [name=due_date]') && e.target.value) { const r = $('#hwCopyForm input[name=due][value=new]'); if (r) r.checked = true; } // elegir fecha marca "Otra"
   if (e.target.name === 'audience') { const b = $('#pickBox'); if (b) b.hidden = e.target.value !== 'selected'; }
   if (e.target.id === 'familyDm') setFamilyDm(e.target.dataset.id, e.target.checked);
@@ -6603,7 +6647,7 @@ document.addEventListener('submit', async e => {
     btn.disabled = false; btn.textContent = 'Guardar';
     const title = f.title.value.trim() || meta.title; // vacío → el título de Spotify/YouTube
     if (!title) return toast('No he podido sacar el título de ese enlace. Escríbelo tú', 'bad');
-    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null, folder_id: f.folder.value || null, watch_video: f.watch_video.checked };
+    const row = { title, url, kind: f.kind.value, brief: f.brief.value.trim() || null, folder_id: f.folder.value || null, watch_video: f.watch_video.checked, play_through: f.play_through.checked };
     const genreIds = $$('input[name=genre]:checked', f).map(x => x.value);
     if (!prev || prev.url !== url || !prev.thumb_url) row.thumb_url = meta.thumb; // portada de Spotify/YouTube
     // Duración: lo escrito a mano manda; si está vacío, se saca de Spotify/YouTube
@@ -6671,13 +6715,43 @@ const hwOverdue = h => !h.done_at && h.due_date && daysDiff(h.due_date) < 0;
 let hwReturn = null; // id del alumno cuya ficha estaba abierta al pulsar "+ Añadir" o "Editar" (para volver a ella)
 const hwFromCard = el => { const m = el.closest('.modal'); return m && m.querySelector('[data-sdm-hw]') ? m.querySelector('[data-sdm-hw]').dataset.sdmHw : null; };
 function hwAfterChange(studentId) { render(); if (studentId && $('[data-sdm-hw]')) studentDetailModal(studentId); }
+// Objetivo al que acerca un deber (lo elige el profesor). El alumno lo ve en la tarea y, al marcarla, un mensaje.
+const hwGoal = h => h.goal_id ? S.goalItems.find(g => g.id === h.goal_id) || null : null;
+const goalWhere = g => g.student_id ? 'Objetivo personal' : `Etapa ${g.stage}${stageTitle(g.stage) ? ' · ' + stageTitle(g.stage) : ''}`;
+function hwGoalOptions(sids, sel) {
+  const one = sids.length === 1 ? sids[0] : null;
+  const opt = g => `<option value="${g.id}" ${g.id === sel ? 'selected' : ''}>${esc(g.title)}${one && goalDoneRow(g.id, one) ? ' (ya conseguido)' : ''}</option>`;
+  const pers = one ? S.goalItems.filter(g => g.student_id === one).sort(goalSort) : [];
+  let h = '<option value="">Ninguno</option>';
+  if (pers.length) h += `<optgroup label="${esc('Personales de ' + studentName(one))}">${pers.map(opt).join('')}</optgroup>`;
+  stageNums().forEach(n => { const it = S.goalItems.filter(g => !g.student_id && g.stage === n).sort(goalSort);
+    if (it.length) h += `<optgroup label="${esc(`Etapa ${n}${stageTitle(n) ? ' · ' + stageTitle(n) : ''}`)}">${it.map(opt).join('')}</optgroup>`; });
+  return h;
+}
+function hwGoalRefresh() { // al cambiar los alumnos marcados: los objetivos personales solo salen con uno
+  const sel = $('#hwForm select[name=goal_id]'); if (!sel || $('#hwForm').dataset.id) return;
+  const sids = $$('#hwForm input[name=pick]:checked').map(x => x.value), v = sel.value;
+  sel.innerHTML = hwGoalOptions(sids, v);
+  if (sel.value !== v) sel.value = '';
+}
+function hwGoalCelebrate(h) {
+  const g = hwGoal(h); if (!g) return;
+  const done = goalDoneRow(g.id, S.user.id);
+  openModal(`<div class="celebrate"><div class="trophy">🎯</div>
+      <h2>¡Bien hecho!</h2>
+      <p style="margin:0 0 6px">Lo que acabas de practicar te acerca a tu objetivo:</p>
+      <p class="hwgoal-t"><b>${esc(g.title)}</b><span class="sub">${esc(goalWhere(g))}</span></p>
+      ${done ? '<p class="sub" style="margin:0 0 10px">Ya lo conseguiste: así lo afianzas.</p>' : ''}
+      <div class="actions" style="justify-content:center"><button class="btn" data-action="hw-goal-see">Ver mis objetivos</button><button class="btn primary" data-action="close">¡Seguimos! 🤘</button></div></div>`);
+  $('.modal').classList.add('narrow');
+}
 function hwRow(h, teacher) {
-  const d = hwDue(h);
+  const d = hwDue(h), g = hwGoal(h);
   return `<div class="hw ${h.done_at ? 'done' : ''}" data-hw="${h.id}">
     <button class="hwcheck" data-action="hw-toggle" data-id="${h.id}" aria-pressed="${!!h.done_at}" title="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}" aria-label="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}">${ic('check')}</button>
     <div class="hwbody"><div class="hwtitle">${esc(h.title)}</div>
       ${h.details ? `<div class="hwdet">${linkify(h.details)}</div>` : ''}
-      <div class="hwmeta">${d ? `<span class="chip ${d.cls}">${esc(d.text)}</span>` : ''}
+      <div class="hwmeta">${g ? `<span class="chip goalchip" title="${esc(goalWhere(g))}">🎯 ${esc(g.title)}</span>` : ''}${d ? `<span class="chip ${d.cls}">${esc(d.text)}</span>` : ''}
         ${h.done_at ? `<span class="chip ok">Practicada · ${timeAgo(h.done_at)}</span>` : ''}
         ${teacher ? '' : `<span class="sub">${timeAgo(h.created_at)}</span>`}</div></div>
     ${teacher ? `<div class="hwtools"><button class="iconbtn sm" data-action="hw-copy" data-id="${h.id}" title="Copiar a otros alumnos" aria-label="Copiar a otros alumnos">${ic('copy')}</button>
@@ -6725,6 +6799,8 @@ function hwFormModal(id, forStudent) {
       <label class="f">Qué tiene que practicar<input type="text" name="title" required maxlength="200" value="${esc(h ? h.title : '')}" placeholder="Ej.: Escala pentatónica de La en las 5 posiciones"></label>
       <label class="f">Detalles (opcional)<textarea name="details" maxlength="1500" rows="4" placeholder="Tempo, compases, cómo practicarlo, enlaces…">${esc(h ? h.details || '' : '')}</textarea></label>
       <label class="f" style="max-width:220px">Fecha límite (opcional)<input type="date" name="due_date" value="${esc(h ? h.due_date || '' : '')}"></label>
+      ${S.goalItems.length ? `<label class="f">Le acerca al objetivo (opcional)<select name="goal_id">${hwGoalOptions(h ? [h.student_id] : forStudent ? [forStudent] : [], h ? h.goal_id : null)}</select>
+        <span class="sub" style="font-weight:400">Al marcarlo como practicado, le saldrá un mensaje diciéndole que le acerca a ese objetivo.${h ? '' : ' Los objetivos personales salen si marcas un solo alumno.'}</span></label>` : ''}
       <div class="actions"><button class="btn" type="submit">${h ? 'Guardar cambios' : 'Poner deberes'}</button><button class="btn ghost" type="button" data-action="hw-cancel">Cancelar</button></div>
     </form>`);
   $('.modal').classList.add('narrow');
@@ -6799,6 +6875,35 @@ function agendaView() {
     ${agendaGrid(days, list)}
     ${list.length ? '' : '<p class="sub" style="margin-top:10px">No hay clases esta semana.</p>'}`;
 }
+// Fechas límite de la semana (deberes y escuchas sin hacer), en una fila encima de la rejilla, como los
+// eventos de "todo el día" de Google Calendar. Iguales por título se agrupan ("Escala de La · 3 alumnos").
+const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function agendaDues(key) {
+  const ok = new Set(S.students.filter(s => s.approved).map(s => s.id));
+  const itemTitle = a => (S.items.find(i => i.id === a.item_id) || {}).title || 'Escucha';
+  return {
+    hw: S.homework.filter(h => !h.done_at && h.due_date === key && ok.has(h.student_id)).map(h => ({ sid: h.student_id, title: h.title })),
+    ls: S.assigns.filter(a => !a.listened && a.due_date === key && ok.has(a.student_id)).map(a => ({ sid: a.student_id, title: itemTitle(a) }))
+  };
+}
+function agendaDueCell(d) {
+  const key = dayKey(d), du = agendaDues(key), late = key < dayKey(new Date());
+  const groups = (list, type) => { const m = new Map(); list.forEach(x => { if (!m.has(x.title)) m.set(x.title, []); m.get(x.title).push(x.sid); });
+    return [...m].map(([title, sids]) => `<button class="cal-due ${type} ${late ? 'bad' : ''}" data-action="agenda-day" data-d="${key}"
+      title="${esc(`${type === 'hw' ? 'Deberes' : 'Escucha'}: ${title} · ${sids.map(studentName).join(', ')}${late ? ' (vencido)' : ''}`)}">${type === 'hw' ? '📝' : '🎧'} ${esc(sids.length > 1 ? `${title} · ${sids.length} alumnos` : `${studentName(sids[0])} · ${title}`)}</button>`); };
+  return `<div class="cal-dd ${d.toDateString() === new Date().toDateString() ? 'today' : ''}">${groups(du.hw, 'hw').concat(groups(du.ls, 'ls')).join('')}</div>`;
+}
+function agendaDayModal(key) {
+  const du = agendaDues(key), late = key < dayKey(new Date());
+  const row = (x, icon) => `<button class="adue-row" data-action="open-student" data-id="${x.sid}">${avatarHtml(x.sid, 30)}<span class="t"><b>${esc(studentName(x.sid))}</b><span class="sub">${icon} ${esc(x.title)}</span></span></button>`;
+  const by = (a, b) => studentName(a.sid).localeCompare(studentName(b.sid), 'es');
+  openModal(`<div class="modal-head"><h2>Para el ${esc(dayLabel(key + 'T12:00:00'))}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    ${late ? '<p class="sub" style="margin:0 0 12px;color:var(--bad)">Fecha pasada: siguen sin hacer.</p>' : ''}
+    ${du.hw.length ? `<h3 class="h2" style="margin:0 0 8px">📝 ${esc(MODULE_HOMEWORK)}</h3><div class="adue-list">${du.hw.sort(by).map(x => row(x, '📝')).join('')}</div>` : ''}
+    ${du.ls.length ? `<h3 class="h2" style="margin:0 0 8px">🎧 ${esc(MODULE_LISTENING)}</h3><div class="adue-list">${du.ls.sort(by).map(x => row(x, '🎧')).join('')}</div>` : ''}
+    ${!du.hw.length && !du.ls.length ? '<p class="sub">Ya no queda nada pendiente para ese día.</p>' : ''}`);
+  $('.modal').classList.add('narrow');
+}
 // Semana en rejilla, como Google Calendar: días en columnas, horas en filas, cada clase un bloque de su duración
 const WD3 = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 function agendaGrid(days, list) {
@@ -6841,6 +6946,7 @@ function agendaGrid(days, list) {
   return `<div class="cal" style="--hh:${H}px"><div class="cal-in">
     <div class="cal-head"><div class="cal-tz">${esc(Intl.DateTimeFormat().resolvedOptions().timeZone === 'Europe/Madrid' ? 'Madrid' : '')}</div>
       ${days.map(d => `<div class="cal-dh ${d.toDateString() === today ? 'today' : ''}"><span>${WD3[d.getDay()]}</span><b>${d.getDate()}</b></div>`).join('')}</div>
+    ${days.some(d => { const du = agendaDues(dayKey(d)); return du.hw.length || du.ls.length; }) ? `<div class="cal-dues"><div class="cal-tz">Fecha<br>límite</div>${days.map(agendaDueCell).join('')}</div>` : ''}
     <div class="cal-body" style="height:${hours.length * H}px">
       <div class="cal-hours">${hours.map(h => `<div class="cal-hr" style="height:${H}px"><span>${pad(h)}:00</span></div>`).join('')}</div>
       ${days.map(dayCol).join('')}
@@ -7040,6 +7146,7 @@ Object.assign(actions, {
     } catch (e) { toast('No se pudo sincronizar: ' + errEs(e), 'bad'); }
     render();
   },
+  'agenda-day'(el) { agendaDayModal(el.dataset.d); },
   'agenda-week'(el) { const n = Number(el.dataset.n), ws = S.agendaWeek ? new Date(S.agendaWeek) : weekStart(); if (n === 0) S.agendaWeek = null; else { ws.setDate(ws.getDate() + 7 * n); S.agendaWeek = ws.toISOString(); } render(); },
   async 'cal-name'(el) {
     const id = el.dataset.id, v = ($('#calNameInput') || {}).value; const name = (v || '').trim() || null;
@@ -7055,6 +7162,7 @@ Object.assign(actions, {
   'hw-copy'(el) { const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return; hwReturn = hwFromCard(el); hwCopyModal(h.student_id, h.id); },
   'hw-copy-all'(el) { hwReturn = hwFromCard(el); hwCopyModal(el.dataset.id); },
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
+  'hw-goal-see'() { closeModal(); S.section = 'profile'; render(); const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   'hw-all'() { const boxes = $$('#hwForm input[name=pick], #hwCopyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
@@ -7062,8 +7170,8 @@ Object.assign(actions, {
     const { data, error } = await sb.from('homework_tasks').update({ done_at: val }).eq('id', h.id).select();
     if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
     h.done_at = data[0].done_at;
-    if (val && !isTeacher()) toast('¡Bien! Marcada como practicada', 'ok');
     hwAfterChange(hwFromCard(el));
+    if (val && !isTeacher()) { if (hwGoal(h)) hwGoalCelebrate(h); else toast('¡Bien! Marcada como practicada', 'ok'); }
   },
   async 'hw-delete'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
@@ -7360,9 +7468,10 @@ document.addEventListener('submit', async e => {
   if (f.id === 'hwForm') {
     e.preventDefault();
     const title = f.title.value.trim(), details = f.details.value.trim() || null, due_date = f.due_date.value || null;
+    const goal_id = f.goal_id ? f.goal_id.value || null : undefined; // sin objetivos creados, el campo no existe y no se toca
     if (!title) return toast('Escribe qué tiene que practicar', 'bad');
     if (f.dataset.id) {
-      const { data, error } = await sb.from('homework_tasks').update({ title, details, due_date }).eq('id', f.dataset.id).select();
+      const { data, error } = await sb.from('homework_tasks').update({ title, details, due_date, ...(goal_id !== undefined ? { goal_id } : {}) }).eq('id', f.dataset.id).select();
       if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');
       Object.assign(S.homework.find(x => x.id === f.dataset.id), data[0]);
       const back = hwReturn; hwReturn = null;
@@ -7371,7 +7480,7 @@ document.addEventListener('submit', async e => {
     }
     const ids = $$('#hwForm input[name=pick]:checked').map(x => x.value);
     if (!ids.length) return toast('Elige al menos un alumno', 'bad');
-    const { data, error } = await sb.from('homework_tasks').insert(ids.map(student_id => ({ student_id, title, details, due_date, created_by: S.user.id }))).select();
+    const { data, error } = await sb.from('homework_tasks').insert(ids.map(student_id => ({ student_id, title, details, due_date, goal_id: goal_id || null, created_by: S.user.id }))).select();
     if (error) return toast('No se pudo guardar: ' + errEs(error), 'bad');
     (data || []).forEach(r => addUnique(S.homework, r, 'homework_tasks'));
     const back = hwReturn; hwReturn = null;
@@ -7414,7 +7523,8 @@ document.addEventListener('submit', async e => {
       tasks.forEach(h => {
         if (has.has(hwKey(h.title))) { skipped++; return; }
         has.add(hwKey(h.title));
-        rows.push({ student_id, title: h.title, details: h.details || null, due_date: due(h), created_by: S.user.id });
+        const g = hwGoal(h); // el objetivo se copia si es de la lista general; uno personal es solo de su alumno
+        rows.push({ student_id, title: h.title, details: h.details || null, due_date: due(h), goal_id: g && !g.student_id ? g.id : null, created_by: S.user.id });
       });
     });
     if (!rows.length) return toast('Esos alumnos ya tienen esas tareas pendientes', 'warn');
