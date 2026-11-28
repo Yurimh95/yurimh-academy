@@ -152,11 +152,11 @@ const navTo = async (p, s) => {
   // alumnos: renombrar
   await goto(p,'students');
   await p.evaluate(()=>{ window.__DB.profiles.find(x=>x.id==='s2').avatar=null; });
-  await p.click('.row.click:has-text("Luis")'); await p.waitForTimeout(200);
+  await p.click('.stl:has-text("Luis")'); await p.click('.sts-open'); await p.waitForTimeout(200);
   await p.fill('#renameInput','Luis G.'); await p.click('[data-action=rename-student]'); await p.waitForTimeout(250);
   ok((await p.evaluate(()=>window.__DB.profiles.find(x=>x.id==='s2').display_name))==='Luis G.', 'Profe renombra alumno en BD');
-  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-  ok((await p.locator('.row.click:has-text("Luis G.")').count())===1 && (await p.locator('.row.click:has-text("Luis")').count())===1, 'Lista de alumnos refleja el nombre nuevo');
+  await p.click('.sp-back'); await p.waitForTimeout(200);
+  ok((await p.locator('.stl:has-text("Luis G.")').count())===1 && (await p.locator('.stl:has-text("Luis")').count())===1, 'Lista de alumnos refleja el nombre nuevo');
   // escucha intacta
   await goto(p,'listening');
   ok((await p.locator('.track').count())===2, 'Módulo Escucha sigue funcionando (2 filas en la lista)');

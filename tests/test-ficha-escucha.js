@@ -16,15 +16,15 @@ const path = require('path');
   const ficha = async () => { await t.evaluate(() => { S.section = 'students'; render(); studentDetailModal('s1'); }); await t.waitForTimeout(150); };
 
   await ficha();
-  ok(await t.locator('.modal [data-action=sdm-item][data-id=i1]').count() === 1, 'En la ficha, la escucha se puede pulsar');
+  ok(await t.locator('.modal').count() === 0 && await t.locator('.stu-page [data-action=sdm-item][data-id=i1]').count() === 1, 'La ficha es una pantalla (sin ventana) y en ella, la escucha se puede pulsar');
   await t.screenshot({ path: path.join(__dirname, 'shots', 'ficha-escucha-1.png') });
 
   // El botón ▶ sigue abriendo el enlace, no la ventana
-  await t.evaluate(() => { const a = document.querySelector('.modal .sdm-open .playbtn'); a.removeAttribute('href'); a.click(); });
+  await t.evaluate(() => { const a = document.querySelector('.stu-page .sdm-open .playbtn'); a.removeAttribute('href'); a.click(); });
   await t.waitForTimeout(100);
-  ok(await t.locator('.modal .sdm-head').count() === 1, 'Pulsar ▶ no abre la ventana de la escucha');
+  ok(await t.locator('.modal').count() === 0, 'Pulsar ▶ no abre la ventana de la escucha');
 
-  await t.click('.modal [data-action=sdm-item][data-id=i1] .tmain'); await t.waitForTimeout(150);
+  await t.click('.stu-page [data-action=sdm-item][data-id=i1] .tmain'); await t.waitForTimeout(150);
   ok(await t.locator('.modal #assignBox, .modal [data-action=assign-selected], .modal [data-action=edit-item]').count() > 0, 'Al pulsarla se abre la ventana de la escucha');
   ok(await t.locator('.modal [data-action=item-back]').count() === 1, 'Tiene el botón "Volver a la ficha"');
   await t.screenshot({ path: path.join(__dirname, 'shots', 'ficha-escucha-2.png') });
@@ -46,8 +46,8 @@ const path = require('path');
   ok(await t.locator('.modal [data-action=item-back]').count() === 1, 'Tras guardar la edición vuelve a la escucha');
 
   await t.click('.modal [data-action=item-back]'); await t.waitForTimeout(150);
-  ok(await t.locator('.modal .sdm-head').count() === 1, '"Volver" lleva a la ficha del alumno');
-  ok((await t.locator('.modal .sdm-open b').first().textContent()) === 'Título cambiado', 'La ficha muestra el título nuevo');
+  ok(await t.locator('.modal').count() === 0 && await t.locator('.stu-page .sdm-head').count() === 1, '"Volver" lleva a la ficha del alumno');
+  ok((await t.locator('.stu-page .sdm-open b').first().textContent()) === 'Título cambiado', 'La ficha muestra el título nuevo');
 
   // Cerrar del todo olvida el "volver": abrir la escucha desde Escucha analítica no lo enseña
   await t.evaluate(() => closeModal()); await t.waitForTimeout(100);
@@ -57,9 +57,9 @@ const path = require('path');
 
   // Eliminar la escucha desde la ficha vuelve a la ficha
   await ficha();
-  await t.click('.modal [data-action=sdm-item][data-id=i1] .tmain'); await t.waitForTimeout(150);
+  await t.click('.stu-page [data-action=sdm-item][data-id=i1] .tmain'); await t.waitForTimeout(150);
   await t.click('.modal [data-action=delete-item]'); await t.waitForTimeout(300);
-  ok(await t.locator('.modal .sdm-head').count() === 1 && await t.locator('.modal [data-action=sdm-item][data-id=i1]').count() === 0, 'Al eliminarla vuelve a la ficha, ya sin esa escucha');
+  ok(await t.locator('.modal').count() === 0 && await t.locator('.stu-page .sdm-head').count() === 1 && await t.locator('.stu-page [data-action=sdm-item][data-id=i1]').count() === 0, 'Al eliminarla vuelve a la ficha, ya sin esa escucha');
 
   console.log(errors.length ? 'ERRORES DE CONSOLA/PÁGINA:\n' + errors.join('\n') : 'ERRORES DE CONSOLA/PÁGINA: ninguno');
   console.log(fails ? `\n${fails} FALLOS` : '\nTODO OK');

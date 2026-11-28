@@ -290,6 +290,73 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .gcat-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .gcat-head input{flex:1;font-weight:650}
 .modal.wide{max-width:760px}
+/* Alumnos v2 (2026-11-28): lista + resumen o tabla en el PC, filas cortas en el móvil y la ficha como pantalla */
+.stu-pend{background:rgba(var(--warn-rgb),.07);border:1px solid rgba(var(--warn-rgb),.35);border-radius:12px;padding:8px 10px;margin:0 0 14px}
+.stu-pend-h{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);padding:2px 4px 6px}
+.stu-prow{display:flex;align-items:center;gap:10px;padding:6px 4px;flex-wrap:wrap}.stu-prow+.stu-prow{border-top:1px solid var(--pline)}
+.stu-pb{flex:1 1 160px;min-width:0;display:flex;flex-direction:column}.stu-pb b{color:var(--strong)}.stu-pb .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stu-blk{font-size:12.5px;font-weight:500;color:var(--muted);margin-right:4px}
+.stu-bar{margin:0 0 12px;gap:10px}.stu-bar>.sub{margin-right:auto}
+.stu-seg{display:inline-flex;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.stu-seg button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer}
+.stu-seg button .i{width:16px;height:16px}.stu-seg button.on{background:var(--panel2);color:var(--strong)}
+.stu-md{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.stu-side{background:var(--panel);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stl{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;font:inherit;color:var(--text);padding:7px 8px;border-radius:9px;cursor:pointer}
+.stl:hover{background:var(--hover)}.stl.on{background:rgba(var(--accent-rgb),.16)}
+.stl-n{flex:1;min-width:0;font-weight:600;color:var(--strong);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stl-n small,.stm-b small{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+.stu-dot{width:9px;height:9px;border-radius:50%;flex:none}.stu-dot.bad{background:var(--bad)}.stu-dot.warn{background:var(--warn)}
+.stu-sum{background:var(--panel);border-radius:12px;padding:16px;min-width:0}
+.sts-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+.sts-who{flex:1 1 220px;min-width:0}.sts-who h2{margin:0;font-size:19px;color:var(--strong);overflow-wrap:anywhere}
+.sts-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.sts-tags .chip{font-size:12px}
+.sts-act{display:flex;gap:8px;flex-wrap:wrap}
+.sts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.sts-box{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid transparent;background:var(--panel2);border-radius:10px;padding:10px 12px;font:inherit;color:var(--text);cursor:pointer}
+.sts-box:hover{border-color:rgba(var(--accent-rgb),.45)}
+.sts-k{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.sts-v{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:var(--strong)}.sts-s{font-size:12.5px;color:var(--muted)}
+.sts-box.bad{background:rgba(var(--bad-rgb),.10)}.sts-box.bad .sts-v{color:var(--bad)}
+.sts-box.warn{background:rgba(var(--warn-rgb),.10)}.sts-box.warn .sts-v{color:var(--warn)}
+.sts-box.ok .sts-v{color:var(--ok)}.sts-box.mut .sts-v{color:var(--faint);font-weight:600}
+.rk-medal.stu-med{display:inline-block;width:24px;flex:none;cursor:default;vertical-align:middle}.rk-medal.stu-med svg{width:100%;height:auto;display:block}
+.stt-wrap{background:var(--panel);border-radius:12px;overflow:auto}
+.stt{width:100%;border-collapse:collapse}
+.stt th{text-align:left;padding:0;border-bottom:1px solid var(--line)}
+.stt-h{border:0;background:none;font:inherit;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:10px 12px;cursor:pointer;white-space:nowrap}
+.stt-h:hover,.stt-h.on{color:var(--strong)}
+.stt td{padding:8px 12px;border-bottom:1px solid var(--pline);font-size:13.5px;white-space:nowrap}
+.stt tr:last-child td{border-bottom:0}
+.stt-r{cursor:pointer}.stt-r:hover td{background:var(--hover)}.stt-r.bad td:first-child{box-shadow:inset 3px 0 0 var(--bad)}.stt-r.warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.stt-n{display:flex;align-items:center;gap:9px;font-weight:600;color:var(--strong)}
+.stt-rk{display:inline-flex;align-items:center;gap:7px}
+.stt .mut,.stt-p.mut{color:var(--faint)}
+.stt-p{font-weight:600}.stt-p.bad,.stt-p.warn,.stt-p.ok{font-size:12.5px;padding:2px 9px;border-radius:99px}
+.stt-p.bad{background:rgba(var(--bad-rgb),.14);color:var(--bad)}.stt-p.warn{background:rgba(var(--warn-rgb),.14);color:var(--warn)}.stt-p.ok{background:rgba(var(--ok-rgb),.12);color:var(--ok)}
+.stm-list{display:flex;flex-direction:column;gap:6px}
+.stm{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:var(--panel);border-radius:11px;padding:9px 10px;font:inherit;color:var(--text);cursor:pointer}
+.stm.bad{box-shadow:inset 3px 0 0 var(--bad)}.stm.warn{box-shadow:inset 3px 0 0 var(--warn)}
+.stm-b{flex:1;min-width:0}.stm-b b{display:block;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stm-ics{display:flex;gap:9px;flex:none}
+.stm-i{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--muted)}.stm-i .i{width:16px;height:16px}
+.stm-i.bad{color:var(--bad)}.stm-i.warn{color:var(--warn)}.stm-i.ok{color:var(--ok)}
+.stu-page{container-type:inline-size}
+.sp-nav{margin:0 0 10px}
+.sp-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.sp-head .sdm-head{flex:1 1 280px}.sp-head h2{margin:0;font-size:21px;color:var(--strong)}
+.sp-cols{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);align-items:start}
+.sp-c1,.sp-c2,.sp-c3{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sp-card{background:var(--panel);border-radius:12px;padding:14px 16px;min-width:0;scroll-margin-top:12px}
+.sp-card h3{margin:0 0 10px;font-size:15px;color:var(--strong)}
+.sp-card>.dhead{margin:0 0 10px!important;flex-wrap:wrap}
+.sp-card .agebox{background:none;border:0;padding:0;margin:0}
+.sp-card .rename{margin:0 0 6px}.sp-card .rename input{min-width:0;flex:1}
+.sp-lbl{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px}
+.sp-card .arow{margin:0 0 8px;background:var(--panel2)}.sp-card .arow:last-child{margin-bottom:0}
+@container (min-width:740px){.sp-cols{grid-template-columns:300px minmax(0,1fr)}.sp-c1{grid-row:span 2}.sp-c3{grid-column:2}}
+@container (min-width:1040px){.sp-cols{grid-template-columns:290px minmax(0,1fr) minmax(0,1.15fr)}.sp-c1{grid-row:auto}.sp-c3{grid-column:auto}}
+@container (max-width:739px){.sp-c1{order:3}.sp-c2{order:1}.sp-c3{order:2}}
 .modal.hwwide{max-width:980px}
 .hwf-cols{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px;align-items:start}
 .hwf-who{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
@@ -1700,6 +1767,8 @@ html[data-theme="dark"] .dcard.mod{border-color:rgba(var(--warn-rgb),.45)}
   <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-student" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5 12 5l10 4.5-10 4.5z"/><path d="M6 11.3v4.2c0 1.4 2.7 2.9 6 2.9s6-1.5 6-2.9v-4.2"/><path d="M22 9.5v5"/></symbol>
+  <symbol id="i-rows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="7" height="16" rx="1.5"/><path d="M14 6h7M14 10h7M14 14h7M14 18h5"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/></symbol>
 </svg>
 <div id="app"><div class="loading">Cargando…</div></div>
@@ -1753,6 +1822,9 @@ const S = {
   goalStages: [], goalItems: [], goalDone: [], goalPending: false, streakAwards: [], rankPending: false,
   lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
   hwTab: 'tasks', hwSel: null, hwOpen: false, // Deberes: pestaña del alumno; alumno elegido por el profesor (y si en el móvil está abierto)
+  // Alumnos (profesor): vista del PC (lista + resumen o tabla; preferencia como el tema), alumno elegido, ficha abierta como pantalla y orden de la tabla
+  stuView: (() => { try { return localStorage.getItem('ya-stuview') === 'table' ? 'table' : 'list'; } catch (e) { return 'list'; } })(),
+  stuSel: null, stuPage: null, stuSort: { k: 'att', d: 1 },
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -3084,13 +3156,14 @@ function toast(msg, type = '') {
 // histSkip: "atrás" internos pendientes (al cerrar una ventana). Mientras haya alguno, lo nuevo espera.
 let histSkip = 0, histModalPending = false, histRestoring = false;
 const histState = () => ({ app: 1, s: S.section, dm: S.section === 'messages' ? (S.dmWith || null) : null,
-  hw: S.section === 'homework' && S.hwOpen ? S.hwSel : null }); // hw: alumno abierto en Deberes (móvil)
+  hw: S.section === 'homework' && S.hwOpen ? S.hwSel : null, // hw: alumno abierto en Deberes (móvil)
+  stu: S.section === 'students' && S.stuPage ? S.stuPage : null }); // stu: ficha completa de un alumno abierta en Alumnos
 function histSync() { // la llama render(): si cambió la sección, añade una entrada
   if (histRestoring || !S.profile || histSkip) return; // con un "atrás" pendiente, se sincroniza al terminar
   const st = history.state || {}, want = histState();
   if (st.modal) return;
   if (!st.app) { history.replaceState(want, ''); return; }
-  if (st.s === want.s && (st.dm || null) === want.dm && (st.hw || null) === want.hw) return;
+  if (st.s === want.s && (st.dm || null) === want.dm && (st.hw || null) === want.hw && (st.stu || null) === want.stu) return;
   history.pushState(want, '');
 }
 // Al recargar (F5) el navegador conserva history.state: se vuelve a la sección (y al chat) donde estaba.
@@ -3102,8 +3175,8 @@ function histRestoreOnLoad() {
   histBooted = true;
   const st = history.state || {};
   if (!st.app) return;
-  if (st.s) { S.section = st.s; S.dmWith = st.s === 'messages' ? (st.dm || null) : null; S.hwOpen = !!st.hw; if (st.hw) S.hwSel = st.hw; }
-  if (st.modal || st.lb || st.pop) history.replaceState({ app: 1, s: st.s, dm: st.dm || null, hw: st.hw || null }, '');
+  if (st.s) { S.section = st.s; S.dmWith = st.s === 'messages' ? (st.dm || null) : null; S.hwOpen = !!st.hw; if (st.hw) S.hwSel = st.hw; S.stuPage = st.stu || null; }
+  if (st.modal || st.lb || st.pop) history.replaceState({ app: 1, s: st.s, dm: st.dm || null, hw: st.hw || null, stu: st.stu || null }, '');
 }
 window.addEventListener('popstate', async e => {
   if (histSkip) { // es el "atrás" que hicimos nosotros al cerrar una ventana
@@ -3122,6 +3195,7 @@ window.addEventListener('popstate', async e => {
   histRestoring = true;
   S.section = st.s || 'feed'; S.dmWith = st.dm || null;
   S.hwOpen = !!st.hw; if (st.hw) S.hwSel = st.hw;
+  S.stuPage = st.stu || null; if (st.stu) S.stuSel = st.stu;
   render(); window.scrollTo(0, 0);
   histRestoring = false;
 });
@@ -4291,7 +4365,8 @@ async function closeModal(fromHistory = false) {
   phClear('feed-edit'); phClear('board'); vdClear('story'); // fotos o vídeo elegidos en un editor que se cierra sin guardar
   // Cerrada con la ✕, Esc o al pulsar fuera: quitamos su entrada del historial
   if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
-  if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
+  if (wasOpen && S.section === 'students' && S.stuPage) render(); // ficha del alumno debajo: refleja lo cambiado en la ventana
+  else if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
   if (S.goalPending) setTimeout(goalsCelebrate, 300); // celebración que esperaba a que se cerrara la ventana
   else if (S.rankPending) setTimeout(rankCelebrate, 300);
 }
@@ -5961,35 +6036,130 @@ function genrePicker(itemId) {
     : `<div class="sub" style="margin:4px 0 14px">Aún no hay géneros. Créalos con el botón "Géneros" del catálogo.</div>`;
 }
 
+/* ---- Alumnos (profesor), v2 (2026-11-28, Yuri: "tarjetas largas que enseñan muy poca info").
+   PC: lista a la izquierda + resumen del elegido a la derecha, o tabla (interruptor S.stuView, guardado como el tema).
+   Móvil: filas cortas con iconos. Pulsar un alumno abre su ficha completa como PANTALLA (no ventana): S.stuPage,
+   con su entrada en el historial (stu en histState), así el Atrás vuelve a la lista. ---- */
+const STU_DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+function stuDay(iso) { // Hoy 18:00 / Mañana 17:00 / Jue 27 19:30 / 4 dic. 18:00
+  const d = new Date(iso), t = new Date();
+  const n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5);
+  const w = STU_DAYS[d.getDay()];
+  return (n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : n < 7 ? w[0].toUpperCase() + w.slice(1) + ' ' + d.getDate() : `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}.`) + ' ' + hhmm(iso);
+}
+const stuMobile = () => matchMedia('(max-width:760px)').matches;
+function stuInfo(id) {
+  const as = S.assigns.filter(a => a.student_id === id), hw = S.homework.filter(h => h.student_id === id && !h.done_at);
+  const pl = planOf(id), pack = !!(pl && pl.mode === 'monthly' && calSynced()), ps = pack ? packState(id) : null;
+  const lOver = as.filter(isOverdue).length, hOver = hw.filter(hwOverdue).length;
+  return { as, lPend: as.filter(a => !a.listened).length, lOver, hwN: hw.length, hOver, nl: nextLesson(id), pl, pack, ps,
+    unread: as.filter(ansUnread).length, st: streakOf(id), rk: rankOf(pointsOf(id)),
+    alert: lOver || hOver ? 'bad' : pack && ps && ps.dueNow ? 'warn' : '' };
+}
+function stuPay(i) {
+  const p = i.pl;
+  if (!p) return { t: 'Sin trato', c: 'mut' };
+  if (p.mode === 'free') return { t: 'Gratis', c: 'mut' };
+  if (p.mode === 'per_class') return { t: p.amount != null ? `${money(p.amount)} / clase` : 'Por clase', c: '' };
+  if (!i.pack) return { t: 'Bono' + (p.amount != null ? ' · ' + money(p.amount) : ''), c: '' };
+  if (!i.ps) return { t: 'Sin pagos apuntados', c: 'warn' };
+  return i.ps.dueNow ? { t: 'Toca cobrar', c: 'warn' } : { t: `${i.ps.used} de ${i.ps.n} clases`, c: '' };
+}
+const stuListen = i => i.lOver ? { t: `${i.lOver} vencida${i.lOver > 1 ? 's' : ''}`, c: 'bad' } : i.lPend ? { t: `${i.lPend} pendiente${i.lPend > 1 ? 's' : ''}`, c: '' }
+  : i.as.length ? { t: 'Al día', c: 'ok' } : { t: 'Nada asignado', c: 'mut' };
+const stuHw = i => i.hOver ? { t: `${i.hOver} vencido${i.hOver > 1 ? 's' : ''}`, c: 'bad' } : i.hwN ? { t: `${i.hwN} pendiente${i.hwN > 1 ? 's' : ''}`, c: '' } : { t: 'Al día', c: 'ok' };
+const stuTags = s => [s.birth_date ? `${ageOf(s.birth_date)} años${isMinorProfile(s) ? ' · menor' : ''}` : 'Sin fecha de nacimiento',
+  s.app_installed_at ? '📲 Tiene la app' : '🌐 Sin la app', S.pushOn ? (S.pushOn[s.id] ? '🔔 Avisos activados' : '🔕 Sin avisos') : '']
+  .filter(Boolean).map(t => `<span class="chip">${t}</span>`).join('');
+const stuMedal = tier => `<span class="rk-medal stu-med" aria-hidden="true">${emblemSvg(tier)}</span>`;
+// Orden: "att" (lo que pide atención primero: vencido, luego cobrar, luego por próxima clase) o la columna pulsada en la tabla
+function stuSorted(list) {
+  const { k, d } = S.stuSort, I = {}; list.forEach(x => { I[x.id] = stuInfo(x.id); });
+  const nm = x => studentName(x.id), nt = x => I[x.id].nl ? I[x.id].nl.starts_at : '9999', lvl = { bad: 0, warn: 1, '': 2 }, pv = { warn: 0, '': 1, mut: 2 };
+  const by = {
+    att: (x, y) => lvl[I[x.id].alert] - lvl[I[y.id].alert] || nt(x).localeCompare(nt(y)),
+    name: (x, y) => nm(x).localeCompare(nm(y), 'es'),
+    next: (x, y) => nt(x).localeCompare(nt(y)),
+    listen: (x, y) => (I[y.id].lOver - I[x.id].lOver) || (I[y.id].lPend - I[x.id].lPend),
+    hw: (x, y) => (I[y.id].hOver - I[x.id].hOver) || (I[y.id].hwN - I[x.id].hwN),
+    pay: (x, y) => pv[stuPay(I[x.id]).c] - pv[stuPay(I[y.id]).c],
+    rank: (x, y) => I[y.id].rk.points - I[x.id].rk.points,
+    streak: (x, y) => I[y.id].st.cur - I[x.id].st.cur };
+  return { I, list: list.slice().sort((x, y) => (by[k] || by.att)(x, y) * d || nm(x).localeCompare(nm(y), 'es')) };
+}
 function teacherStudents() {
-  const pending = S.students.filter(isPending), ok = S.students.filter(s => s.approved), arch = S.students.filter(s => s.archived_at);
-  const stat = s => {
-    const as = S.assigns.filter(a => a.student_id === s.id);
-    return { n: as.length, li: as.filter(a => a.listened).length, ov: as.filter(isOverdue).length };
-  };
+  if (S.stuPage) { if (S.students.some(x => x.id === S.stuPage && x.approved)) return studentPage(S.stuPage); S.stuPage = null; }
+  const pending = S.students.filter(isPending), arch = S.students.filter(x => x.archived_at);
+  const { I, list: ok } = stuSorted(S.students.filter(x => x.approved)), mob = stuMobile();
+  if (!ok.some(x => x.id === S.stuSel)) S.stuSel = ok[0] ? ok[0].id : null;
+  const view = v => `<button class="${S.stuView === v ? 'on' : ''}" data-action="stu-view" data-v="${v}" aria-pressed="${S.stuView === v}">${ic(v === 'list' ? 'rows' : 'table')} ${v === 'list' ? 'Lista' : 'Tabla'}</button>`;
   return `
-    ${pending.length ? `<h2 class="h2">Pendientes de aprobar</h2><div class="list">${pending.map(s => `
-      <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div></div>
-      <div class="chips"><button class="linkbtn" style="font-size:12.5px;font-weight:500;color:var(--muted);margin-right:6px" data-action="block-pending" data-id="${s.id}">Bloquear</button>
-        <button class="btn sm danger" data-action="reject" data-id="${s.id}">Rechazar</button>
-        <button class="btn" data-action="approve" data-id="${s.id}">Aprobar</button></div></div>`).join('')}</div>` : ''}
-    <div class="dhead" style="margin:22px 0 10px"><h2 class="h2" style="margin:0">Alumnos</h2><div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
-    ${ok.length ? `<div class="list">${ok.map(s => { const st = stat(s); return `
-      <div class="row click" data-action="open-student" data-id="${s.id}">
-        <div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">${esc(s.email || '')}</div></div></div>
-        <div class="chips">
-          <span class="chip">${st.n} asignado${st.n === 1 ? '' : 's'}</span>
-          <span class="chip ${st.li ? 'ok' : ''}">${st.li} escuchado${st.li === 1 ? '' : 's'}</span>
-          ${st.ov ? `<span class="chip bad">${st.ov} vencido${st.ov > 1 ? 's' : ''}</span>` : ''}
-        </div>
-      </div>`; }).join('')}</div>` : `<div class="empty">Aún no hay alumnos aprobados.</div>`}
+    ${pending.length ? `<div class="stu-pend"><div class="stu-pend-h">${pending.length === 1 ? 'Una cuenta nueva quiere entrar' : `${pending.length} cuentas nuevas quieren entrar`}</div>
+      ${pending.map(x => `<div class="stu-prow">${avatarHtml(x.id, 34, false)}<div class="stu-pb"><b>${esc(x.display_name)}</b><span class="sub">${esc(x.email || '')}</span></div>
+        <div class="chips"><button class="linkbtn stu-blk" data-action="block-pending" data-id="${x.id}">Bloquear</button>
+          <button class="btn sm danger" data-action="reject" data-id="${x.id}">Rechazar</button>
+          <button class="btn sm primary" data-action="approve" data-id="${x.id}">Aprobar</button></div></div>`).join('')}</div>` : ''}
+    <div class="dhead stu-bar"><span class="sub">${ok.length} alumno${ok.length === 1 ? '' : 's'}</span>
+      ${!mob && ok.length ? `<div class="stu-seg" role="group" aria-label="Cómo ver la lista">${view('list')}${view('table')}</div>` : ''}
+      <div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
+    ${!ok.length ? `<div class="empty">Aún no hay alumnos aprobados.</div>` : mob ? stuMobileList(ok, I) : S.stuView === 'table' ? stuTable(ok, I) : stuListView(ok, I)}
     ${arch.length ? `<details class="archived"><summary>Archivados (${arch.length})</summary>
       <p class="sub" style="margin:8px 0 10px">No pueden entrar y lo que publicaron está oculto. Al reactivarlos vuelve todo tal cual estaba.</p>
-      <div class="list">${arch.map(s => `
-      <div class="row"><div class="arow-who">${avatarHtml(s.id, 40)}<div><strong>${esc(s.display_name)}</strong><div class="sub">Archivado el ${fmtDate(s.archived_at.slice(0, 10))}</div></div></div>
-        <div class="chips"><button class="btn sm" data-action="unarchive" data-id="${s.id}">Reactivar</button>
-        <button class="btn sm danger" data-action="delete-student" data-id="${s.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}`;
+      <div class="list">${arch.map(x => `
+      <div class="row"><div class="arow-who">${avatarHtml(x.id, 40)}<div><strong>${esc(x.display_name)}</strong><div class="sub">Archivado el ${fmtDate(x.archived_at.slice(0, 10))}</div></div></div>
+        <div class="chips"><button class="btn sm" data-action="unarchive" data-id="${x.id}">Reactivar</button>
+        <button class="btn sm danger" data-action="delete-student" data-id="${x.id}">Borrar definitivamente</button></div></div>`).join('')}</div></details>` : ''}`;
 }
+// PC · Lista: alumnos a la izquierda (punto rojo = algo vencido, amarillo = toca cobrar) y el resumen del elegido a la derecha
+function stuListView(ok, I) {
+  const sel = S.students.find(x => x.id === S.stuSel);
+  return `<div class="stu-md"><aside class="stu-side">${ok.map(x => { const i = I[x.id];
+    return `<button class="stl ${x.id === S.stuSel ? 'on' : ''}" data-action="stu-sel" data-id="${x.id}">${avatarHtml(x.id, 34, false)}
+      <span class="stl-n">${esc(whoName(x.id))}<small>${i.nl ? esc(stuDay(i.nl.starts_at)) : 'Sin clases próximas'}</small></span>
+      ${i.alert ? `<span class="stu-dot ${i.alert}" title="${i.alert === 'bad' ? 'Tiene algo vencido' : 'Toca cobrar'}"></span>` : ''}</button>`; }).join('')}</aside>
+    <section class="stu-sum">${sel ? stuSummary(sel, I[sel.id]) : ''}</section></div>`;
+}
+function stuSummary(x, i) {
+  const pay = stuPay(i), li = stuListen(i), hw = stuHw(i), pr = hwProgress(x.id), gs = S.goalItems.length || goalsFor(x.id).length ? goalStats(x.id) : null;
+  // Cada recuadro abre la ficha y baja a su bloque
+  const box = (jump, k, v, sub, c = '') => `<button class="sts-box ${c}" data-action="open-student" data-id="${x.id}" data-jump="${jump}"><span class="sts-k">${k}</span><span class="sts-v">${v}</span>${sub ? `<span class="sts-s">${sub}</span>` : ''}</button>`;
+  return `<div class="sts-head">${avatarHtml(x.id, 64, false)}<div class="sts-who"><h2>${esc(whoName(x.id))}</h2><div class="sub">${esc(x.email || '')}</div><div class="sts-tags">${stuTags(x)}</div></div>
+      <div class="sts-act"><button class="btn sm" data-action="student-profile" data-id="${x.id}">Ver perfil</button>
+        <button class="btn sm primary sts-open" data-action="open-student" data-id="${x.id}">Abrir ficha completa</button></div></div>
+    <div class="sts-grid">
+      ${box('data', 'Próxima clase', i.nl ? esc(stuDay(i.nl.starts_at)) : calSynced() ? 'Sin clases próximas' : 'Calendario sin conectar', '', i.nl ? '' : 'mut')}
+      ${box('data', 'Pago', esc(pay.t), i.pack && i.pl.amount != null ? `Bono de ${packN(null, i.pl)} clases · ${money(i.pl.amount)}` : '', pay.c)}
+      ${box('listen', esc(MODULE_LISTENING), esc(li.t), i.as.length ? `${i.as.length} asignada${i.as.length > 1 ? 's' : ''}${i.unread ? ` · ${i.unread} con respuestas sin leer` : ''}` : '', li.c)}
+      ${box('hw', esc(MODULE_HOMEWORK), esc(hw.t), pr.done ? `${pr.done} practicado${pr.done > 1 ? 's' : ''} desde su última clase` : '', hw.c)}
+      ${box('rank', 'Rango y racha', `${stuMedal(i.rk.tier)}${esc(i.rk.name)}`, `${nfmt(i.rk.points)} puntos · racha de ${daysTxt(i.st.cur)} (récord ${daysTxt(i.st.best)})`)}
+      ${gs ? box('goals', '🎯 ' + esc(MODULE_GOALS), `${gs.n} de ${gs.total}`, gs.cur ? `Etapa ${esc(gs.cur.num)} · ${esc(gs.cur.title)}` : '') : ''}
+    </div>`;
+}
+// PC · Tabla: todo de todos a la vez; se ordena pulsando la cabecera
+function stuTable(ok, I) {
+  const { k, d } = S.stuSort;
+  const th = (key, label) => `<th><button class="stt-h ${k === key ? 'on' : ''}" data-action="stu-sort" data-k="${key}">${label}${k === key ? (d > 0 ? ' ▾' : ' ▴') : ''}</button></th>`;
+  const pill = o => `<span class="stt-p ${o.c}">${esc(o.t)}</span>`;
+  return `<div class="stt-wrap"><table class="stt"><thead><tr>${th('name', 'Alumno')}${th('next', 'Próxima clase')}${th('listen', 'Escuchas')}${th('hw', esc(MODULE_HOMEWORK))}${th('pay', 'Pago')}${th('rank', 'Rango')}${th('streak', 'Racha')}</tr></thead>
+    <tbody>${ok.map(x => { const i = I[x.id]; return `<tr class="stt-r ${i.alert}" data-action="open-student" data-id="${x.id}" tabindex="0">
+      <td><span class="stt-n">${avatarHtml(x.id, 30, false)}<span>${esc(whoName(x.id))}</span></span></td>
+      <td class="${i.nl ? '' : 'mut'}">${i.nl ? esc(stuDay(i.nl.starts_at)) : '—'}</td>
+      <td>${pill(stuListen(i))}</td><td>${pill(stuHw(i))}</td><td>${pill(stuPay(i))}</td>
+      <td><span class="stt-rk">${stuMedal(i.rk.tier)}${esc(i.rk.name)}</span></td>
+      <td class="${i.st.cur ? '' : 'mut'}">${daysTxt(i.st.cur)}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+// Móvil: filas cortas con iconos (escuchas, deberes y cobro); pulsar abre la ficha
+function stuMobileList(ok, I) {
+  const ico = (name, n, c, t) => `<span class="stm-i ${c}" title="${t}" aria-label="${t}">${ic(name)}${n}</span>`;
+  return `<div class="stm-list">${ok.map(x => { const i = I[x.id];
+    return `<button class="stm ${i.alert}" data-action="open-student" data-id="${x.id}">${avatarHtml(x.id, 40, false)}
+      <span class="stm-b"><b>${esc(whoName(x.id))}</b><small>${i.nl ? esc(stuDay(i.nl.starts_at)) : 'Sin clases próximas'}</small></span>
+      <span class="stm-ics">${i.lOver ? ico('listening', i.lOver, 'bad', 'Escuchas vencidas') : i.lPend ? ico('listening', i.lPend, '', 'Escuchas pendientes') : i.as.length ? ico('listening', '✓', 'ok', 'Escuchas al día') : ''}
+        ${i.hOver ? ico('homework', i.hOver, 'bad', 'Deberes vencidos') : i.hwN ? ico('homework', i.hwN, '', 'Deberes pendientes') : ''}
+        ${i.alert === 'warn' ? ico('payments', '', 'warn', 'Toca cobrar') : ''}</span></button>`; }).join('')}</div>`;
+}
+// Al girar el móvil o cambiar el tamaño de la ventana, la lista cambia de forma
+matchMedia('(max-width:760px)').addEventListener('change', () => { if (S.section === 'students' && !S.stuPage && !$('#modalRoot').firstChild) render(); });
 const isPending = s => !s.approved && !s.archived_at;
 
 // ---------- Rechazar alumnos y correos bloqueados ----------
@@ -6269,66 +6439,88 @@ function itemModal(id) {
   `);
 }
 
-function studentDetailModal(id) {
-  const s = S.students.find(x => x.id === id);
-  if (!s) return;
-  const as = S.assigns.filter(a => a.student_id === id).sort(dueSort);
-  openModal(`
-    <div class="modal-head"><div class="sdm-head">${zoomableAvatar(s.id, 96)}<div><h2>${esc(whoName(s.id))}</h2><div class="sub" style="color:var(--muted)">${esc(s.email || '')}</div>
-        <button class="btn sm" style="margin-top:8px" data-action="student-profile" data-id="${s.id}">Ver perfil</button></div></div>
-      <button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${s.id}">Cambiar nombre</button></div>
-    <p class="sub" style="margin:0 0 4px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
-    ${S.pushOn ? `<p class="sub" style="margin:0 0 4px" data-pushchip>${S.pushOn[s.id] ? `🔔 Tiene las notificaciones activadas${S.pushOn[s.id] > 1 ? ` (en ${S.pushOn[s.id]} dispositivos)` : ''}` : '🔕 No tiene las notificaciones activadas'}</p>` : ''}
-    ${(() => { const nl = nextLesson(s.id), cn = (S.lessonNames.find(x => x.student_id === s.id) || {}).calendar_name || '';
-      return `<p class="sub" style="margin:0 0 4px">📅 ${nl ? `Próxima clase: <b>${esc(relDay(nl.starts_at))}</b> a las ${hhmm(nl.starts_at)}` : calSynced() ? 'Sin clases próximas en tu calendario' : 'Calendario sin conectar (Agenda)'}</p>
-        <div class="rename"><input type="text" id="calNameInput" maxlength="80" value="${esc(cn)}" placeholder="Nombre en Google Calendar (si no es &quot;${esc(s.display_name)}&quot;)" aria-label="Nombre en Google Calendar"><button class="btn sm" data-action="cal-name" data-id="${s.id}">Guardar</button></div>`; })()}
-    ${(() => { const pl = planOf(s.id);
-      return `<div class="chips" style="margin:8px 0 4px">
-        <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${s.id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button>
-        ${pl && pl.mode === 'monthly' && calSynced() ? (() => { const ps = packState(s.id);
-          return !ps ? '<span class="chip warn">Sin pagos apuntados</span>' : ps.dueNow ? `<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span>`
-            : `<span class="chip">${ps.used} de ${ps.n} clases pagadas${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`; })() : ''}</div>`; })()}
-    ${goalsFichaHtml(s.id)}
-    ${streakFichaHtml(s.id)}
-    ${(() => { // Deberes de este alumno: se gestionan aquí mismo (la sección Deberes es la vista de todos)
-      const l = S.homework.filter(h => h.student_id === s.id).sort(hwSort), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
-      return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">${esc(MODULE_HOMEWORK)}
-          ${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : ''}${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}</h2>
-          <div class="chips">${l.length ? `<button class="btn sm" data-action="hw-copy-all" data-id="${s.id}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>` : ''}
-          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div></div>
-        <div data-sdm-hw="${s.id}">
-          ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
-          ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
-        </div>`; })()}
-    <h2 class="h2">Edad y mensajes privados</h2>
-    <div class="agebox">
-      <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
-        · <b>${isMinorProfile(s) ? 'Menor' : 'Mayor de edad'}</b></div>
-      <div class="rename" style="margin-top:8px"><input type="date" id="birthInput" value="${esc(s.birth_date || '')}" aria-label="Fecha de nacimiento"><button class="btn sm" data-action="save-birth" data-id="${s.id}">Corregir fecha</button></div>
-      ${isMinorProfile(s) ? `<label class="chk" style="margin-top:8px"><input type="checkbox" id="familyDm" data-id="${s.id}" ${s.family_dm_ok ? 'checked' : ''}> La familia autoriza mensajes privados con compañeros</label>
-        <p class="sub" style="margin:6px 0 0">Sin esta marca, solo puede escribirte a ti. Contigo siempre puede hablar.</p>`
-        : '<p class="sub" style="margin:6px 0 0">Al ser mayor de edad puede escribirse con otros compañeros que también puedan.</p>'}
-    </div>
-    <h2 class="h2">${esc(MODULE_LISTENING)}</h2>
-    ${as.length ? as.map(a => {
-      const it = S.items.find(x => x.id === a.item_id);
-      if (!it) return '';
-      const d = dueInfo(a), n = answeredCount(a);
-      return `<div class="arow">
-        <div class="arow-head"><div class="arow-who sdm-item sdm-open" data-action="sdm-item" data-id="${it.id}" data-sid="${s.id}" title="Abrir y editar esta escucha">${coverHtml(it, 56)}
-            <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
-            ${playBtn(it.url, it)}</div>
-          <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span data-readchip="${a.id}">${ansReadChip(a)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
-        ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
-        <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
-      </div>`;
-    }).join('') : `<div class="empty">Este alumno no tiene nada asignado.</div>`}
-    <h2 class="h2">Dar de baja</h2>
-    <div class="agebox">
-      <p class="sub" style="margin:0 0 10px;color:var(--text)">Si deja las clases, archívalo: no podrá entrar, desaparecerá de las listas (Alumnos, Pagos, deberes, menciones…) y se ocultará lo que haya publicado. No se borra nada: puedes reactivarlo cuando quieras desde el final de la lista de Alumnos.</p>
-      <button class="btn danger" data-action="archive" data-id="${s.id}">Archivar alumno</button>
-    </div>`, async () => render());
+// Se sigue llamando así porque la usan muchos sitios ("Volver a la ficha"…), pero desde el 2026-11-28 (Yuri) la ficha
+// no es una ventana: sustituye a la pantalla de Alumnos (S.stuPage) y el Atrás vuelve a la lista. jump = bloque al que bajar.
+async function studentDetailModal(id, jump) {
+  if (!S.students.some(x => x.id === id && x.approved)) return;
+  const same = S.section === 'students' && S.stuPage === id, y = window.scrollY;
+  if ($('#modalRoot').firstChild) await closeModal();
+  S.section = 'students'; S.stuPage = id; S.stuSel = id;
+  render();
+  const t = jump && $(`.stu-page [data-sp="${jump}"]`);
+  if (t) t.scrollIntoView({ block: 'start' }); else window.scrollTo(0, same ? y : 0);
+}
+// A lo ancho (PC grande): datos | rango, objetivos y deberes | escuchas. Más estrecho, dos columnas; en el móvil, una.
+function studentPage(id) {
+  const s = S.students.find(x => x.id === id), i = stuInfo(id);
+  const as = i.as.slice().sort(dueSort), cn = (S.lessonNames.find(x => x.student_id === id) || {}).calendar_name || '', pl = i.pl;
+  const l = S.homework.filter(h => h.student_id === id).sort(hwSort), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
+  const rank = streakFichaHtml(id);
+  return `<div class="stu-page" data-stu="${id}">
+    <div class="sp-nav"><button class="btn sm ghost sp-back" data-action="stu-back">← Alumnos</button></div>
+    <div class="sp-head"><div class="sdm-head">${zoomableAvatar(id, 88)}<div><h2>${esc(whoName(id))}</h2><div class="sub">${esc(s.email || '')}</div><div class="sts-tags">${stuTags(s)}</div></div></div>
+      <div class="sp-hact"><button class="btn sm" data-action="student-profile" data-id="${id}">Ver perfil</button></div></div>
+    <div class="sp-cols">
+      <div class="sp-c1">
+        <section class="sp-card" data-sp="data"><h3>Datos</h3>
+          <div class="sp-lbl">Nombre</div>
+          <div class="rename"><input type="text" id="renameInput" maxlength="60" value="${esc(s.display_name)}" aria-label="Nombre del alumno"><button class="btn sm" data-action="rename-student" data-id="${id}">Cambiar</button></div>
+          <p class="sub" style="margin:4px 0 2px">${s.app_installed_at ? '📲 Tiene la app instalada en el móvil' : '🌐 Aún no ha instalado la app del móvil'}</p>
+          ${S.pushOn ? `<p class="sub" style="margin:0" data-pushchip>${S.pushOn[id] ? `🔔 Tiene las notificaciones activadas${S.pushOn[id] > 1 ? ` (en ${S.pushOn[id]} dispositivos)` : ''}` : '🔕 No tiene las notificaciones activadas'}</p>` : ''}
+          <h3 style="margin-top:16px">Clases y pago</h3>
+          <p class="sub" style="margin:0 0 6px">📅 ${i.nl ? `Próxima clase: <b>${esc(relDay(i.nl.starts_at))}</b> a las ${hhmm(i.nl.starts_at)}` : calSynced() ? 'Sin clases próximas en tu calendario' : 'Calendario sin conectar (Agenda)'}</p>
+          <div class="sp-lbl">Nombre en Google Calendar</div>
+          <div class="rename"><input type="text" id="calNameInput" maxlength="80" value="${esc(cn)}" placeholder="Si no es &quot;${esc(s.display_name)}&quot;" aria-label="Nombre en Google Calendar"><button class="btn sm" data-action="cal-name" data-id="${id}">Guardar</button></div>
+          <div class="chips" style="margin:8px 0 0">
+            <button class="chip" style="cursor:pointer" data-action="pay-plan" data-id="${id}">💶 ${pl ? PAY_MODE[pl.mode] + (pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : '') : 'Sin trato'}</button>
+            ${i.pack ? (!i.ps ? '<span class="chip warn">Sin pagos apuntados</span>' : i.ps.dueNow ? `<span class="chip warn">Toca cobrar · clase del ${shortDay(i.ps.due)}</span>`
+              : `<span class="chip">${i.ps.used} de ${i.ps.n} clases pagadas${i.ps.due ? ` · le toca el ${shortDay(i.ps.due)}` : ''}</span>`) : ''}</div>
+        </section>
+        <section class="sp-card"><h3>Edad y mensajes privados</h3>
+          <div class="sub" style="color:var(--text)">${s.birth_date ? `${ageOf(s.birth_date)} años · nacido/a el ${fmtDate(s.birth_date)}` : 'Sin fecha de nacimiento (se trata como menor)'}
+            · <b>${isMinorProfile(s) ? 'Menor' : 'Mayor de edad'}</b></div>
+          <div class="rename" style="margin-top:8px"><input type="date" id="birthInput" value="${esc(s.birth_date || '')}" aria-label="Fecha de nacimiento"><button class="btn sm" data-action="save-birth" data-id="${id}">Corregir fecha</button></div>
+          ${isMinorProfile(s) ? `<label class="chk" style="margin-top:8px"><input type="checkbox" id="familyDm" data-id="${id}" ${s.family_dm_ok ? 'checked' : ''}> La familia autoriza mensajes privados con compañeros</label>
+            <p class="sub" style="margin:6px 0 0">Sin esta marca, solo puede escribirte a ti. Contigo siempre puede hablar.</p>`
+            : '<p class="sub" style="margin:6px 0 0">Al ser mayor de edad puede escribirse con otros compañeros que también puedan.</p>'}
+        </section>
+        <section class="sp-card"><h3>Dar de baja</h3>
+          <p class="sub" style="margin:0 0 10px">Si deja las clases, archívalo: no podrá entrar, desaparecerá de las listas (Alumnos, Pagos, deberes, menciones…) y se ocultará lo que haya publicado. No se borra nada: puedes reactivarlo cuando quieras desde el final de la lista de Alumnos.</p>
+          <button class="btn sm danger" data-action="archive" data-id="${id}">Archivar alumno</button>
+        </section>
+      </div>
+      <div class="sp-c2">
+        ${rank ? `<section class="sp-card" data-sp="rank">${rank}</section>` : ''}
+        <section class="sp-card" data-sp="goals">${goalsFichaHtml(id)}</section>
+        <section class="sp-card" data-sp="hw"><div class="dhead"><h2 class="h2" style="margin:0">${esc(MODULE_HOMEWORK)}
+            ${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : ''}${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}</h2>
+            <div class="chips">${l.length ? `<button class="btn sm" data-action="hw-copy-all" data-id="${id}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>` : ''}
+            <button class="btn sm" data-action="hw-new" data-id="${id}">+ Añadir</button></div></div>
+          <div data-sdm-hw="${id}">
+            ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
+            ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
+          </div></section>
+      </div>
+      <div class="sp-c3">
+        <section class="sp-card" data-sp="listen"><div class="dhead"><h2 class="h2" style="margin:0">${esc(MODULE_LISTENING)}
+            ${i.lOver ? `<span class="chip bad">${i.lOver} vencida${i.lOver > 1 ? 's' : ''}</span>` : ''}${i.unread ? `<span class="chip acc">${i.unread} sin leer</span>` : ''}</h2>
+            <span class="sub">${as.length} asignada${as.length === 1 ? '' : 's'}</span></div>
+          ${as.length ? as.map(a => {
+            const it = S.items.find(x => x.id === a.item_id);
+            if (!it) return '';
+            const d = dueInfo(a), n = answeredCount(a);
+            return `<div class="arow">
+              <div class="arow-head"><div class="arow-who sdm-item sdm-open" data-action="sdm-item" data-id="${it.id}" data-sid="${id}" title="Abrir y editar esta escucha">${coverHtml(it, 48)}
+                  <div class="tmain"><b>${esc(it.title)}</b><span class="tsub">${watchTag(it)}${kindIcon(it.kind)}${durHtml(it)}<span class="tbrief">${esc(KIND[it.kind] || it.kind)}</span></span></div>
+                  ${playBtn(it.url, it)}</div>
+                <div class="chips"><span class="chip ${a.listened ? 'ok' : ''}">${a.listened ? '✔ Escuchado' : '○ Pendiente'}</span><span class="chip ${n === 6 ? 'acc' : ''}">${n}/6 respuestas</span><span data-readchip="${a.id}">${ansReadChip(a)}</span><span class="chip ${d.cls}">${esc(d.text)}</span></div></div>
+              ${a.note ? `<div class="callout" style="margin-top:0"><b>Tu nota para este alumno</b>${esc(a.note)}</div>` : ''}
+              <details><summary>Ver respuestas</summary>${answersHtml(a)}</details>
+            </div>`;
+          }).join('') : `<div class="empty small">Este alumno no tiene nada asignado.</div>`}
+        </section>
+      </div>
+    </div></div>`;
 }
 
 /* ========================= PERFILES COMPLETOS ========================= */
@@ -6825,7 +7017,7 @@ async function openNotif(n) {
     case 'assignment': S.section = 'listening'; render(); break;
     case 'dm': await openDm(n.actor_id); break;
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
-    case 'signup': case 'account_deleted': S.section = 'students'; render(); break;
+    case 'signup': case 'account_deleted': S.section = 'students'; S.stuPage = null; render(); break;
     case 'streak': case 'rank': render(); if (S.students.some(s => s.id === n.actor_id)) studentDetailModal(n.actor_id); break;
     case 'goal': goGoals(); break;
     case 'report': S.section = 'mod'; render(); break;
@@ -6874,7 +7066,7 @@ const actions = {
     S.meOpen = !S.meOpen; const tr = $('.top-r'); if (tr) tr.outerHTML = topRight(sections());
     const f = $('.memenu [role=menuitem]'); if (f) f.focus({ preventScroll: true });
   },
-  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; if (S.section === 'homework') { S.hwTab = 'tasks'; S.hwOpen = false; } render(); if (changed) window.scrollTo(0, 0); },
+  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; if (S.section === 'homework') { S.hwTab = 'tasks'; S.hwOpen = false; } if (S.section === 'students') S.stuPage = null; render(); if (changed) window.scrollTo(0, 0); },
   theme(el) {
     setTheme(el.dataset.t);
     if ($('.shell')) return render();
@@ -7122,7 +7314,11 @@ const actions = {
     await closeModal(); await loadData(true); render();
     toast('Cuenta borrada', 'ok');
   },
-  'open-student'(el) { studentDetailModal(el.dataset.id); },
+  'open-student'(el) { studentDetailModal(el.dataset.id, el.dataset.jump); },
+  'stu-sel'(el) { S.stuSel = el.dataset.id; render(); }, // PC, vista de lista: el resumen de la derecha
+  'stu-back'() { if ((history.state || {}).stu) history.back(); else { S.stuPage = null; render(); window.scrollTo(0, 0); } }, // como el Atrás
+  'stu-view'(el) { S.stuView = el.dataset.v; try { localStorage.setItem('ya-stuview', S.stuView); } catch (e) {} render(); },
+  'stu-sort'(el) { const k = el.dataset.k; S.stuSort = { k, d: S.stuSort.k === k ? -S.stuSort.d : 1 }; render(); },
   'avatar-zoom'(el) { avatarZoom(el.dataset.id); },
   'student-profile'(el) { profReturn = el.dataset.id; profileModal(el.dataset.id); }, // desde la ficha: el perfil ofrece volver a ella
   async 'rename-student'(el) {
@@ -7650,8 +7846,8 @@ const hwSort = (a, b) => {
 };
 const hwOverdue = h => !h.done_at && h.due_date && daysDiff(h.due_date) < 0;
 let hwReturn = null; // id del alumno cuya ficha estaba abierta al pulsar "+ Añadir" o "Editar" (para volver a ella)
-const hwFromCard = el => { const m = el.closest('.modal'); return m && m.querySelector('[data-sdm-hw]') ? m.querySelector('[data-sdm-hw]').dataset.sdmHw : null; };
-function hwAfterChange(studentId) { render(); if (studentId && $('[data-sdm-hw]')) studentDetailModal(studentId); }
+const hwFromCard = el => { const p = el.closest('.stu-page'); return p ? p.dataset.stu : null; }; // desde la ficha (pantalla) del alumno
+function hwAfterChange() { render(); } // la ficha es una pantalla: render() ya la repinta
 // Objetivo al que acerca un deber (lo elige el profesor). El alumno lo ve en la tarea y, al marcarla, un mensaje.
 const hwGoal = h => h.goal_id ? S.goalItems.find(g => g.id === h.goal_id) || null : null;
 const goalWhere = g => g.student_id ? 'Objetivo personal' : `Etapa ${g.stage}${stageTitle(g.stage) ? ' · ' + stageTitle(g.stage) : ''}`;

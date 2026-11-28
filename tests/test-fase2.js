@@ -170,12 +170,12 @@ const navTo = async (p, s) => {
   await t.click('#itemForm button[type=submit]'); await wait(t,400);
   ok((await t.locator('#itemForm').count())===1 && !(await db(t,()=>window.__DB.listening_items.some(i=>i.url==='https://youtu.be/abcdefghijk'))), 'Si no se puede sacar el título, pide escribirlo (no guarda vacío)');
   await t.keyboard.press('Escape'); await wait(t);
-  await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
-  const ficha = await t.textContent('.modal');
+  await goto(t,'students'); await t.click('.stl:has-text("Marta")'); await t.click('.sts-open'); await wait(t,300);
+  const ficha = await t.textContent('.stu-page');
   ok(ficha.includes('13 años') && ficha.includes('Menor'), 'Ficha de Marta: 13 años, menor (calculado de la fecha)');
   await t.check('#familyDm'); await wait(t,350);
   ok((await db(t,()=>window.__DB.profiles.find(x=>x.id==='s1').family_dm_ok))===true, 'Profe activa "la familia autoriza mensajes"');
-  await t.keyboard.press('Escape'); await wait(t);
+  await t.click('.sp-back'); await wait(t);
   state = await snapshot(t);
 
   // ================= MARTA con permiso =================
@@ -248,7 +248,7 @@ const navTo = async (p, s) => {
   pdb.push_subscriptions = [{user_id:'s1',endpoint:'https://x/1'},{user_id:'s1',endpoint:'https://x/2'}];
   const pt = await open('t1', undefined, pdb); await wait(pt,300);
   const pushTxt = async id => { await pt.evaluate(async i=>{ await closeModal(); S.section='students'; render(); studentDetailModal(i); }, id); await wait(pt,150);
-    return (await pt.locator('.modal [data-pushchip]').count()) ? pt.locator('.modal [data-pushchip]').innerText() : ''; };
+    return (await pt.locator('.stu-page [data-pushchip]').count()) ? pt.locator('.stu-page [data-pushchip]').innerText() : ''; };
   ok((await pushTxt('s1')).includes('Tiene las notificaciones activadas (en 2 dispositivos)'), 'Ficha: con notificaciones, lo dice y cuenta los dispositivos');
   { const t2 = await pushTxt('s2'); ok(t2.includes('No tiene las notificaciones activadas'), 'Ficha: sin notificaciones, lo dice'); }
   const ps1 = await open('s1', undefined, pdb); await wait(ps1,300);

@@ -161,9 +161,8 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   let t = await open('t1', afterStudent);
   ok(await t.evaluate(() => /ascendido a <b>Oro III/.test(notifText(S.notifs.find(n => n.kind === 'rank') || {}))), 'Campanita: "Marta ha ascendido a Oro III"');
   await t.evaluate(() => studentDetailModal('s1')); await t.waitForTimeout(300);
-  const ficha = await t.locator('.modal').innerText();
+  const ficha = await t.locator('.stu-page').innerText();
   ok(/Rango y racha/.test(ficha) && /Oro III/.test(ficha) && /3 días seguidos/.test(ficha), 'Ficha: rango Oro III y racha de 3 días');
-  await t.click('.modal [data-action="close"]'); await t.waitForTimeout(200);
   await goto(t, 'profile');
   ok(/Mito/.test(await t.locator('#rankPanel').innerText()) && await t.locator('#rankPanel svg.emb').count() === 1, 'El profesor ve su Mito en su Perfil');
   // Al mandar una escucha: ×1 a Marta (3 días de racha); ×2 a Luis si lleva 14 días seguidos
@@ -185,8 +184,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   await t.click('.cal-due.hw'); await t.waitForTimeout(250);
   ok(await t.locator('.modal .adue-row', { hasText: 'Marta' }).count() === 1, 'Agenda: al pulsar sale la lista del día');
   await t.click('.modal .adue-row'); await t.waitForTimeout(250);
-  ok(await t.locator('.modal [data-sdm-hw="s1"]').count() === 1, 'Agenda: desde la lista se abre la ficha');
-  await t.click('.modal [data-action="close"]'); await t.waitForTimeout(200);
+  ok(await t.locator('.modal').count() === 0 && await t.locator('.stu-page [data-sdm-hw="s1"]').count() === 1, 'Agenda: desde la lista se abre la ficha');
 
   // Deberes con objetivo
   await goto(t, 'homework');

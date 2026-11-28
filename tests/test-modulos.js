@@ -95,26 +95,26 @@ const navTo = async (p, s) => {
   ok((await p2.textContent('.bell')).match(/\d/), 'Y suena la campanita');
 
   // ================= PROFESOR: deberes desde la ficha del alumno =================
-  await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
-  ok((await t.locator('.modal [data-sdm-hw] .hw:not(.done)').count())===2, 'Ficha de Marta: ve sus deberes pendientes ahí mismo');
-  await t.click('.modal .dhead [data-action=hw-new]'); await wait(t);
+  await goto(t,'students'); await t.click('.stl:has-text("Marta")'); await t.click('.sts-open'); await wait(t,300);
+  ok((await t.locator('.stu-page [data-sdm-hw] .hw:not(.done)').count())===2, 'Ficha de Marta: ve sus deberes pendientes ahí mismo');
+  await t.click('.stu-page .dhead [data-action=hw-new]'); await wait(t);
   ok(await t.locator('#hwForm input[name=pick][value=s1]').isChecked() && !(await t.locator('#hwForm input[name=pick][value=s2]').isChecked()), '"+ Añadir" desde la ficha ya trae a Marta elegida');
   await t.fill('#hwForm [name=title]','Transcribir 4 compases de un solo'); await t.click('#hwForm button[type=submit]'); await wait(t,400);
-  ok((await t.locator('.modal [data-sdm-hw]').count())===1 && (await t.textContent('.modal [data-sdm-hw]')).includes('Transcribir 4 compases'), 'Al guardar vuelve a la ficha de Marta con el deber nuevo');
-  await t.click('.modal [data-sdm-hw] .hw:has-text("Transcribir") [data-action=hw-toggle]'); await wait(t,300);
-  ok((await t.locator('.modal [data-sdm-hw] .hwdone summary').textContent()).includes('Practicadas') && !!(await db(t,()=>window.__DB.homework_tasks.find(h=>h.title==='Transcribir 4 compases de un solo').done_at)), 'Lo marca como practicado sin salir de la ficha');
-  await t.click('.modal [data-sdm-hw] .hw:has-text("Pentatónica") [data-action=hw-edit]'); await wait(t);
+  ok((await t.locator('.stu-page [data-sdm-hw]').count())===1 && (await t.textContent('.stu-page [data-sdm-hw]')).includes('Transcribir 4 compases'), 'Al guardar vuelve a la ficha de Marta con el deber nuevo');
+  await t.click('.stu-page [data-sdm-hw] .hw:has-text("Transcribir") [data-action=hw-toggle]'); await wait(t,300);
+  ok((await t.locator('.stu-page [data-sdm-hw] .hwdone summary').textContent()).includes('Practicadas') && !!(await db(t,()=>window.__DB.homework_tasks.find(h=>h.title==='Transcribir 4 compases de un solo').done_at)), 'Lo marca como practicado sin salir de la ficha');
+  await t.click('.stu-page [data-sdm-hw] .hw:has-text("Pentatónica") [data-action=hw-edit]'); await wait(t);
   await t.click('#hwForm [data-action=hw-cancel]'); await wait(t,250);
-  ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Cancelar una edición vuelve a la ficha (no la cierra)');
+  ok((await t.locator('.stu-page [data-sdm-hw]').count())===1, 'Cancelar una edición vuelve a la ficha (no la cierra)');
   // Copiar deberes de Marta a Luis desde la ficha
-  await t.click('.modal .dhead [data-action=hw-copy-all]'); await wait(t);
+  await t.click('.stu-page .dhead [data-action=hw-copy-all]'); await wait(t);
   ok(await t.locator('#hwCopyForm input[name=task]:checked').count()===2 && !(await t.locator('#hwCopyForm input[name=pick][value=s1]').count()), 'Copiar: vienen marcadas sus 2 pendientes y Marta no sale como destino');
   await t.check('#hwCopyForm input[name=pick][value=s2]');
   await t.click('#hwCopyForm button[type=submit]'); await wait(t,400);
   const copiados = await db(t,()=>window.__DB.homework_tasks.filter(h=>h.student_id==='s2'&&!h.done_at).map(h=>h.title));
   ok(copiados.filter(x=>x.startsWith('Pentatónica')).length===1 && copiados.filter(x=>x.startsWith('Improvisar')).length===1, 'Copia "Pentatónica" a Luis y no duplica "Improvisar", que ya tenía pendiente');
   ok((await db(t,()=>window.__DB.homework_tasks.find(h=>h.student_id==='s2'&&h.title.startsWith('Pentatónica')).details))==='A 80 bpm con metrónomo, subiendo y bajando.', 'La copia lleva los detalles');
-  ok((await t.locator('.modal [data-sdm-hw="s1"]').count())===1, 'Al copiar vuelve a la ficha de Marta');
+  ok((await t.locator('.stu-page [data-sdm-hw="s1"]').count())===1, 'Al copiar vuelve a la ficha de Marta');
   await t.keyboard.press('Escape'); await wait(t,250);
   // Copiar una sola tarea, con fecha nueva, desde la sección Deberes
   await goto(t,'homework');
@@ -134,9 +134,9 @@ const navTo = async (p, s) => {
   await t.click('#hwCopyForm button[type=submit]'); await wait(t,300);
   const wb = await db(t,()=>window.__DB.homework_tasks.find(h=>h.student_id==='s1'&&h.title.startsWith('Walking bass')));
   ok(!!wb && wb.due_date==='2099-02-01' && !wb.done_at, 'Copia una tarea ya practicada con fecha nueva; la copia nace pendiente');
-  await goto(t,'students'); await t.click('.row.click:has-text("Marta")'); await wait(t,300);
+  await goto(t,'students'); await t.click('.stl:has-text("Marta")'); await t.click('.sts-open'); await wait(t,300);
   await shot(t,'ficha_deberes.png');
-  await t.keyboard.press('Escape'); await wait(t,250);
+  await t.click('.sp-back'); await wait(t,250);
 
   // ================= PROFESOR: pagos =================
   await goto(t,'payments');

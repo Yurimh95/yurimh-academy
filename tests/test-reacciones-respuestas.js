@@ -57,7 +57,7 @@ const path = require('path');
   await t.click('#dmRxBox [data-arx-pick="❤️"]'); await t.waitForTimeout(150);
   await t.click('.modal [data-ansread=a2] [data-action=ans-read]'); await t.waitForTimeout(200);
   ok(!!(await t.evaluate(() => __DB.listening_assignments.find(a => a.id === 'a2').teacher_read_at)), 'Marcar como leído guarda la fecha');
-  ok((await t.locator('.modal [data-readchip=a2] .chip').textContent()).includes('Leído'), 'El chip pasa a "Leído"');
+  ok((await t.locator('.stu-page [data-readchip=a2] .chip').textContent()).includes('Leído'), 'El chip pasa a "Leído"');
   ok(await t.locator('.modal [data-ansread=a2] [data-off]').count() === 1, 'Sale "Desmarcar"');
   const notifs = await t.evaluate(() => __DB.notifications.filter(n => n.user_id === 's2' && n.kind === 'listening_feedback'));
   ok(notifs.length === 1 && notifs[0].target_id === 'i1' && notifs[0].extra === 'Kind of Blue', 'Luis recibe UN solo aviso aunque haya reacciones y "leído"');
@@ -66,8 +66,8 @@ const path = require('path');
 
   // Desde la ficha del alumno también
   await t.evaluate(() => { closeModal(); S.section = 'students'; render(); studentDetailModal('s2'); }); await t.waitForTimeout(150);
-  ok((await t.locator('.modal [data-readchip=a2] .chip').textContent()).includes('Leído'), 'En la ficha del alumno también sale "Leído"');
-  ok(await t.locator('.modal [data-ansrx="a2|likes"] .msg-rx').textContent() === '❤️', 'Y la reacción');
+  ok((await t.locator('.stu-page [data-readchip=a2] .chip').textContent()).includes('Leído'), 'En la ficha del alumno también sale "Leído"');
+  ok(await t.locator('.stu-page [data-ansrx="a2|likes"] .msg-rx').textContent() === '❤️', 'Y la reacción');
   const db = await t.evaluate(() => JSON.parse(JSON.stringify(__DB)));
 
   // ---------- Luis (alumno) ----------

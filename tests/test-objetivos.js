@@ -66,9 +66,9 @@ const navTo = async (p, s) => {
   // ================= PROFESOR: marcar desde la ficha =================
   p = await open('t1');
   await goto(p,'students');
-  await p.click('[data-action=open-student][data-id=s1]'); await wait(p);
-  ok((await p.textContent('.modal')).includes('2/5'), 'Ficha: resumen de objetivos 2/5');
-  await p.click('.modal [data-action=goals-open]'); await wait(p);
+  await p.click('.stl[data-id=s1]'); await p.click('.sts-open'); await wait(p);
+  ok((await p.textContent('.stu-page')).includes('2/5'), 'Ficha: resumen de objetivos 2/5');
+  await p.click('.stu-page [data-action=goals-open]'); await wait(p);
   ok(await p.locator('.modal [data-goals=s1]').count()===1, 'Se abre "Objetivos de Marta"');
   await p.click('.modal [data-action=goal-toggle][data-id=g3]'); await wait(p,350);
   let d = await snapshot(p);

@@ -43,11 +43,12 @@ const navTo = async (p, s) => {
   ok((await t.textContent('.cev:has-text("Marta")')).includes('📝 2'), 'En cada clase ve los deberes pendientes del alumno');
   ok((await t.textContent('.cev:has-text("Marta")')).includes('Sin pago apuntado'), 'Y si tiene el bono de clases pagado o no');
   await t.click('.cev:has-text("Luis")'); await wait(t,300);
-  ok((await t.locator('.modal [data-sdm-hw]').count())===1, 'Pulsar una clase abre la ficha del alumno');
-  ok((await t.textContent('.modal')).includes('Próxima clase: mañana'), 'La ficha dice cuándo es su próxima clase');
+  ok((await t.locator('.stu-page [data-sdm-hw]').count())===1, 'Pulsar una clase abre la ficha del alumno');
+  ok((await t.textContent('.stu-page')).includes('Próxima clase: mañana'), 'La ficha dice cuándo es su próxima clase');
   await t.fill('#calNameInput','Lucho'); await t.click('[data-action=cal-name]'); await wait(t,300);
   ok((await t.evaluate(()=>window.__DB.lessons_students.find(x=>x.student_id==='s2').calendar_name))==='Lucho', 'Guarda cómo se llama el alumno en el calendario');
-  await t.keyboard.press('Escape'); await wait(t,200);
+  await t.goBack(); await wait(t,300);
+  ok((await t.evaluate(()=>S.section))==='agenda', 'Atrás desde la ficha vuelve a la Agenda');
   await t.click('[data-action=agenda-week][data-n="1"]'); await wait(t,200);
   ok((await t.textContent('#app')).includes('Esta semana'), 'Navega a la semana siguiente (con botón para volver)');
   await shot(t,'agenda.png');

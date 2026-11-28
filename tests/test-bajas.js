@@ -36,9 +36,9 @@ const navTo = async (p, s) => {
   await p.evaluate(()=>{ __DB.profiles.find(x=>x.id==='s2').avatar=null; });
   await goto(p,'students');
   ok(await p.locator('[data-action=revoke]').count()===0, 'Ya no existe "Revocar acceso" suelto en la lista');
-  await p.click('[data-action=open-student][data-id=s2]'); await wait(p);
-  ok(await p.locator('.modal [data-action=archive]').count()===1, 'La ficha tiene "Archivar alumno"');
-  await p.click('.modal [data-action=archive]'); await wait(p,400);
+  await p.click('.stl[data-id=s2]'); await p.click('.sts-open'); await wait(p);
+  ok(await p.locator('.stu-page [data-action=archive]').count()===1, 'La ficha tiene "Archivar alumno"');
+  await p.click('.stu-page [data-action=archive]'); await wait(p,400);
   let d = await snapshot(p);
   const luis = d.profiles.find(x=>x.id==='s2');
   ok(luis.archived_at && luis.approved===false, 'Archivado: archived_at puesto y sin acceso');
@@ -83,8 +83,8 @@ const navTo = async (p, s) => {
   const notArch = await p.evaluate(async()=>{ const {error} = await sb.functions.invoke('delete-account',{body:{user_id:'s2'}}); return !!error; });
   ok(notArch, 'No se puede borrar a un alumno activo (hay que archivarlo antes)');
   await goto(p,'students');
-  await p.click('[data-action=open-student][data-id=s2]'); await wait(p);
-  await p.click('.modal [data-action=archive]'); await wait(p,400);
+  await p.click('.stl[data-id=s2]'); await p.click('.sts-open'); await wait(p);
+  await p.click('.stu-page [data-action=archive]'); await wait(p,400);
   await p.click('details.archived summary'); await wait(p);
   await p.click('[data-action=delete-student][data-id=s2]'); await wait(p);
   ok((await p.textContent('.modal')).includes('no se puede deshacer'), 'Modal de borrado con aviso');
