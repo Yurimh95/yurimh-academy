@@ -49,26 +49,26 @@ const path = require('path');
   // ======================= Marta (s1, alumna menor) =======================
   let p = await open('s1');
   ok(await p.locator('.stories:visible .st-me [data-action=story-add]').count() >= 1, 'Arriba del Inicio está "Tu story" con el botón +');
-  ok(await p.locator('#feedForm [data-action=vd-add]').count() === 1, 'El cuadro de publicar tiene el botón Vídeo');
+  ok(await p.locator('#feedForm [data-action=md-add]').count() === 1 && await p.locator('#feedForm [data-action=vd-add], #feedForm [data-action=ph-add]').count() === 0, 'El cuadro de publicar tiene un solo botón multimedia (fotos o vídeo)');
   ok(!(await p.locator('#feedForm .vd-days').isVisible()), 'Sin vídeo no sale la duración');
 
   // --- Elegir vídeo: sale el borrador y la duración; no se mezclan fotos y vídeo ---
-  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await pickVideo(p, '#feedForm [data-action=md-add]');
   ok(await p.locator('[data-vd-draft="feed-new"] .vd-chip:not(.busy)').count() === 1, 'El vídeo elegido sale como borrador con su portada');
   ok(await p.locator('#feedForm .vd-days').isVisible(), 'Con vídeo sale "El vídeo se borra a los…"');
   ok(/poco espacio/.test(await p.locator('#feedForm .vd-days small').textContent()), 'Y la letra pequeña sobre el poco espacio');
   ok(await p.locator('#feedForm [name=vdays] option').evaluateAll(o => o.map(x => x.value).join(',')) === '1,3,7', 'Se puede elegir 1, 3 o 7 días');
-  await p.click('#feedForm [data-action=ph-add]'); await p.waitForTimeout(150);
+  await p.evaluate(() => mdAddFiles('feed-new', [new File([1], 'foto.jpg', { type: 'image/jpeg' })])); await p.waitForTimeout(150);
   ok(/fotos o un vídeo/.test(await toastText(p)), 'Con un vídeo no deja añadir fotos');
   await p.click('[data-vd-draft="feed-new"] [data-action=vd-del]');
   ok(await p.locator('[data-vd-draft="feed-new"] .vd-chip').count() === 0 && !(await p.locator('#feedForm .vd-days').isVisible()), 'La × quita el vídeo');
 
   // --- Un vídeo que el navegador no sabe preparar ---
-  await pickVideo(p, '#feedForm [data-action=vd-add]', 'malo.mov');
+  await pickVideo(p, '#feedForm [data-action=md-add]', 'malo.mov');
   ok(/no puede preparar/.test(await toastText(p)) && await p.locator('[data-vd-draft="feed-new"] .vd-chip').count() === 0, 'Si no se puede preparar, avisa y no queda borrador');
 
   // --- Publicar con texto y 7 días ---
-  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await pickVideo(p, '#feedForm [data-action=md-add]');
   await p.fill('#feedForm textarea', 'Mi primer riff en vídeo');
   await p.selectOption('#feedForm [name=vdays]', '7');
   await shot(p, 'vd1-borrador.png');
@@ -108,7 +108,7 @@ const path = require('path');
   await p.evaluate(() => { document.getElementById('vdSpacer').remove(); window.scrollTo(0, 0); });
 
   // --- Solo vídeo, sin texto ---
-  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await pickVideo(p, '#feedForm [data-action=md-add]');
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(600);
   D = await state(p);
   const fp2 = D.feed_posts.find(x => x.author_id === 's1' && x.video && x.body === '');
@@ -148,7 +148,7 @@ const path = require('path');
   F = await files(p);
   ok(!F.some(([k]) => k.includes(fp2.id)), 'Borrar tu post con vídeo borra el vídeo y su portada');
   // Otro post solo con vídeo y un comentario, para ver qué queda al caducar
-  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await pickVideo(p, '#feedForm [data-action=md-add]');
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(500);
   const fp3 = (await state(p)).feed_posts.find(x => x.author_id === 's1' && x.video && x.body === '');
   await db(p, id => sb.from('feed_comments').insert({ id: crypto.randomUUID(), post_id: id, author_id: 's1', body: '¿Qué tal suena?' }), fp3.id);
@@ -251,7 +251,7 @@ const path = require('path');
   // Fusible: si se pasa del presupuesto del mes, no se pueden subir vídeos
   await db(p, () => { window.__VIDEO_BUDGET = 100; });
   await p.click('.nav button[data-s=feed]'); await p.waitForTimeout(150);
-  await pickVideo(p, '#feedForm [data-action=vd-add]');
+  await pickVideo(p, '#feedForm [data-action=md-add]');
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(500);
   ok(/presupuesto de vídeo/.test(await toastText(p)), 'Con el presupuesto del mes gastado, avisa y no sube el vídeo');
   const direct = await db(p, async () => (await sb.storage.from('video').upload(`fvideo/s2/${crypto.randomUUID()}/${crypto.randomUUID()}.mp4`, new Blob([1], { type: 'video/mp4' }), { contentType: 'video/mp4' })).error);

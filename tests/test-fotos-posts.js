@@ -43,14 +43,14 @@ const navTo = async (p, s) => {
   // ======================= Marta (s1, alumna) =======================
   let p = await open('s1');
   await goto(p, 'feed');
-  ok(await p.locator('#feedForm [data-action=ph-add][data-ph=feed-new]').count() === 1, 'El cuadro de publicar tiene el botón de foto');
+  ok(await p.locator('#feedForm [data-action=md-add][data-key=feed-new]').count() === 1, 'El cuadro de publicar tiene el botón multimedia');
 
   // --- Elegir, quitar y publicar solo fotos (sin texto) ---
-  await pick(p, '#feedForm [data-action=ph-add]', imgs(2));
+  await pick(p, '#feedForm [data-action=md-add]', imgs(2));
   ok(await chips(p, 'feed-new') === 2, 'Salen las 2 fotos elegidas como miniaturas');
   await p.locator('[data-ph-strip="feed-new"] .ph-x').first().click();
   ok(await chips(p, 'feed-new') === 1, 'La × quita una foto antes de publicar');
-  await pick(p, '#feedForm [data-action=ph-add]', imgs(1, ICON));
+  await pick(p, '#feedForm [data-action=md-add]', imgs(1, ICON));
   ok(await chips(p, 'feed-new') === 2, 'Se pueden añadir más en otra tanda');
   await shot(p, 'ph1-borrador.png');
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(500);
@@ -69,7 +69,7 @@ const navTo = async (p, s) => {
 
   // --- 5 fotos: rejilla de 4 con "+1" ---
   await p.fill('#feedForm textarea[name=body]', 'Mis dedos haciendo el ejercicio de legato');
-  await pick(p, '#feedForm [data-action=ph-add]', imgs(5));
+  await pick(p, '#feedForm [data-action=md-add]', imgs(5));
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(700);
   const post5 = await db(p, () => window.__DB.feed_posts.find(x => x.author_id === 's1' && x.photos && x.photos.length === 5));
   ok(!!post5 && post5.body.includes('legato'), 'Post con texto y 5 fotos');
@@ -80,7 +80,7 @@ const navTo = async (p, s) => {
   await shot(p, 'ph2-rejilla.png');
 
   // --- Tope de 10 ---
-  await pick(p, '#feedForm [data-action=ph-add]', imgs(12));
+  await pick(p, '#feedForm [data-action=md-add]', imgs(12));
   ok(await chips(p, 'feed-new') === 10, 'Como mucho 10 fotos por publicación');
   ok((await p.locator('.toast').allTextContents()).some(t => t.includes('Solo caben 10')), 'Avisa de que solo caben 10');
   await db(p, () => phClear('feed-new'));
@@ -252,7 +252,7 @@ const navTo = async (p, s) => {
   const n0 = (await storeKeys(p, '')).length;
   await db(p, () => enterPreview()); await p.waitForTimeout(400);
   await goto(p, 'feed');
-  await pick(p, '#feedForm [data-action=ph-add]', imgs(1));
+  await pick(p, '#feedForm [data-action=md-add]', imgs(1));
   await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(400);
   ok((await storeKeys(p, '')).length === n0, 'En la vista de alumno no se sube ninguna foto');
   await db(p, () => exitPreview()); await p.waitForTimeout(400);
