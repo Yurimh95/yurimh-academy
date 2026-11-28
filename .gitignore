@@ -4,3 +4,6 @@ backups/
 
 # Configuración local de vista previa (rutas de este ordenador)
 .claude/launch.json
+
+# Ideas de negocio y notas personales: el repositorio es público.
+ideas/
