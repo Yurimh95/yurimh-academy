@@ -106,6 +106,16 @@ const path = require('path');
   await p.locator(`${card} .vd video`).scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
   ok(await p.evaluate(() => window.__vdPlayed) === 1, 'Si lo había pausado la persona, al volver no se reanuda');
   await p.evaluate(() => { document.getElementById('vdSpacer').remove(); window.scrollTo(0, 0); });
+  // Arranque solo al bajar (muteado); el que ya se ve al entrar en el Inicio espera a que salga y vuelva
+  await p.evaluate(() => { S.section = 'board'; render(); S.section = 'feed'; render(); window.scrollTo(0, 0); });
+  await p.locator(`${card} .vd`).scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+  ok(await p.locator(`${card} .vd video`).count() === 0, 'El vídeo que ya está en pantalla al entrar en el Inicio no arranca solo');
+  await p.evaluate(() => { const sp = document.createElement('div'); sp.id = 'vdSpacer'; sp.style.height = '5000px'; document.body.appendChild(sp); window.scrollTo(0, document.body.scrollHeight); });
+  await p.waitForTimeout(300);
+  await p.locator(`${card} .vd`).scrollIntoViewIfNeeded(); await p.waitForTimeout(800);
+  ok(await p.locator(`${card} .vd video`).count() === 1, 'Al salir de la pantalla y volver, arranca solo');
+  ok(await p.evaluate(sel => document.querySelector(sel).muted, `${card} .vd video`), 'Y arranca muteado');
+  await p.evaluate(() => { document.getElementById('vdSpacer').remove(); S.section = 'board'; render(); S.section = 'feed'; render(); window.scrollTo(0, 0); });
 
   // --- Solo vídeo, sin texto ---
   await pickVideo(p, '#feedForm [data-action=md-add]');

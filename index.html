@@ -3332,7 +3332,7 @@ const phIO = 'IntersectionObserver' in window
   ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { phIO.unobserve(e.target); phLoad(e.target); } }), { rootMargin: '600px 0px' }) : null;
 function phScan() { $$('img[data-ph-src]:not([data-ph-on])').forEach(i => { i.setAttribute('data-ph-on', '1'); phIO ? phIO.observe(i) : phLoad(i); }); }
 let phScanQueued = false;
-new MutationObserver(() => { if (!phScanQueued) { phScanQueued = true; requestAnimationFrame(() => { phScanQueued = false; phScan(); }); } })
+new MutationObserver(() => { if (!phScanQueued) { phScanQueued = true; requestAnimationFrame(() => { phScanQueued = false; phScan(); vdAutoScan(); }); } })
   .observe(document.body, { childList: true, subtree: true });
 
 // Rejilla tipo Facebook/WhatsApp: hasta 4 a la vista y "+N" en la cuarta si hay más
@@ -3652,20 +3652,41 @@ function vdBox(kind, owner, rowId, v, chip = '') {
     <button type="button" class="vd-play" data-action="vd-play" aria-label="Reproducir el vídeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
     <span class="vd-dur">${durShort(v.d)}</span>${chip ? `<span class="vd-exp">${esc(chip)}</span>` : ''}</div>`;
 }
-async function vdPlay(btn) {
+async function vdPlay(btn, muted = false) {
   const box = btn.closest('.vd'); if (!box || box.classList.contains('on')) return;
   const path = box.dataset.vdPath + '.mp4';
   box.classList.add('on', 'loading');
   const url = await vdSrc(path);
   box.classList.remove('loading');
-  if (!url) { box.classList.remove('on'); return toast('No se pudo cargar el vídeo. Puede que haya caducado', 'bad'); }
+  if (!url) { box.classList.remove('on'); return muted ? null : toast('No se pudo cargar el vídeo. Puede que haya caducado', 'bad'); }
   const poster = box.querySelector('img'), v = document.createElement('video');
-  v.controls = true; v.playsInline = true; v.autoplay = true; v.preload = 'auto'; v.src = url;
+  v.controls = true; v.playsInline = true; v.autoplay = true; v.preload = 'auto'; v.muted = muted; v.src = url;
   if (poster && poster.src) v.poster = poster.src;
   box.innerHTML = ''; box.appendChild(v);
   if (vdIO) vdIO.observe(v);
   v.play().catch(() => { });
   vdCount(box.dataset.vdKind, box.dataset.vdRow, path);
+}
+// Inicio (Yuri, 2026-11-28): al bajar, cada vídeo arranca solo y **muteado** cuando se ve al 60 % (tras 300 ms,
+// para no descargar los que se pasan de largo). El que ya está en pantalla al entrar en el Inicio no arranca
+// hasta que sale y vuelve: un vídeo solo se "arma" (`vdArmed`, por fila) al estar fuera de la pantalla, y
+// `vdArmed` se vacía al entrar en el Inicio desde otra sección. Si ya tiene reproductor, manda `vdIO`.
+const vdArmed = new Set();
+const vdAutoIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver(es => es.forEach(e => {
+    const box = e.target, row = box.dataset.vdRow;
+    if (!box.isConnected || box.classList.contains('on')) { vdAutoIO.unobserve(box); return; }
+    clearTimeout(box._vdT);
+    if (!e.isIntersecting) { vdArmed.add(row); return; }
+    if (e.intersectionRatio < 0.6 || !vdArmed.has(row)) return;
+    box._vdT = setTimeout(() => {
+      if (!box.isConnected || box.classList.contains('on') || S.section !== 'feed' || document.hidden || $('#modalRoot').firstChild) return;
+      const btn = box.querySelector('.vd-play'); if (btn) vdPlay(btn, true);
+    }, 300);
+  }), { threshold: [0, 0.6] }) : null;
+function vdAutoScan() {
+  if (!vdAutoIO || S.section !== 'feed') return;
+  $$('#app .main .vd[data-vd-kind="fvideo"]:not(.on):not([data-vd-auto])').forEach(b => { b.setAttribute('data-vd-auto', '1'); vdAutoIO.observe(b); });
 }
 // El vídeo de un post del Inicio (o el aviso de que ha caducado)
 const fvExpired = p => !p.video || (p.video_expires_at && new Date(p.video_expires_at) <= Date.now() && !(isTeacher() && openReport('feed_post', p.id)));
@@ -4529,6 +4550,8 @@ function render() {
   S.meOpen = false; // el menú de la cuenta se cierra al repintar (cambiar de sección, de tema…)
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
   if (!['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].concat(t ? ['students', 'payments', 'agenda', 'mod'] : []).includes(S.section)) S.section = 'feed';
+  if (S.section === 'feed' && render._sec !== 'feed') vdArmed.clear(); // al entrar en el Inicio, lo que se vea no arranca solo
+  render._sec = S.section;
   let body;
   switch (S.section) {
     case 'messages': body = messagesView(); break;
@@ -4673,6 +4696,7 @@ function forYou() {
    a la derecha que desliza al pulsarla y, la primera vez que sale en cada carga, un pequeño
    empujón de ida y vuelta (sin él si el sistema pide menos movimiento). */
 const FY_MORE = `<button type="button" class="fy-more" data-action="fy-more" aria-label="Ver más" title="Ver más"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+const FY_LESS = `<button type="button" class="fy-more fy-less" data-action="fy-more" data-dir="-1" aria-label="Volver" title="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
 let fyNudged = false;
 function fyEdges(row) {
   const fy = row.closest('.foryou'); if (!fy) return;
@@ -4696,7 +4720,6 @@ new MutationObserver(() => { if (!fyQueued) { fyQueued = true; requestAnimationF
   .observe(document.body, { childList: true, subtree: true });
 // Columna derecha del Inicio para el profesor: lo que tiene hoy (clases, respuestas, altas, denuncias, vencidas).
 // Solo en el PC ancho: en el móvil todo eso ya está en Moderación y la Agenda.
-const FY_LESS = `<button type="button" class="fy-more fy-less" data-action="fy-more" data-dir="-1" aria-label="Volver" title="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
 function homeRail() {
   if (!isTeacher()) return '';
   const now = new Date(), ok = modActive(), out = [], chip = fyChip;
