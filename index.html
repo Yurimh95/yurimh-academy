@@ -174,7 +174,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .prof-me .avrow{gap:14px;margin-bottom:12px}
 .prof-avbtns{display:flex;flex-wrap:wrap;gap:8px}
 .prof-hint{margin:6px 0 0;font-size:12.5px}
-.prof-bar+.prof-mates{margin-bottom:16px}.prof-cols+.prof-mates{margin-top:16px}
+.prof-side{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media (max-width:900px){.prof-cols{grid-template-columns:minmax(0,1fr)}}
 .name-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
 .name-row .f{margin:0}
@@ -4688,7 +4688,6 @@ function profileView() {
   return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
     <span style="display:flex;gap:8px">${isTeacher() ? `<button class="btn sm pvbtn only-m" data-action="preview-on">${ic('eye')} Ver como alumno</button>` : ''}
     <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></span></div>
-  ${!isTeacher() && mateRequestsIn().length ? `<div class="prof-mates">${matesPanel()}</div>` : ''}
   <div class="prof-cols">
     <div class="panel prof-me">
       <div class="prof-sec">
@@ -4722,9 +4721,12 @@ function profileView() {
         <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
       </form>
     </div>
-    ${!isTeacher() ? rankPanel() : teacherRankPanel()}
-  </div>
-  ${isTeacher() || mateRequestsIn().length ? '' : `<div class="prof-mates">${matesPanel()}</div>`}`;
+    <div class="prof-side">
+      ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
+      ${!isTeacher() ? rankPanel() : teacherRankPanel()}
+      ${isTeacher() || mateRequestsIn().length ? '' : matesPanel()}
+    </div>
+  </div>`;
 }
 
 /* ================================ AJUSTES ============================= */
