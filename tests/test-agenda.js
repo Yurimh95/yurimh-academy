@@ -12,6 +12,10 @@ const { chromium } = require('playwright');
     page.on('pageerror',e=>errors.push('pageerror: '+e.message));
     page.on('console',m=>{ if(m.type()==='error' && !/Failed to load resource/.test(m.text())) errors.push('console: '+m.text()); });
     page.on('dialog',d=>d.accept());
+    // Reloj fijo en el último miércoles a las 10:00: "mañana" y "pasado mañana" (clases de la semilla) caen siempre
+    // en la misma semana de la Agenda. Sin esto, la prueba fallaba en sábado (pasado mañana = lunes = otra semana).
+    const wed = new Date(); wed.setDate(wed.getDate() - ((wed.getDay() + 4) % 7)); wed.setHours(10, 0, 0, 0);
+    await page.clock.setFixedTime(wed);
     await page.addInitScript(`window.__ME=${JSON.stringify(me)}`);
     if (db) await page.addInitScript(`window.__DB_OVERRIDE=${JSON.stringify(db)}`);
     await page.goto(require('url').pathToFileURL(require('path').join(__dirname,'test.html')).href);
