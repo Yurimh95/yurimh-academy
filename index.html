@@ -87,7 +87,7 @@ svg.i{width:20px;height:20px;flex:none}
 .top{position:relative;z-index:45;height:var(--toph)} /* sin fondo ni línea: todo junto, sobre el mismo degradado (Yuri); no se queda fija */
 .top-in{max-width:var(--wrap);height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:12px}
 .tbrand{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;min-width:0;width:var(--side);color:var(--strong)}
-.tbrand img{width:36px;height:36px;flex:none;border-radius:10px;object-fit:cover}
+.tbrand img{width:36px;height:36px;flex:none;border-radius:10px;object-fit:cover;box-shadow:var(--glow)} /* el brillo del logo se queda (Yuri) */
 .tbrand:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:10px}
 .tb-name{display:flex;flex-direction:column;min-width:0;line-height:1.2}
 .tb-name b{font-size:15px;letter-spacing:-.015em;white-space:nowrap}
@@ -6293,7 +6293,7 @@ function notifIcon(kind) { return { board_post: 'board', assignment: 'listening'
 // Va suelto en <body> (#notifBox) para que repintar la barra de arriba no lo cierre ni pierda el desplazamiento.
 // Se cierra con la campanita, tocando fuera, Esc o Atrás (entrada `pop: 1` en el historial).
 // Como Facebook (Yuri, 2026-11-28): filtro Todas / No leídas arriba y, en Todas, tres grupos:
-// Nuevas (sin leer, de cuando sean), Hoy (ya leídas, de hoy) y Anteriores (leídas, de otros días).
+// Nuevas (sin leer, de cuando sean), Hoy (ya leídas, de las últimas 24 h) y Anteriores (leídas, más antiguas).
 let notifFilter = 'all'; // 'all' | 'unread'; se queda como estaba al volver a abrir (solo en memoria)
 function notifRowHtml(n) {
   return `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
@@ -6301,9 +6301,9 @@ function notifRowHtml(n) {
     <div class="t"><div>${notifText(n)}</div><span class="sub">${timeAgo(n.created_at)}</span></div>${n.read_at ? '' : '<i class="udot"></i>'}</div>`;
 }
 function notifGroups(list) {
-  const today = new Date().toDateString();
+  const since = Date.now() - 864e5; // "Hoy" = últimas 24 h, aunque sean de ayer (Yuri)
   const g = { new: [], today: [], old: [] };
-  list.forEach(n => g[!n.read_at ? 'new' : new Date(n.created_at).toDateString() === today ? 'today' : 'old'].push(n));
+  list.forEach(n => g[!n.read_at ? 'new' : new Date(n.created_at).getTime() >= since ? 'today' : 'old'].push(n));
   return [['new', 'Nuevas'], ['today', 'Hoy'], ['old', 'Anteriores']].filter(([k]) => g[k].length).map(([k, label]) => ({ k, label, items: g[k] }));
 }
 function notifsInner() {

@@ -130,12 +130,13 @@ const navTo = async (p, s) => {
   await p.evaluate(()=>{ const d=new Date(Date.now()-3*864e5).toISOString(), now=new Date().toISOString();
     S.notifs.push({id:'ng1',user_id:'s1',kind:'homework',extra:'Escala nueva',created_at:now,read_at:null},
       {id:'ng2',user_id:'s1',kind:'homework',extra:'Escala vista hoy',created_at:now,read_at:now},
+      {id:'ng4',user_id:'s1',kind:'homework',extra:'Escala de hace 20 h',created_at:new Date(Date.now()-20*3600e3).toISOString(),read_at:now},
       {id:'ng3',user_id:'s1',kind:'homework',extra:'Escala antigua',created_at:d,read_at:d}); });
   await p.evaluate(()=>{ S.push='off'; }); await p.click('.bell'); await wait(p,250);
   const grp = async k => (await p.locator(`#notifBox [data-ngroup=${k}]`).count()) ? await p.textContent(`#notifBox [data-ngroup=${k}]`) : '';
   ok((await grp('new')).includes('Nuevas') && (await grp('new')).includes('Escala nueva') && !(await grp('new')).includes('Escala vista hoy'), 'Grupo "Nuevas": las que no has leído');
-  ok((await grp('today')).includes('Hoy') && (await grp('today')).includes('Escala vista hoy'), 'Grupo "Hoy": leídas de hoy');
-  ok((await grp('old')).includes('Anteriores') && (await grp('old')).includes('Escala antigua'), 'Grupo "Anteriores": leídas de otros días');
+  ok((await grp('today')).includes('Hoy') && (await grp('today')).includes('Escala vista hoy') && (await grp('today')).includes('Escala de hace 20 h'), 'Grupo "Hoy": leídas de las últimas 24 h (aunque sean de ayer)');
+  ok((await grp('old')).includes('Anteriores') && (await grp('old')).includes('Escala antigua'), 'Grupo "Anteriores": leídas de hace más de 24 h');
   ok((await p.locator('#notifBox .nb-tab.on').textContent()).includes('Todas'), 'Filtro: empieza en "Todas"');
   await p.click('#notifBox [data-action=notif-filter][data-f=unread]'); await wait(p,200);
   { const t = await p.textContent('#notifBox .nb-scroll'); ok((await p.locator('#notifBox').count())===1 && t.includes('Escala nueva') && !t.includes('Escala vista hoy') && !t.includes('Escala antigua') && (await p.locator('#notifBox .nb-group').count())===0, 'Filtro "No leídas": solo las sin leer, y el desplegable sigue abierto'); }
