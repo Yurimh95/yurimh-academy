@@ -4,8 +4,10 @@
 const { chromium } = require('playwright');
 // Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
 const navTo = async (p, s) => {
-  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible, .stu-tabs button[data-s=${s}]:visible`;
   if (await p.locator(sel).count()) return p.click(sel);
+  if (['homework', 'payments', 'agenda'].includes(s) && await p.locator('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible').count()) { // profesor: pestañas de Alumnos
+    await p.click('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible'); await p.waitForTimeout(80); return p.click(`.stu-tabs button[data-s=${s}]`); }
   await p.click('.avbtn'); await p.waitForTimeout(80);
   if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
   await p.click(`.memenu [data-s=${s}]`);
@@ -66,7 +68,7 @@ const navTo = async (p, s) => {
   await t.evaluate(()=>{ const l=S.lessons.filter(x=>x.student_id==='s1' && new Date(x.starts_at)>new Date()).sort((a,b)=>a.starts_at.localeCompare(b.starts_at))[0]; S.agendaWeek = weekStart(new Date(l.starts_at)).toISOString(); render(); });
   ok((await t.textContent('.cev:has-text("Marta"):not(.past)')).includes('Toca cobrar'), 'Agenda: en la clase siguiente al bono pone "Toca cobrar"');
   await goto(t,'payments');
-  row = await t.evaluate(()=>{ const d=new Date(); d.setHours(0,5,0,0); S.lessons.push({id:'lx',student_id:'s1',title:'Marta',starts_at:d.toISOString(),ends_at:new Date(d.getTime()+3600000).toISOString()}); render(); return document.querySelector('.payrow:last-child').innerText; });
+  row = await t.evaluate(()=>{ const d=new Date(); d.setHours(0,5,0,0); S.lessons.push({id:'lx',student_id:'s1',title:'Marta',starts_at:d.toISOString(),ends_at:new Date(d.getTime()+3600000).toISOString()}); render(); return [...document.querySelectorAll('.payrow')].find(r=>r.innerText.includes('Marta')).innerText; });
   ok(row.includes('Toca cobrar') , 'Cuando llega el día de la clase siguiente al bono → toca cobrar');
   await t.evaluate(()=>{ S.lessons = S.lessons.filter(l=>l.id!=='lx'); render(); });
 
@@ -105,7 +107,7 @@ const navTo = async (p, s) => {
 
   // Móvil del profesor: Agenda desde Alumnos
   const m = await open('t1',{width:390,height:844});
-  await goto(m,'students'); await m.click('.dhead [data-action=section][data-s=agenda]'); await wait(m,250);
+  await goto(m,'students'); await m.click('.stu-tabs [data-s=agenda]'); await wait(m,250);
   ok((await m.locator('.cev').count())>=3 && await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: Agenda desde Alumnos; la rejilla se desliza dentro de su caja, la página no');
   await shot(m,'m_agenda.png');
 

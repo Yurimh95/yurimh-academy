@@ -17,7 +17,8 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail
     return page;
   }
   const check = async (p, quien) => {
-    await p.click('.tabbar button[data-s=homework]');
+    if (quien === 'profesor') { await p.click('.tabbar button[data-s=students]'); await p.waitForTimeout(150); await p.click('.stu-tabs button[data-s=homework]'); } // profesor: pestaña de Alumnos
+    else await p.click('.tabbar button[data-s=homework]');
     await p.waitForTimeout(300);
     const m = await p.evaluate(() => {
       const W = document.documentElement.clientWidth;
@@ -33,19 +34,20 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail
   const t = await open('t1'); await check(t, 'profesor');
   // Profesor en el móvil: al abrir un alumno, "Atrás" vuelve a la lista (no a la sección anterior)
   await t.click('.tabbar button[data-s=feed]'); await t.waitForTimeout(250);
-  await t.click('.tabbar button[data-s=homework]'); await t.waitForTimeout(250);
+  await t.click('.tabbar button[data-s=students]'); await t.waitForTimeout(250);
+  await t.click('.stu-tabs button[data-s=homework]'); await t.waitForTimeout(250);
   await t.click('.hwstu:has-text("Luis")'); await t.waitForTimeout(250);
   ok(await t.locator('.hwdetail:visible').count() === 1 && await t.locator('.hwside:visible').count() === 0, 'Profesor: al pulsar un alumno se abren sus deberes');
   await t.goBack(); await t.waitForTimeout(300);
   ok(await t.evaluate(() => S.section) === 'homework' && await t.locator('.hwside:visible').count() === 1 && await t.locator('.hwdetail:visible').count() === 0, 'Atrás vuelve a la lista de alumnos');
   await t.goBack(); await t.waitForTimeout(300);
-  ok(await t.evaluate(() => S.section) === 'feed', 'Otro Atrás vuelve a la sección anterior');
+  ok(await t.evaluate(() => S.section) === 'students', 'Otro Atrás vuelve a la pestaña anterior (Alumnos)');
   await t.goForward(); await t.waitForTimeout(300);
   await t.click('.hwstu:has-text("Marta")'); await t.waitForTimeout(250);
   await t.click('.hwback'); await t.waitForTimeout(300);
   ok(await t.locator('.hwside:visible').count() === 1, '"← Alumnos" también vuelve a la lista');
   await t.goBack(); await t.waitForTimeout(300);
-  ok(await t.evaluate(() => S.section) === 'feed', '…y no deja una entrada de más en el historial');
+  ok(await t.evaluate(() => S.section) === 'students', '…y no deja una entrada de más en el historial');
   const s = await open('s1'); await check(s, 'alumna');
   ok(!errors.length, 'Sin errores de JavaScript' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();

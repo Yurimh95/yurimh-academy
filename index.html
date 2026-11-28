@@ -297,6 +297,13 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .stu-pb{flex:1 1 160px;min-width:0;display:flex;flex-direction:column}.stu-pb b{color:var(--strong)}.stu-pb .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stu-blk{font-size:12.5px;font-weight:500;color:var(--muted);margin-right:4px}
 .stu-bar{margin:0 0 12px;gap:10px}.stu-bar>.sub{margin-right:auto}
+.stu-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-6px 0 16px;overflow-x:auto;scrollbar-width:none}
+.stu-tabs::-webkit-scrollbar{display:none}
+.stu-tabs button{display:inline-flex;align-items:center;gap:7px;flex:none;border:0;background:none;font:inherit;font-weight:600;font-size:14px;color:var(--muted);padding:9px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.stu-tabs button .i{width:18px;height:18px}
+.stu-tabs button:hover{color:var(--strong)}.stu-tabs button.on{color:var(--strong);border-bottom-color:var(--accent)}
+.stt-n-b{font-style:normal;font-size:11px;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:inline-grid;place-items:center;background:var(--warn);color:#1a1300}
+@media (max-width:760px){.stu-tabs{margin:0 -16px 14px;padding:0 8px}.stu-tabs button{flex:1 1 0;justify-content:center;padding:10px 2px;font-size:13.5px;gap:5px}.stu-tabs button .i{display:none}}
 .stu-seg{display:inline-flex;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .stu-seg button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer}
 .stu-seg button .i{width:16px;height:16px}.stu-seg button.on{background:var(--panel2);color:var(--strong)}
@@ -568,11 +575,40 @@ html[data-theme="light"] .rk-tag{text-shadow:none;filter:brightness(.75)}
 .monthnav{display:flex;align-items:center;gap:10px;margin:0 0 16px}
 .monthnav h2{margin:0;font-size:20px;min-width:170px;text-align:center;text-transform:capitalize}
 .paylist{display:flex;flex-direction:column;gap:8px}
-.payrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-.payrow .who{display:flex;align-items:center;gap:12px;min-width:0}
-.payrow .who strong{display:block;color:var(--strong)}
-.payrow .who .linkbtn{font-weight:500}
-.paystatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.payrow.pm{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border-radius:12px;padding:10px 12px}
+.payrow.pm.warn{box-shadow:inset 3px 0 0 var(--warn)}
+.pm-b{flex:1;min-width:0}.pm-b>b{display:block;color:var(--strong)}.pm-b .pay-plan-l{font-size:12.5px}
+.pm-s{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}.pm-s:empty{display:none}
+.pm-a{flex:none;align-self:center}
+/* Pagos v2: cabecera (mes + cifras | gráfica) y tabla */
+.pay-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px;margin:0 0 14px}
+.pay-sum,.pay-chart{background:var(--panel);border-radius:12px;padding:12px 14px;min-width:0}
+.pay-sum .monthnav{margin:0 0 10px}
+.pay-kp.stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin:0}
+.pay-kp .stat{background:none;border:0;box-shadow:none;padding:0;min-width:0}
+.pay-kp .stat b{font-size:22px}.pay-kp .stat.warn b{color:var(--warn)}
+.pch-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.pch-h .pch-t{display:block;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.pch-h .sub{font-size:12.5px}
+.pch-bars{display:flex;align-items:stretch;gap:8px;height:120px}.pch-bars.many{gap:4px}
+.pch-b{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0;cursor:pointer;font:inherit;color:var(--faint)}
+.pch-col{flex:1;width:100%;display:flex;align-items:flex-end;border-radius:6px;background:rgba(var(--accent-rgb),.05)}
+.pch-col i{display:block;width:100%;border-radius:6px 6px 0 0;background:rgba(var(--accent-rgb),.42);transition:background .15s}
+.pch-b:hover .pch-col i{background:rgba(var(--accent-rgb),.7)}.pch-b.on .pch-col i{background:var(--accent)}
+.pch-b.on .pch-m{color:var(--strong);font-weight:700}
+.pch-v{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;min-height:14px}.pch-bars.many .pch-v{display:none}
+.pch-m{font-size:11.5px;white-space:nowrap;text-transform:capitalize}
+.pay-t .payrow.warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.pay-t td{vertical-align:middle}
+.pay-who{display:flex;align-items:center;gap:9px;border:0;background:none;font:inherit;font-weight:600;color:var(--strong);cursor:pointer;padding:0}
+.pay-who:hover span{text-decoration:underline}
+.pay-plan-l{font-weight:500;color:var(--text)}
+.pay-cell{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pay-act{text-align:right}
+.pay-dots{display:inline-flex;gap:3px;vertical-align:middle}
+.pay-dots i{width:10px;height:10px;border-radius:50%;background:var(--field);border:1.5px solid var(--line-strong)}
+.pay-dots i.f{background:var(--ok);border-color:var(--ok)}.pay-dots i.d{background:var(--warn);border-color:var(--warn)}
+.pay-dots-t{font-weight:600;font-size:12.5px}
+@media (max-width:1100px){.pay-top{grid-template-columns:minmax(0,1fr)}}
 .hwtools .iconbtn.sm,.paystatus .iconbtn.sm{width:30px;height:30px;font-size:17px;border-color:var(--line);background:var(--panel)}
 .hwtools .iconbtn.sm svg{width:16px;height:16px}
 .privtext p{margin:0 0 12px;font-size:14.5px;line-height:1.55}.privtext b{color:var(--strong)}
@@ -1832,6 +1868,9 @@ const S = {
   // Alumnos (profesor): vista del PC (lista + resumen o tabla; preferencia como el tema), alumno elegido, ficha abierta como pantalla y orden de la tabla
   stuView: (() => { try { return localStorage.getItem('ya-stuview') === 'table' ? 'table' : 'list'; } catch (e) { return 'list'; } })(),
   stuSel: null, stuPage: null, stuSort: { k: 'att', d: 1 },
+  // Pagos: meses de la gráfica (3, 6 o 12; preferencia como el tema) y orden de la tabla
+  payRange: (() => { try { return [3, 12].includes(+localStorage.getItem('ya-payrange')) ? +localStorage.getItem('ya-payrange') : 6; } catch (e) { return 6; } })(),
+  paySort: { k: 'att', d: 1 },
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -4645,11 +4684,14 @@ function render() {
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
+  // Grupo Alumnos (profesor): título "Alumnos" y pestañas Alumnos · Deberes · Pagos · Agenda (PC y móvil)
+  const grp = t && (S.section === 'students' || (here && here.sub === 'students'));
+  const head = grp ? secs.find(s => s.id === 'students') : here;
   // Diseño 2026-11-28 (Yuri, inspirado en Evenant): barra superior a lo ancho con Mensajes, tema, campanita y
   // menú de la cuenta; menú lateral solo con las secciones; el Inicio lleva columna derecha fija (forYou / homeRail).
   $('#app').innerHTML = `${topbar(here, secs)}<div class="shell">
     ${sidebar(secs)}
-    <div class="main">${S.preview ? previewBar() : ''}${S.section !== 'feed' && here ? `<div class="phead"><h1 class="sec">${esc(here.label)}</h1></div>` : ''}${body}</div>
+    <div class="main">${S.preview ? previewBar() : ''}${S.section !== 'feed' && head ? `<div class="phead"><h1 class="sec">${esc(head.label)}</h1></div>` : ''}${grp ? stuTabs() : ''}${body}</div>
   </div>
   ${tabbar(secs)}`;
   histSync();
@@ -4673,13 +4715,14 @@ function sections() {
     { id: 'messages', label: 'Mensajes', short: 'Mensajes', icon: 'chat', n: dmu, badge: dmu ? `${dmu} sin leer` : '', top: true },
     { id: 'board', label: 'Avisos', short: 'Avisos', n: unread, badge: unread ? `${unread} nuevo${unread > 1 ? 's' : ''}` : '' },
     { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' },
-    { id: 'homework', label: MODULE_HOMEWORK, short: 'Deberes', icon: 'homework', n: hwn, badge: hwn ? `${hwn} pendiente${hwn > 1 ? 's' : ''}` : '' }
+    // Profesor: Deberes, Pagos y Agenda son pestañas de Alumnos (sub; Yuri, 2026-11-28). El alumno sigue con su sección Deberes.
+    { id: 'homework', label: MODULE_HOMEWORK, short: 'Deberes', icon: 'homework', n: hwn, badge: hwn ? `${hwn} pendiente${hwn > 1 ? 's' : ''}` : '', sub: t ? 'students' : '' }
   ];
   if (t) list.push({ id: 'students', label: 'Alumnos', short: 'Alumnos', n: pending, badge: pending ? `${pending} por aprobar` : '', cls: 'warn' });
   // Pagos: solo el profesor. En el móvil se entra desde el botón de Alumnos (la barra de abajo va llena)
-  if (t) list.push({ id: 'payments', label: 'Pagos', short: 'Pagos', icon: 'payments', mob: false });
+  if (t) list.push({ id: 'payments', label: 'Pagos', short: 'Pagos', icon: 'payments', sub: 'students' });
   // Agenda: clases leídas de Google Calendar. En el móvil, desde el botón de Alumnos.
-  if (t) list.push({ id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', mob: false });
+  if (t) list.push({ id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', sub: 'students' });
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
   const mreq = t ? 0 : mateRequestsIn().length; // solicitudes de compañero sin responder
   list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t, n: mreq, badge: mreq ? `${mreq} solicitud${mreq > 1 ? 'es' : ''}` : '', top: true });
@@ -4689,7 +4732,9 @@ function sections() {
   return list;
 }
 // Menú lateral: las secciones seguidas, sin grupos (Yuri). Lo personal (Mensajes, Perfil, Ajustes) va arriba.
-const navHtml = secs => `<nav class="nav">${secs.filter(s => !s.top).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.icon || s.id)}<span class="nav-l">${esc(s.label)}</span>${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
+// Una sección con sub (pestaña de otra) no sale en el menú: se marca la sección que la engloba.
+const navOn = (secs, id) => S.section === id || (secs.find(x => x.id === S.section) || {}).sub === id;
+const navHtml = secs => `<nav class="nav">${secs.filter(s => !s.top && !s.sub).map(s => `<button class="${navOn(secs, s.id) ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.icon || s.id)}<span class="nav-l">${esc(s.label)}</span>${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
 const sidebar = secs => `<aside class="sidebar">${navHtml(secs)}</aside>`;
 /* Barra superior a lo ancho (PC y móvil). PC: marca, Mensajes, tema, campanita y la foto, que abre el menú de la
    cuenta (Perfil, Ajustes, Ver como alumno, Salir). Móvil: Mensajes va abajo y la foto lleva directa al Perfil. */
@@ -4734,7 +4779,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.meOpen) 
 let notifOpen = false; // desplegable de la campanita (ver NOTIFICACIONES)
 const bellHtml = () => { const n = unreadNotifs(); return `<button class="iconbtn tb bell${notifOpen ? ' on' : ''}" data-action="notifs" title="Notificaciones" aria-label="Notificaciones${n ? ` (${n} sin leer)` : ''}" aria-haspopup="dialog" aria-expanded="${notifOpen}">${ic('bell')}${n ? `<i class="dotn static">${n > 9 ? '9+' : n}</i>` : ''}</button>`; };
 function tabbar(secs) {
-  return `<nav class="tabbar">${secs.filter(s => s.mob !== false).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.icon || s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
+  return `<nav class="tabbar">${secs.filter(s => s.mob !== false && !s.sub).map(s => `<button class="${navOn(secs, s.id) ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.icon || s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
 }
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
@@ -6047,6 +6092,12 @@ function genrePicker(itemId) {
    PC: lista a la izquierda + resumen del elegido a la derecha, o tabla (interruptor S.stuView, guardado como el tema).
    Móvil: filas cortas con iconos. Pulsar un alumno abre su ficha completa como PANTALLA (no ventana): S.stuPage,
    con su entrada en el historial (stu en histState), así el Atrás vuelve a la lista. ---- */
+// Pestañas del grupo Alumnos (solo el profesor). Cada una sigue siendo su sección (historial, recargar…).
+const STU_TABS = [['students', 'Alumnos', 'students'], ['homework', 'Deberes', 'homework'], ['payments', 'Pagos', 'payments'], ['agenda', 'Agenda', 'calendar']];
+function stuTabs() {
+  const pend = S.students.filter(isPending).length;
+  return `<nav class="stu-tabs" aria-label="Alumnos">${STU_TABS.map(([id, l, icn]) => `<button class="${S.section === id ? 'on' : ''}" data-action="section" data-s="${id}"${S.section === id ? ' aria-current="page"' : ''}>${ic(icn)}<span>${l}</span>${id === 'students' && pend ? `<i class="stt-n-b">${pend}</i>` : ''}</button>`).join('')}</nav>`;
+}
 const STU_DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 function stuDay(iso) { // Hoy 18:00 / Mañana 17:00 / Jue 27 19:30 / 4 dic. 18:00
   const d = new Date(iso), t = new Date();
@@ -6108,7 +6159,7 @@ function teacherStudents() {
           <button class="btn sm primary" data-action="approve" data-id="${x.id}">Aprobar</button></div></div>`).join('')}</div>` : ''}
     <div class="dhead stu-bar"><span class="sub">${ok.length} alumno${ok.length === 1 ? '' : 's'}</span>
       ${!mob && ok.length ? `<div class="stu-seg" role="group" aria-label="Cómo ver la lista">${view('list')}${view('table')}</div>` : ''}
-      <div class="chips"><button class="btn sm" data-action="section" data-s="agenda">${ic('calendar')} Agenda</button><button class="btn sm" data-action="section" data-s="payments">${ic('payments')} Pagos</button></div></div>
+</div>
     ${!ok.length ? `<div class="empty">Aún no hay alumnos aprobados.</div>` : mob ? stuMobileList(ok, I) : S.stuView === 'table' ? stuTable(ok, I) : stuListView(ok, I)}
     ${arch.length ? `<details class="archived"><summary>Archivados (${arch.length})</summary>
       <p class="sub" style="margin:8px 0 10px">No pueden entrar y lo que publicaron está oculto. Al reactivarlos vuelve todo tal cual estaba.</p>
@@ -6166,7 +6217,7 @@ function stuMobileList(ok, I) {
         ${i.alert === 'warn' ? ico('payments', '', 'warn', 'Toca cobrar') : ''}</span></button>`; }).join('')}</div>`;
 }
 // Al girar el móvil o cambiar el tamaño de la ventana, la lista cambia de forma
-matchMedia('(max-width:760px)').addEventListener('change', () => { if (S.section === 'students' && !S.stuPage && !$('#modalRoot').firstChild) render(); });
+matchMedia('(max-width:760px)').addEventListener('change', () => { if (((S.section === 'students' && !S.stuPage) || S.section === 'payments') && !$('#modalRoot').firstChild) render(); });
 const isPending = s => !s.approved && !s.archived_at;
 
 // ---------- Rechazar alumnos y correos bloqueados ----------
@@ -8323,48 +8374,99 @@ const monthLabel = p => { const [y, m] = p.split('-').map(Number); return `${MON
 const shiftMonth = (p, n) => { const [y, m] = p.split('-').map(Number); return monthStart(new Date(y, m - 1 + n, 1)); };
 const money = v => v == null || v === '' ? '' : Number(v).toLocaleString('es-ES', { minimumFractionDigits: Number(v) % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' €';
 const planOf = id => S.payPlans.find(p => p.student_id === id) || null;
+/* Pagos v2 (2026-11-28, Yuri eligió la tabla entre maquetas): arriba el mes con sus cifras y la gráfica de lo cobrado
+   (3, 6 o 12 meses, S.payRange; pulsar una barra lleva a ese mes); debajo una fila por alumno (.payrow): tabla en el PC,
+   filas cortas en el móvil. Las columnas Bono y Próximo cobro dicen cómo está ahora; "Cobrado en <mes>", lo del mes elegido. */
+const PAY_RANGES = [3, 6, 12];
+const payPlanTxt = pl => !pl ? 'Sin trato' : pl.mode === 'free' ? 'Gratis' : pl.mode === 'per_class' ? (pl.amount != null ? `${money(pl.amount)} / clase` : 'Por clase')
+  : `Bono de ${packN(null, pl)}${pl.amount != null ? ' · ' + money(pl.amount) : ''}`;
+function payDots(ps) { // clases del bono: verdes las ya hechas; amarilla la que toca cobrar
+  if (!ps) return '';
+  if (ps.n > 10) return `<span class="pay-dots-t">${ps.used}/${ps.n}</span>`;
+  return `<span class="pay-dots" title="${ps.used} de ${ps.n} clases del bono${ps.dueNow ? ' · toca cobrar' : ''}">${Array.from({ length: ps.n }, (_, k) => `<i class="${k < ps.used ? 'f' : ''}"></i>`).join('')}${ps.dueNow ? '<i class="d"></i>' : ''}</span>`;
+}
+function payInfo(s, per, isNow) {
+  const pl = planOf(s.id), mine = S.payRecords.filter(r => r.student_id === s.id && r.period === per);
+  const monthly = !!(pl && pl.mode === 'monthly'), ps = monthly ? packState(s.id) : null;
+  const last = S.payRecords.filter(r => r.student_id === s.id).sort((a, b) => b.paid_on.localeCompare(a.paid_on) || (b.created_at || '').localeCompare(a.created_at || ''))[0] || null;
+  const due = isNow && monthly && (!ps || (calSynced() && ps.dueNow));
+  const paidChip = r => `<span class="chip ok">✓ ${r.amount != null ? money(r.amount) + ' · ' : ''}${fmtDate(r.paid_on)}${r.classes ? ` · ${r.classes} clases` : ''}</span><button class="iconbtn sm" data-action="pay-edit" data-id="${r.id}" title="Editar el pago" aria-label="Editar el pago">✎</button><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
+  let state = '', month = '', act = '';
+  if (!pl) act = `<button class="btn sm" data-action="pay-plan" data-id="${s.id}">Configurar trato</button>`;
+  else if (pl.mode === 'free') state = '<span class="chip">Gratis</span>';
+  else if (monthly) {
+    const paid = mine.filter(x => x.kind === 'monthly');
+    month = paid.map(paidChip).join('') || (isNow ? '' : '<span class="sub">Sin pagos este mes</span>');
+    if (isNow) {
+      if (!ps) state = '<span class="chip warn">Sin pagos apuntados</span>';
+      else if (!calSynced()) state = '<span class="sub">Calendario sin conectar</span>';
+      else if (ps.dueNow) state = `<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span>`;
+      else state = `<span class="chip">${ps.used} de ${ps.n} clases${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`;
+      if (due || !calSynced()) act = `<button class="btn ${due ? 'primary ' : ''}sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
+    }
+  } else { // por clase
+    const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
+    month = `<span class="chip ${n ? 'ok' : ''}">${n} clase${n === 1 ? '' : 's'} pagada${n === 1 ? '' : 's'}${n ? ' · ' + money(sum) : ''}</span>
+      ${n ? `<button class="iconbtn sm" data-action="pay-class-undo" data-id="${s.id}" title="Quitar la última" aria-label="Quitar la última clase pagada">−</button>` : ''}`;
+    act = `<button class="btn primary sm" data-action="pay-class" data-id="${s.id}">+ Clase pagada</button>`;
+  }
+  return { pl, mine, monthly, ps, last, due, state, month, act, sum: mine.reduce((t, r) => t + Number(r.amount || 0), 0),
+    dots: monthly && isNow && calSynced() ? payDots(ps) : '' };
+}
+function payChart(per) {
+  const n = S.payRange, cur = monthStart(), ms = Array.from({ length: n }, (_, k) => shiftMonth(cur, k - n + 1));
+  const tot = ms.map(m => S.payRecords.filter(r => r.period === m).reduce((t, r) => t + Number(r.amount || 0), 0));
+  const max = Math.max(...tot, 1), sum = tot.reduce((x, y) => x + y, 0);
+  const lbl = (m, k) => MONTHS[Number(m.slice(5, 7)) - 1].slice(0, 3) + (k === 0 || m.slice(5, 7) === '01' ? ' ' + m.slice(2, 4) : '');
+  return `<div class="pay-chart"><div class="pch-h"><div><b class="pch-t">Cobrado por mes</b><span class="sub">${money(sum) || '0 €'} en total · media de ${money(Math.round(sum / n)) || '0 €'} al mes</span></div>
+      <div class="stu-seg" role="group" aria-label="Periodo de la gráfica">${PAY_RANGES.map(r => `<button class="${r === n ? 'on' : ''}" data-action="pay-range" data-n="${r}" aria-pressed="${r === n}">${r === 12 ? '1 año' : r + ' meses'}</button>`).join('')}</div></div>
+    <div class="pch-bars ${n > 6 ? 'many' : ''}">${ms.map((m, k) => `<button class="pch-b ${m === per ? 'on' : ''}" data-action="pay-month-go" data-p="${m}" title="${esc(monthLabel(m))}: ${money(tot[k]) || '0 €'}" aria-label="${esc(monthLabel(m))}: ${money(tot[k]) || '0 €'}">
+      <span class="pch-v">${tot[k] ? money(tot[k]) : ''}</span><span class="pch-col"><i style="height:${Math.max(tot[k] ? 4 : 0, Math.round(tot[k] / max * 100))}%"></i></span><span class="pch-m">${lbl(m, k)}</span></button>`).join('')}</div></div>`;
+}
 function paymentsView() {
   const per = S.payMonth || (S.payMonth = monthStart());
-  const isNow = per === monthStart(), future = per > monthStart();
-  const ok = S.students.filter(s => s.approved);
+  const isNow = per === monthStart(), mob = stuMobile();
+  const ok = S.students.filter(x => x.approved);
   const recs = S.payRecords.filter(r => r.period === per);
   const total = recs.reduce((t, r) => t + Number(r.amount || 0), 0);
-  let pendN = 0;
-  const rows = ok.map(s => {
-    const pl = planOf(s.id), mine = recs.filter(r => r.student_id === s.id);
-    const planTxt = !pl ? '<span class="sub">Sin trato</span>' : `${PAY_MODE[pl.mode]}${pl.mode !== 'free' && pl.amount != null ? ' · ' + money(pl.amount) : ''}`;
-    let status = '';
-    if (!pl) status = `<button class="btn sm" data-action="pay-plan" data-id="${s.id}">Configurar trato</button>`;
-    else if (pl.mode === 'free') status = '<span class="chip">Gratis</span>';
-    else if (pl.mode === 'monthly') { // bono de N clases (ver packState)
-      const paidChip = r => `<span class="chip ok">✓ Pagado${r.amount != null ? ' · ' + money(r.amount) : ''} · ${fmtDate(r.paid_on)}${r.classes ? ` · ${r.classes} clases` : ''}</span><button class="iconbtn sm" data-action="pay-edit" data-id="${r.id}" title="Editar el pago" aria-label="Editar el pago">✎</button><button class="iconbtn sm" data-action="pay-undo" data-id="${r.id}" title="Desmarcar" aria-label="Desmarcar el pago">×</button>`;
-      const paidHere = mine.filter(x => x.kind === 'monthly').map(paidChip).join('');
-      if (!isNow) status = paidHere || '<span class="sub">Sin pagos este mes</span>';
-      else {
-        const ps = packState(s.id);
-        if (!ps) { pendN++; status = `${paidHere}<span class="chip warn">Sin pagos apuntados</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
-        else if (!calSynced()) status = `${paidHere || paidChip(ps.r)}<button class="btn sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`;
-        else if (ps.dueNow) { pendN++; status = `${paidHere}<span class="chip warn">Toca cobrar · clase del ${shortDay(ps.due)}</span><button class="btn primary sm" data-action="pay-mark" data-id="${s.id}">Marcar pagado</button>`; }
-        else status = `${paidHere || paidChip(ps.r)}<span class="chip">${ps.used} de ${ps.n} clases${ps.due ? ` · le toca el ${shortDay(ps.due)}` : ''}</span>`;
-      }
-    } else { // por clase
-      const n = mine.filter(x => x.kind === 'class').length, sum = mine.reduce((t, x) => t + Number(x.amount || 0), 0);
-      status = `<span class="chip ${n ? 'ok' : ''}">${n} clase${n === 1 ? '' : 's'} pagada${n === 1 ? '' : 's'}${n ? ' · ' + money(sum) : ''}</span>
-        ${n ? `<button class="iconbtn sm" data-action="pay-class-undo" data-id="${s.id}" title="Quitar la última" aria-label="Quitar la última clase pagada">−</button>` : ''}
-        <button class="btn primary sm" data-action="pay-class" data-id="${s.id}">+ Clase pagada</button>`;
-    }
-    return `<div class="payrow"><div class="who">${avatarHtml(s.id, 34)}<div><strong>${esc(s.display_name)}</strong>
-        <button class="linkbtn mute" data-action="pay-plan" data-id="${s.id}" title="Cambiar el trato">${planTxt} ✎</button></div></div>
-      <div class="paystatus">${status}</div></div>`;
-  }).join('');
-  return `<div class="monthnav"><button class="iconbtn" data-action="pay-month" data-n="-1" aria-label="Mes anterior">‹</button>
-      <h2>${monthLabel(per)}</h2><button class="iconbtn" data-action="pay-month" data-n="1" aria-label="Mes siguiente">›</button>
-      ${isNow ? '' : '<button class="btn sm ghost" data-action="pay-month" data-n="0">Mes actual</button>'}</div>
-    <div class="stats"><div class="stat"><b>${money(total) || '0 €'}</b><span>Cobrado en ${MONTHS[Number(per.slice(5, 7)) - 1]}</span></div>
-      <div class="stat ${pendN ? 'warn' : ''}"><b>${isNow ? pendN : recs.filter(r => r.kind === 'monthly').length}</b><span>${isNow ? 'Toca cobrar' : 'Bonos cobrados ese mes'}</span></div>
-      <div class="stat"><b>${ok.filter(s => (planOf(s.id) || {}).mode === 'free').length}</b><span>Con clases gratis</span></div></div>
-    ${ok.length ? `<div class="paylist">${rows}</div>` : '<div class="empty">Aún no tienes alumnos aprobados.</div>'}
-    <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Los mensuales pagan un bono de clases: el aviso sale el día de la clase siguiente a la última pagada (se cuentan con Google Calendar, así que una clase cancelada retrasa el cobro sola). Con las flechas ves lo cobrado cada mes.</p>`;
+  const I = {}; ok.forEach(x => { I[x.id] = payInfo(x, per, isNow); });
+  const dueL = ok.filter(x => I[x.id].due), dueSum = dueL.reduce((t, x) => t + Number((I[x.id].pl || {}).amount || 0), 0);
+  const packs = ok.filter(x => I[x.id].monthly && I[x.id].ps).length;
+  // Orden: "att" (toca cobrar primero, luego por fecha del siguiente cobro, luego por clase, gratis y sin trato) o la columna pulsada
+  const { k, d } = S.paySort, nm = x => studentName(x.id);
+  const rankOf_ = x => { const i = I[x.id]; return i.due ? 0 : i.monthly ? 1 : i.pl && i.pl.mode === 'per_class' ? 2 : i.pl ? 3 : 4; };
+  const nextOf = x => { const ps = I[x.id].ps; return ps && ps.due ? ps.due : '9999'; };
+  const by = { att: (x, y) => rankOf_(x) - rankOf_(y) || nextOf(x).localeCompare(nextOf(y)), name: (x, y) => nm(x).localeCompare(nm(y), 'es'),
+    plan: (x, y) => rankOf_(x) - rankOf_(y) || Number((I[y.id].pl || {}).amount || 0) - Number((I[x.id].pl || {}).amount || 0),
+    next: (x, y) => (I[y.id].due - I[x.id].due) || nextOf(x).localeCompare(nextOf(y)),
+    last: (x, y) => ((I[y.id].last || {}).paid_on || '').localeCompare((I[x.id].last || {}).paid_on || ''),
+    month: (x, y) => I[y.id].sum - I[x.id].sum };
+  const rows = ok.slice().sort((x, y) => (by[k] || by.att)(x, y) * d || nm(x).localeCompare(nm(y), 'es'));
+  const plan = x => `<button class="linkbtn pay-plan-l" data-action="pay-plan" data-id="${x.id}" title="Cambiar el trato">${esc(payPlanTxt(I[x.id].pl))} ✎</button>`;
+  const lastTxt = x => { const l = I[x.id].last; return l ? `${shortDay(l.paid_on)}${l.amount != null ? ' · ' + money(l.amount) : ''}` : '—'; };
+  const who = x => `<button class="pay-who" data-action="open-student" data-id="${x.id}" title="Abrir su ficha">${avatarHtml(x.id, 30, false)}<span>${esc(whoName(x.id))}</span></button>`;
+  const th = (key, label) => `<th><button class="stt-h ${k === key ? 'on' : ''}" data-action="pay-sort" data-k="${key}">${label}${k === key ? (d > 0 ? ' ▾' : ' ▴') : ''}</button></th>`;
+  const mName = MONTHS[Number(per.slice(5, 7)) - 1];
+  const list = !ok.length ? '<div class="empty">Aún no tienes alumnos aprobados.</div>'
+    : mob ? `<div class="paylist">${rows.map(x => { const i = I[x.id];
+        return `<div class="payrow pm ${i.due ? 'warn' : ''}">${avatarHtml(x.id, 38, false)}<div class="pm-b"><b>${esc(whoName(x.id))}</b>${plan(x)}
+          <div class="pm-s">${i.state}${i.dots}${i.month}</div></div>${i.act ? `<div class="pm-a">${i.act}</div>` : ''}</div>`; }).join('')}</div>`
+    : `<div class="stt-wrap"><table class="stt pay-t"><thead><tr>${th('name', 'Alumno')}${th('plan', 'Trato')}<th><span class="stt-h">Bono</span></th>${th('next', isNow ? 'Próximo cobro' : 'Estado')}${th('last', 'Último pago')}${th('month', 'Cobrado en ' + mName)}<th></th></tr></thead>
+      <tbody>${rows.map(x => { const i = I[x.id];
+        return `<tr class="payrow ${i.due ? 'warn' : ''}"><td>${who(x)}</td><td>${plan(x)}</td><td>${i.dots || '<span class="mut">—</span>'}</td>
+          <td>${i.state || '<span class="mut">—</span>'}</td><td class="${I[x.id].last ? '' : 'mut'}">${lastTxt(x)}</td>
+          <td><span class="pay-cell">${i.month || '<span class="mut">—</span>'}</span></td><td class="pay-act">${i.act}</td></tr>`; }).join('')}</tbody></table></div>`;
+  return `<div class="pay-top"><div class="pay-sum">
+      <div class="monthnav"><button class="iconbtn" data-action="pay-month" data-n="-1" aria-label="Mes anterior">‹</button>
+        <h2>${monthLabel(per)}</h2><button class="iconbtn" data-action="pay-month" data-n="1" aria-label="Mes siguiente">›</button>
+        ${isNow ? '' : '<button class="btn sm ghost" data-action="pay-month" data-n="0">Mes actual</button>'}</div>
+      <div class="stats pay-kp"><div class="stat"><b>${money(total) || '0 €'}</b><span>Cobrado en ${mName}</span></div>
+        ${isNow ? `<div class="stat ${dueL.length ? 'warn' : ''}"><b>${dueL.length}</b><span>Toca cobrar${dueSum ? ` (${money(dueSum)})` : ''}</span></div>
+          <div class="stat"><b>${packs}</b><span>Bonos en curso</span></div>`
+        : `<div class="stat"><b>${recs.length}</b><span>Pago${recs.length === 1 ? '' : 's'} apuntado${recs.length === 1 ? '' : 's'}</span></div>`}</div></div>
+      ${payChart(per)}</div>
+    ${list}
+    <p class="sub" style="margin-top:14px">🔒 Solo lo ves tú. Los mensuales pagan un bono de clases: el aviso sale el día de la clase siguiente a la última pagada (se cuentan con Google Calendar, así que una clase cancelada retrasa el cobro sola). Los puntitos son las clases del bono. Pulsa una barra de la gráfica o usa las flechas para ver lo cobrado cada mes.</p>`;
 }
 function planModal(id) {
   const pl = planOf(id) || { mode: 'monthly', amount: null, note: '', classes_per_payment: PACK_DEF };
@@ -8458,6 +8560,9 @@ Object.assign(actions, {
     const from = hwFromCard(el);
     S.homework = S.homework.filter(x => x.id !== h.id); hwAfterChange(from);
   },
+  'pay-month-go'(el) { S.payMonth = el.dataset.p; render(); },
+  'pay-range'(el) { S.payRange = Number(el.dataset.n); try { localStorage.setItem('ya-payrange', S.payRange); } catch (e) {} render(); },
+  'pay-sort'(el) { const k = el.dataset.k; S.paySort = { k, d: S.paySort.k === k ? -S.paySort.d : 1 }; render(); },
   'pay-month'(el) { const n = Number(el.dataset.n); S.payMonth = n === 0 ? monthStart() : shiftMonth(S.payMonth || monthStart(), n); render(); },
   'pay-plan'(el) { planModal(el.dataset.id); },
   'pay-mark'(el) { payPackModal(el.dataset.id); },

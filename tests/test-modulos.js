@@ -3,8 +3,10 @@
 const { chromium } = require('playwright');
 // Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
 const navTo = async (p, s) => {
-  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible, .stu-tabs button[data-s=${s}]:visible`;
   if (await p.locator(sel).count()) return p.click(sel);
+  if (['homework', 'payments', 'agenda'].includes(s) && await p.locator('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible').count()) { // profesor: pestañas de Alumnos
+    await p.click('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible'); await p.waitForTimeout(80); return p.click(`.stu-tabs button[data-s=${s}]`); }
   await p.click('.avbtn'); await p.waitForTimeout(80);
   if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
   await p.click(`.memenu [data-s=${s}]`);
@@ -177,7 +179,7 @@ const navTo = async (p, s) => {
   // Móvil del profesor: Pagos desde Alumnos y barra inferior sin desbordarse
   const m = await open('t1',{width:390,height:844}, await snapshot(t));
   ok(await m.evaluate(()=>{ const b=document.querySelector('.tabbar'); return b.scrollWidth<=b.clientWidth+1; }), 'Móvil (profe): la barra inferior cabe con Deberes');
-  await goto(m,'students'); await m.click('.dhead [data-action=section][data-s=payments]'); await wait(m,250);
+  await goto(m,'students'); await m.click('.stu-tabs [data-s=payments]'); await wait(m,250);
   ok((await m.locator('.payrow').count())===2 && await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: Pagos desde Alumnos, sin scroll horizontal');
   await shot(m,'m_pagos.png');
   await goto(m,'homework');

@@ -3,8 +3,10 @@
 const { chromium } = require('playwright');
 // Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
 const navTo = async (p, s) => {
-  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible, .stu-tabs button[data-s=${s}]:visible`;
   if (await p.locator(sel).count()) return p.click(sel);
+  if (['homework', 'payments', 'agenda'].includes(s) && await p.locator('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible').count()) { // profesor: pestañas de Alumnos
+    await p.click('.nav button[data-s=students]:visible, .tabbar button[data-s=students]:visible'); await p.waitForTimeout(80); return p.click(`.stu-tabs button[data-s=${s}]`); }
   await p.click('.avbtn'); await p.waitForTimeout(80);
   if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
   await p.click(`.memenu [data-s=${s}]`);
