@@ -3160,6 +3160,12 @@ function vdCount(kind, rowId, path) { // una vez por vídeo y sesión; lo recié
   vdPlayed.add(rowId);
   sb.rpc('video_play', { p_kind: kind, p_row: rowId }).then(() => { }, () => { });
 }
+// Si un vídeo que suena sale del todo de la pantalla (o se quita de la página al repintar), se pausa. No se reanuda solo.
+const vdIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver(es => es.forEach(e => {
+    if (!e.target.isConnected) { vdIO.unobserve(e.target); e.target.pause(); return; }
+    if (!e.isIntersecting && !e.target.paused) e.target.pause();
+  })) : null;
 // Portada con ▶; al pulsar se cambia por el reproductor
 function vdBox(kind, owner, rowId, v, chip = '') {
   const ar = Math.max(0.5625, Math.min(1.78, v.w / v.h)).toFixed(3), base = vdBase(kind, owner, rowId, v);
@@ -3179,6 +3185,7 @@ async function vdPlay(btn) {
   v.controls = true; v.playsInline = true; v.autoplay = true; v.preload = 'auto'; v.src = url;
   if (poster && poster.src) v.poster = poster.src;
   box.innerHTML = ''; box.appendChild(v);
+  if (vdIO) vdIO.observe(v);
   v.play().catch(() => { });
   vdCount(box.dataset.vdKind, box.dataset.vdRow, path);
 }

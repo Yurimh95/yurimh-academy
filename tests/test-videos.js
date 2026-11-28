@@ -87,6 +87,18 @@ const path = require('path');
   ok(await p.locator(`${card} .vd video`).count() === 1, 'Al pulsar ▶ sale el reproductor');
   ok((await state(p)).video_plays.length === 0, 'Ver tu propio vídeo recién subido no cuenta (no se descarga)');
   await shot(p, 'vd2-post.png');
+  // Si sale de la pantalla mientras suena, se pausa (en la prueba el vídeo no suena de verdad: se simula)
+  await p.evaluate(sel => {
+    const v = document.querySelector(sel); window.__vdPaused = 0;
+    Object.defineProperty(v, 'paused', { configurable: true, get: () => false });
+    v.pause = () => { window.__vdPaused++; };
+    const sp = document.createElement('div'); sp.id = 'vdSpacer'; sp.style.height = '5000px'; document.body.appendChild(sp);
+  }, `${card} .vd video`);
+  await p.locator(`${card} .vd video`).scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => window.__vdPaused) === 0, 'Mientras se ve, el vídeo sigue sonando');
+  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => window.__vdPaused) >= 1, 'Al desplazarse hasta que no se ve, el vídeo se pausa');
+  await p.evaluate(() => { document.getElementById('vdSpacer').remove(); window.scrollTo(0, 0); });
 
   // --- Solo vídeo, sin texto ---
   await pickVideo(p, '#feedForm [data-action=vd-add]');
