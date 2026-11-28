@@ -46,10 +46,21 @@
     for(;d<=today;d=dAdd(d,1)){ if(rows.some(r=>r.done===d)) cur++; else if(d<today && rows.some(r=>r.from<d&&(!r.done||r.done>=d))) cur=0; }
     return cur;
   }
-  function streakAward(sid){
-    const cur=streakCur(sid), got=[];
-    [3,5,7,10,15,20,30,50,75,100,150,200,365].filter(m=>m<=cur).forEach(m=>{ if(!DB.listening_streak_awards.some(w=>w.student_id===sid&&w.days===m)){ DB.listening_streak_awards.push({student_id:sid,days:m,reached_at:new Date().toISOString(),seen_at:null}); got.push(m); } });
-    if(got.length) DB.profiles.filter(x=>x.role==='teacher'&&x.approved).forEach(tp=>{ const n={id:uid('nt'),user_id:tp.id,kind:'streak',actor_id:sid,target_id:sid,extra:String(Math.max(...got)),created_at:new Date().toISOString(),read_at:null,pushed_at:null}; DB.notifications.push(n); emit('notifications','INSERT',n); });
+  // Rango (2026-11-28): imita listening_points_calc(), listening_rank_step() y listening_rank_notify()
+  const RSTEPS=[0,150,350,600,900,1250,1700,2200,2800,3500,4300,5200,6200,7400,8800,10500,12500,15000,18000,22000,27000,35000];
+  const rStep = p => { let s=0; RSTEPS.forEach((v,i)=>{ if((p||0)>=v) s=i; }); return s; };
+  const rName = s => s>=21?'Mito':['Bronce','Plata','Oro','Platino','Diamante','Maestro','Leyenda'][Math.floor(s/3)]+' '+['III','II','I'][s%3];
+  function pointsCalc(sid,itemId){
+    const it=DB.listening_items.find(i=>i.id===itemId)||{}, today=dk(new Date());
+    const todayDone=DB.listening_assignments.some(a=>a.student_id===sid&&a.completed_at&&dk(a.completed_at)===today);
+    const days=streakCur(sid)+(todayDone?0:1);
+    return Math.round((20+Math.floor((it.duration_sec||0)/60))*(1+Math.min(days,14)/14));
+  }
+  function rankNotify(r){
+    if(!(r.points>0)) return;
+    const tot=DB.listening_assignments.filter(a=>a.student_id===r.student_id).reduce((t,a)=>t+(a.points||0),0);
+    const s0=rStep(tot-r.points), s1=rStep(tot);
+    if(Math.min(Math.floor(s1/3),7)>Math.min(Math.floor(s0/3),7)) DB.profiles.filter(x=>x.role==='teacher'&&x.approved).forEach(tp=>{ const n={id:uid('nt'),user_id:tp.id,kind:'rank',actor_id:r.student_id,target_id:r.student_id,extra:rName(s1),created_at:new Date().toISOString(),read_at:null,pushed_at:null}; DB.notifications.push(n); emit('notifications','INSERT',n); });
   }
   DB.listening_folders = DB.listening_folders || []; DB.listening_genres = DB.listening_genres || []; DB.listening_item_genres = DB.listening_item_genres || [];
   // Carpetas: el alumno solo ve las de sus escuchas (listening_folders_select)
@@ -338,7 +349,8 @@
       nw.teacher_read_at = JSON.stringify(nw.answers)!==JSON.stringify(old.answers) ? null : (old.teacher_read_at||null);
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
-    if (table==='listening_assignments') nw.completed_at = old.completed_at ? old.completed_at : (nw.listened && answersFull(nw.answers) ? new Date().toISOString() : null);
+    if (table==='listening_assignments') { nw.completed_at = old.completed_at ? old.completed_at : (nw.listened && answersFull(nw.answers) ? new Date().toISOString() : null);
+      nw.points = old.completed_at ? (old.points ?? null) : (nw.completed_at ? pointsCalc(nw.student_id, nw.item_id) : null); }
     if (table==='listening_streak_awards' && (nw.student_id!==old.student_id||nw.days!==old.days||nw.reached_at!==old.reached_at)) throw new Error('Solo se puede marcar como vista');
     if (table==='board_posts'){ nw.updated_at=new Date().toISOString(); if(!checks.board_posts(nw)) throw new Error('new row for relation "board_posts" violates check constraint'); }
     if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
@@ -399,7 +411,7 @@
         try{ const done=rows.map(r=>{ const nw={...r,...st.payload}; guard(table,r,nw); return [r,nw]; }); done.forEach(([r,nw])=>{ const was=r.status, oldBody=r.body, wasRead=r.teacher_read_at, wasDone=r.completed_at; Object.assign(r,nw); emit(table,'UPDATE',r);
           if(table==='feed_posts' && r.body!==oldBody){ const before=mentionIds(oldBody); mentionIds(r.body).filter(u=>!before.includes(u)&&DB.profiles.some(p=>p.id===u&&p.approved)&&!blockedBy(u,r.author_id)).forEach(u=>notify(u,'mention_feed',r.author_id,r.id,mentionPlain(r.body).slice(0,120))); }
           if(table==='listening_assignments' && nw.teacher_read_at && !wasRead) feedbackNotify(r.id,me);
-          if(table==='listening_assignments' && r.completed_at && !wasDone) streakAward(r.student_id);
+          if(table==='listening_assignments' && r.completed_at && !wasDone) rankNotify(r);
           if(table==='classmates' && was==='pending' && r.status==='accepted') notify(r.requester_id,'classmate_accept',r.addressee_id,r.addressee_id,null); }); }catch(e){ return finish([],e.message); }
         return st.sel?finish(rows):{data:null,error:null};
       }
@@ -451,6 +463,13 @@
     // email_wait_seconds la puede llamar cualquiera (también sin sesión): solo devuelve un número
     if(name==='email_wait_seconds') return window.__EMAIL_WAIT===undefined?{data:0,error:null}:(window.__EMAIL_WAIT===null?{data:null,error:{message:'function public.email_wait_seconds() does not exist'}}:{data:window.__EMAIL_WAIT,error:null});
     if(!me) return {data:null,error:{message:'No autenticado'}};
+    if(name==='get_listening_rank'){ // público: puntos y récord de racha, a quien puede ver ese perfil
+      if(!isApproved()) return {data:[],error:null};
+      if(args.p_user!==me && !isTeacher() && !canSeeProfile(args.p_user)) return {data:[],error:null};
+      const as=DB.listening_assignments.filter(a=>a.student_id===args.p_user);
+      const rows=as.filter(a=>a.assigned_at).map(a=>({from:dk(a.assigned_at),done:a.completed_at?dk(a.completed_at):null}));
+      let best=0; if(rows.length){ const today=dk(new Date()); let d=rows.reduce((m,r)=>r.from<m?r.from:m,today),cur=0; for(;d<=today;d=dAdd(d,1)){ if(rows.some(r=>r.done===d)){cur++;best=Math.max(best,cur);} else if(d<today&&rows.some(r=>r.from<d&&(!r.done||r.done>=d))) cur=0; } }
+      return {data:[{points:as.reduce((t,a)=>t+(a.points||0),0),best_days:best}],error:null}; }
     if(name==='get_dm_contacts') return {data: DB.profiles.filter(p=>p.approved && canDm(me,p.id) && canSeeProfile(p.id)).map(p=>p.id), error:null};
     if(name==='can_dm') return {data: (args.a===me||args.b===me) && canDm(args.a,args.b), error:null}; // solo responde a los implicados
     if(name==='get_push_status'){ // solo el profesor; cuántos dispositivos por persona, nunca las claves

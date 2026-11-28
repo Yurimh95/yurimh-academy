@@ -1,6 +1,6 @@
-// Racha de escuchas (días seguidos), deberes ligados a un objetivo y fechas límite en la Agenda (2026-11-27).
-// Marta (s1) lleva 2 días seguidos (terminó una escucha anteayer y otra ayer) y tiene una pendiente para hoy.
-// Al terminarla hoy llega a 3: insignia "Primera chispa", celebración y aviso al profesor.
+// Racha y rango de Escucha analítica (2026-11-28), deberes ligados a un objetivo y fechas límite en la Agenda.
+// Marta (s1) lleva 2 días seguidos y 1.690 puntos (Plata I) y tiene una escucha pendiente para hoy.
+// Al terminarla hoy (3 días, ×1,21) gana 30 puntos y asciende a Oro III: celebración y aviso al profesor.
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const W = {}; new Function('window', fs.readFileSync(path.join(__dirname, 'seed.js'), 'utf8'))(W);
@@ -8,10 +8,11 @@ const day = (n, h = 12) => { const d = new Date(); d.setDate(d.getDate() + n); d
 const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const FULL = { highlights: 'a', likes: 'b', dislikes: 'c', learned: 'd', would_use: 'e', would_never_use: 'f' };
 const seed = JSON.parse(JSON.stringify(W.__DB_SEED));
-seed.listening_items.push({ id: 'i3', title: 'Texas Flood', url: 'https://youtu.be/tf', kind: 'song', brief: null, created_at: '2026-01-03' });
+seed.listening_items.push({ id: 'i3', title: 'Texas Flood', url: 'https://youtu.be/tf', kind: 'song', brief: null, created_at: '2026-01-03', duration_sec: 300 });
+seed.profiles.find(x => x.id === 's1').rank_seen = 5; // ya vio Plata I
 seed.listening_assignments = seed.listening_assignments.filter(a => a.student_id !== 's1').concat([
-  { id: 'r1', item_id: 'i1', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-2), answers: FULL, updated_at: day(-2), completed_at: day(-2) },
-  { id: 'r2', item_id: 'i2', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-1), answers: FULL, updated_at: day(-1), completed_at: day(-1) },
+  { id: 'r1', item_id: 'i1', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-2), answers: FULL, updated_at: day(-2), completed_at: day(-2), points: 900 },
+  { id: 'r2', item_id: 'i2', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-1), answers: FULL, updated_at: day(-1), completed_at: day(-1), points: 790 },
   { id: 'r3', item_id: 'i3', student_id: 's1', note: null, due_date: ymd(0), assigned_at: day(-3, 10), listened: false, listened_at: null, answers: {}, updated_at: day(-3), completed_at: null }
 ]);
 seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
@@ -36,19 +37,30 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   const snapshot = p => p.evaluate(() => JSON.parse(JSON.stringify(window.__DB)));
   const shot = (p, n) => p.screenshot({ path: path.join(__dirname, 'shots', n) });
 
-  // ================= ALUMNA: racha =================
+  // ================= ALUMNA: racha y rango =================
   let p = await open('s1', seed);
   const st = await p.evaluate(() => streakOf('s1'));
   ok(st.cur === 2 && st.best === 2 && !st.todayDone && st.atRisk, `Racha calculada: 2 días, en riesgo (${JSON.stringify(st)})`);
   ok(await p.locator('.fy-chip', { hasText: '🔥 2 días' }).count() === 1, 'Inicio: chip "🔥 2 días" en Para ti');
+  ok(await p.locator('.celebrate').count() === 0, 'Al entrar no hay celebración (ya vio su rango)');
   await goto(p, 'listening');
-  const card = p.locator('[data-streak]');
-  ok(await card.count() === 1, 'Escucha analítica: tarjeta de racha arriba');
-  ok(/2 días seguidos/.test(await card.innerText()), 'La tarjeta dice "2 días seguidos"');
-  ok(/no perder la racha/.test(await card.innerText()), 'Avisa de que hoy hay que terminar una');
-  await shot(p, 'racha-tarjeta.png');
+  const card = p.locator('[data-rank-card]');
+  ok(await card.count() === 1, 'Escucha analítica: tarjeta de rango arriba');
+  const ct = await card.innerText();
+  ok(/Plata I\b/.test(ct) && /1690 puntos/.test(ct), 'La tarjeta dice "Plata I · 1690 puntos" (en español, 4 cifras van sin punto)');
+  ok(/Te faltan 10 para Oro III/.test(ct), 'Progreso: "Te faltan 10 para Oro III"');
+  ok(/2 días seguidos/.test(ct) && /×1,21/.test(ct), 'Racha: 2 días y multiplicador ×1,21 para la próxima');
+  ok(/no perder la racha/.test(ct), 'Avisa de que hoy hay que terminar una');
+  ok(await card.locator('svg.emb').count() === 1, 'La tarjeta lleva la medalla');
+  await shot(p, 'rango-tarjeta.png');
+  await card.locator('.rk-medal').click(); await p.waitForTimeout(300);
+  ok(await p.locator('.modal .rk-rung').count() === 8, 'Todos los rangos a la vista (8)');
+  ok(await p.locator('.modal .rk-rung.locked').count() === 6 && await p.locator('.modal .rk-rung.cur').count() === 1, 'Conseguidos Bronce y Plata; el resto bloqueados');
+  ok(/Mito/.test(await p.locator('.modal').innerText()) && /35\.000/.test(await p.locator('.modal').innerText()), 'Se ve hasta dónde se llega (Mito, 35.000)');
+  await shot(p, 'rango-lista.png');
+  await p.click('.modal [data-action="close"]'); await p.waitForTimeout(200);
 
-  // Termina la escucha pendiente (escuchada + 6 respuestas)
+  // Termina la escucha pendiente (escuchada + 6 respuestas): 3 días de racha → ×1,21; (20 + 5 min) × 1,21 = 30 puntos
   await p.click('[data-action="open-assign"][data-id="r3"]'); await p.waitForTimeout(300);
   for (const k of Object.keys(FULL)) await p.fill(`[data-q="${k}"]`, 'Respuesta ' + k);
   await p.check('#chkListened');
@@ -56,38 +68,34 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   let db = await snapshot(p);
   const r3 = db.listening_assignments.find(a => a.id === 'r3');
   ok(!!r3.completed_at, 'La escucha queda terminada (completed_at lo pone la base de datos)');
-  ok(db.listening_streak_awards.some(w => w.student_id === 's1' && w.days === 3), 'Insignia de 3 días creada');
-  ok(db.notifications.some(n => n.user_id === 't1' && n.kind === 'streak' && n.extra === '3' && n.actor_id === 's1'), 'Aviso al profesor: 3 días');
+  ok(r3.points === 30, `Puntos: (20 + 5) × (1 + 3/14) = 30 (${r3.points})`);
+  ok(db.notifications.some(n => n.user_id === 't1' && n.kind === 'rank' && n.extra === 'Oro III' && n.actor_id === 's1'), 'Aviso al profesor: ha ascendido a Oro III');
   ok(await p.locator('.celebrate').count() === 0, 'La celebración espera a que se cierre la ventana de la escucha');
   await p.click('.modal [data-action="close"]'); await p.waitForTimeout(700);
-  ok(await p.locator('.celebrate .trophy', { hasText: '🔥' }).count() === 1, 'Celebración de racha al cerrar la ventana');
-  ok(/3 días seguidos/.test(await p.locator('.celebrate').innerText()), 'Celebración: "¡3 días seguidos!"');
-  ok(await p.locator('.celebrate .bdg', { hasText: 'Primera chispa' }).count() === 1, 'Celebración: insignia "Primera chispa"');
-  await shot(p, 'racha-celebracion.png');
+  ok(await p.locator('.celebrate svg.emb').count() === 1, 'Celebración con la medalla al cerrar la ventana');
+  ok(/ascendido a Oro III/.test(await p.locator('.celebrate').innerText()), 'Celebración: "¡Has ascendido a Oro III!"');
+  await shot(p, 'rango-celebracion.png');
   await p.click('.celebrate [data-action="close"]'); await p.waitForTimeout(300);
   db = await snapshot(p);
-  ok(db.listening_streak_awards.find(w => w.student_id === 's1' && w.days === 3).seen_at, 'La insignia queda vista');
-  ok(/3 días seguidos/.test(await p.locator('[data-streak]').innerText()) && /Hoy ya has sumado/.test(await p.locator('[data-streak]').innerText()), 'Tarjeta: 3 días y "hoy ya has sumado"');
+  ok(db.profiles.find(x => x.id === 's1').rank_seen === 6, 'El rango queda visto (rank_seen = 6)');
+  const ct2 = await p.locator('[data-rank-card]').innerText();
+  ok(/Oro III/.test(ct2) && /3 días seguidos/.test(ct2) && /Hoy ya has sumado/.test(ct2), 'Tarjeta: Oro III, 3 días y "hoy ya has sumado"');
 
-  // Desmarcar y volver a marcar no cambia la fecha (no se puede sumar dos veces con la misma)
+  // Desmarcar y volver a marcar no cambia la fecha ni los puntos; el alumno no puede inventárselos
   const again = await p.evaluate(async () => {
     await sb.from('listening_assignments').update({ listened: false }).eq('id', 'r3');
     const { data } = await sb.from('listening_assignments').update({ listened: true }).eq('id', 'r3').select();
-    return data[0].completed_at;
+    return data[0];
   });
-  ok(again === r3.completed_at, 'Desmarcar y volver a marcar no cambia completed_at');
-  const forge = await p.evaluate(async () => (await sb.from('listening_assignments').update({ completed_at: '2020-01-01T00:00:00Z' }).eq('id', 'r1').select()).data[0].completed_at);
-  ok(forge !== '2020-01-01T00:00:00Z', 'El alumno no puede inventarse completed_at');
-  const forgeAw = await p.evaluate(async () => (await sb.from('listening_streak_awards').update({ days: 365 }).eq('student_id', 's1').select()).error);
-  ok(!!forgeAw, 'El alumno no puede cambiar el número de días de una insignia');
-  const insAw = await p.evaluate(async () => (await sb.from('listening_streak_awards').insert({ student_id: 's1', days: 100 })).error);
-  ok(!!insAw, 'El alumno no puede crearse insignias');
+  ok(again.completed_at === r3.completed_at && again.points === 30, 'Desmarcar y volver a marcar no cambia completed_at ni los puntos');
+  const forge = await p.evaluate(async () => (await sb.from('listening_assignments').update({ completed_at: '2020-01-01T00:00:00Z', points: 99999 }).eq('id', 'r1').select()).data[0]);
+  ok(forge.completed_at !== '2020-01-01T00:00:00Z' && forge.points === 900, 'El alumno no puede inventarse completed_at ni puntos');
 
-  // Perfil: insignias privadas
+  // Perfil: su medalla (pública)
   await goto(p, 'profile');
-  ok(await p.locator('#streakPanel').count() === 1, 'Perfil: bloque "Mi racha de escuchas"');
-  ok(await p.locator('#streakPanel .bdg:not(.locked)').count() === 1 && await p.locator('#streakPanel .bdg.locked').count() === 3, 'Perfil: 1 insignia conseguida y las 3 siguientes bloqueadas');
-  await shot(p, 'racha-perfil.png');
+  ok(await p.locator('#rankPanel svg.emb').count() === 1 && /Oro III/.test(await p.locator('#rankPanel').innerText()), 'Perfil: bloque "Tu rango" con la medalla');
+  ok(/Lo ven tus compañeros/.test(await p.locator('#rankPanel').innerText()), 'Perfil: avisa de que la medalla es pública');
+  await shot(p, 'rango-perfil.png');
 
   // Reglas: un día con algo pendiente y nada terminado la rompe; sin nada pendiente no se toca
   const rules = await p.evaluate(({ d }) => {
@@ -100,21 +108,27 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   }, { d: [0, 1, 2, 3, 4, 5, 6].map(n => day(-n)) });
   ok(rules[0].cur === 1 && rules[0].best === 2, `Un día con algo pendiente y sin terminar nada rompe la racha (${JSON.stringify(rules[0])})`);
   ok(rules[1].cur === 3 && !rules[1].atRisk, `Días sin nada pendiente no la rompen (${JSON.stringify(rules[1])})`);
+  const mults = await p.evaluate(() => [multTxt(nextMult({ cur: 0, todayDone: false })), multTxt(nextMult({ cur: 13, todayDone: false })), multTxt(nextMult({ cur: 40, todayDone: true })), rankOf(35000).name, rankOf(34999).name, rankOf(0).name]);
+  ok(JSON.stringify(mults) === JSON.stringify(['×1,07', '×2', '×2', 'Mito', 'Leyenda I', 'Bronce III']), `Multiplicador y rangos (${mults})`);
   const afterStudent = await snapshot(p);
 
-  // ================= OTRA ALUMNA: privacidad =================
+  // ================= OTRA ALUMNA: lo público y lo privado =================
   let q = await open('s2', afterStudent);
-  const peek = await q.evaluate(async () => (await sb.from('listening_streak_awards').select('*')).data.length);
-  ok(peek === 0, 'Luis no ve las insignias de Marta');
+  const pub = await q.evaluate(async () => (await sb.rpc('get_listening_rank', { p_user: 's1' })).data);
+  ok(pub.length === 1 && pub[0].points === 1720 && pub[0].best_days === 3, `Luis ve la medalla y el récord de Marta (${JSON.stringify(pub)})`);
+  const peek = await q.evaluate(async () => (await sb.from('listening_assignments').select('*').eq('student_id', 's1')).data.length);
+  ok(peek === 0, 'Luis no ve las escuchas (ni la racha de hoy) de Marta');
+  await q.evaluate(() => profileModal('s1')); await q.waitForTimeout(500);
+  ok(await q.locator('.modal .pf-rank svg.emb').count() === 1 && /Oro III/.test(await q.locator('.modal .pf-rank').innerText()), 'Perfil de Marta: su medalla Oro III');
+  await shot(q, 'rango-perfil-ajeno.png');
   await q.context().close();
 
   // ================= PROFESOR =================
   let t = await open('t1', afterStudent);
-  ok(await t.evaluate(() => /lleva/.test(notifText(S.notifs.find(n => n.kind === 'streak') || {}))), 'Campanita: "Marta lleva 3 días seguidos…"');
+  ok(await t.evaluate(() => /ascendido a <b>Oro III/.test(notifText(S.notifs.find(n => n.kind === 'rank') || {}))), 'Campanita: "Marta ha ascendido a Oro III"');
   await t.evaluate(() => studentDetailModal('s1')); await t.waitForTimeout(300);
   const ficha = await t.locator('.modal').innerText();
-  ok(/Racha de escuchas/.test(ficha) && /3 días seguidos/.test(ficha), 'Ficha: racha de 3 días');
-  ok(await t.locator('.modal .bdg', { hasText: 'Primera chispa' }).count() === 1, 'Ficha: insignia de Marta');
+  ok(/Rango y racha/.test(ficha) && /Oro III/.test(ficha) && /3 días seguidos/.test(ficha), 'Ficha: rango Oro III y racha de 3 días');
   await t.click('.modal [data-action="close"]'); await t.waitForTimeout(200);
 
   // Agenda: fechas límite de deberes y escuchas en su día

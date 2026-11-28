@@ -3510,3 +3510,172 @@ alter table public.notifications add constraint notifications_kind_check
                   'mention_feed', 'mention_board', 'mention_listening', 'lesson',
                   'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
                   'story_reaction', 'video_quota', 'mention_story', 'reply_feed', 'reply_listening', 'streak'));
+
+-- =====================================================================
+-- Rango de guerrero (2026-11-28). Sustituye a las insignias de racha.
+--   · Cada escucha TERMINADA da puntos una sola vez (listening_assignments.points):
+--       (20 + 1 por minuto de duración) × multiplicador de racha.
+--     Multiplicador = 1 + min(días de racha contando hoy, 14) / 14  → ×2 a los 14 días.
+--     Los calcula la base de datos en el guard, la primera vez que queda terminada,
+--     y no cambian nunca (ni si luego cambia la duración).
+--   · El rango sale de la suma de puntos: 7 rangos × 3 divisiones + Mito (22 escalones).
+--     Umbrales en listening_rank_step(); la copia en JS es RANK_STEPS (deben coincidir).
+--   · Público: get_listening_rank(uid) da puntos y racha récord a quien puede ver el perfil.
+--     La racha actual sigue siendo privada (listening_streak, invoker).
+--   · Al cambiar de rango (no de división) se avisa al profesor (kind 'rank').
+--   · profiles.rank_seen: último escalón que el alumno ya celebró.
+--   · listening_streak_awards queda sin uso (se conserva la tabla).
+-- =====================================================================
+alter table public.listening_assignments add column if not exists points integer;
+alter table public.profiles add column if not exists rank_seen integer;
+
+create or replace function public.listening_points_calc(p_student uuid, p_item uuid)
+returns integer language plpgsql stable set search_path = public as $$
+declare dur integer; s record; days integer;
+begin
+  select coalesce(duration_sec, 0) into dur from public.listening_items where id = p_item;
+  select * into s from public.listening_streak(p_student);
+  days := coalesce(s.current_days, 0) + case when coalesce(s.today_done, false) then 0 else 1 end;
+  return round((20 + coalesce(dur, 0) / 60) * (1 + least(days, 14) / 14.0));
+end;
+$$;
+revoke execute on function public.listening_points_calc(uuid, uuid) from public, anon;
+grant execute on function public.listening_points_calc(uuid, uuid) to authenticated;
+
+create or replace function public.listening_assignments_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_teacher() then
+    if new.item_id     is distinct from old.item_id
+    or new.student_id  is distinct from old.student_id
+    or new.note        is distinct from old.note
+    or new.due_date    is distinct from old.due_date
+    or new.assigned_at is distinct from old.assigned_at then
+      raise exception 'Solo el profesor puede modificar esos campos';
+    end if;
+    -- "Leído" solo lo pone el profesor; si el alumno cambia sus respuestas, deja de estar leído
+    new.teacher_read_at := case when new.answers is distinct from old.answers then null else old.teacher_read_at end;
+  end if;
+  -- updated_at solo cambia cuando el ALUMNO toca su progreso (respuestas o check),
+  -- no cuando el profesor edita fecha o nota. Así "respuestas recientes" es fiable.
+  if new.answers is distinct from old.answers or new.listened is distinct from old.listened then
+    new.updated_at = now();
+  end if;
+  -- Terminada (para la racha): la primera vez que está escuchada y con las 6 respuestas. Nadie la cambia a mano.
+  -- (El servidor, sin sesión, puede fijarla a mano: escuchas contestadas por WhatsApp antes de la app.)
+  new.completed_at := case when old.completed_at is not null then old.completed_at
+                           when auth.uid() is null and new.completed_at is not null then new.completed_at
+                           when new.listened and public.listening_answers_full(new.answers) then now()
+                           else null end;
+  -- Puntos de rango: se calculan una vez, al quedar terminada. Solo el servidor (sin sesión) puede ponerlos o corregirlos.
+  new.points := case when auth.uid() is null then new.points
+                     when old.completed_at is not null then old.points
+                     when new.completed_at is not null then public.listening_points_calc(new.student_id, new.item_id)
+                     else null end;
+  return new;
+end;
+$$;
+
+create or replace function public.listening_rank_step(p integer)
+returns integer language sql immutable set search_path = public as $$
+  select coalesce(max(t.i)::int - 1, 0)
+  from unnest(array[0, 150, 350, 600, 900, 1250, 1700, 2200, 2800, 3500, 4300, 5200,
+                    6200, 7400, 8800, 10500, 12500, 15000, 18000, 22000, 27000, 35000]) with ordinality t(v, i)
+  where t.v <= coalesce(p, 0);
+$$;
+
+create or replace function public.listening_rank_name(p_step integer)
+returns text language sql immutable set search_path = public as $$
+  select case when p_step >= 21 then 'Mito'
+    else (array['Bronce','Plata','Oro','Platino','Diamante','Maestro','Leyenda'])[p_step / 3 + 1]
+         || ' ' || (array['III','II','I'])[p_step % 3 + 1] end;
+$$;
+
+-- Lo público de la racha: puntos totales y récord. A quien puede ver ese perfil.
+create or replace function public.get_listening_rank(p_user uuid)
+returns table (points integer, best_days integer)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if auth.uid() is null or not public.is_approved() then return; end if;
+  if p_user is distinct from auth.uid() and not public.is_teacher() and not public.can_see_profile(p_user) then return; end if;
+  return query select
+    coalesce((select sum(a.points)::int from public.listening_assignments a where a.student_id = p_user), 0),
+    coalesce((select s.best_days from public.listening_streak(p_user) s), 0);
+end;
+$$;
+revoke execute on function public.get_listening_rank(uuid) from public, anon;
+grant execute on function public.get_listening_rank(uuid) to authenticated;
+
+-- Al terminar una escucha: si sube de RANGO (no de división), aviso al profesor
+create or replace function public.listening_rank_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare tot integer; s0 integer; s1 integer;
+begin
+  if coalesce(new.points, 0) <= 0 then return null; end if;
+  select coalesce(sum(points), 0) into tot from public.listening_assignments where student_id = new.student_id;
+  s0 := public.listening_rank_step(tot - new.points); s1 := public.listening_rank_step(tot);
+  if least(s1 / 3, 7) > least(s0 / 3, 7) then
+    begin -- un fallo del aviso nunca debe impedir que el alumno guarde su escucha
+      insert into public.notifications (user_id, kind, actor_id, target_id, extra)
+      select p.id, 'rank', new.student_id, new.student_id, public.listening_rank_name(s1)
+      from public.profiles p where p.role = 'teacher' and p.approved;
+    exception when others then
+      raise warning 'listening_rank_notify: %', sqlerrm;
+    end;
+  end if;
+  return null;
+end;
+$$;
+-- Las insignias de racha ya no se dan: el mismo disparador pasa a avisar del rango
+create or replace function public.listening_streak_award()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin return null; end;
+$$;
+create or replace trigger listening_streak_award_trg after update on public.listening_assignments
+  for each row when (old.completed_at is null and new.completed_at is not null)
+  execute function public.listening_rank_notify();
+revoke execute on function public.listening_rank_notify(), public.listening_streak_award()
+  from public, anon, authenticated;
+
+alter table public.notifications drop constraint if exists notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check
+  check (kind in ('board_post', 'assignment', 'dm', 'comment', 'reaction', 'signup', 'report', 'homework',
+                  'mention_feed', 'mention_board', 'mention_listening', 'lesson',
+                  'classmate_request', 'classmate_accept', 'account_deleted', 'goal', 'listening_feedback',
+                  'story_reaction', 'video_quota', 'mention_story', 'reply_feed', 'reply_listening', 'streak', 'rank'));
+
+-- Escuchas marcadas como escuchadas antes del 2026-11-28 sin las 6 respuestas: se contestaron por WhatsApp
+-- antes de existir la app (decisión de Yuri). Cuentan como terminadas el día en que se marcaron. Solo una vez.
+update public.listening_assignments
+   set completed_at = coalesce(listened_at, updated_at)
+ where listened and completed_at is null
+   and coalesce(listened_at, updated_at) < timestamptz '2026-11-28 00:00:00 Europe/Madrid';
+
+-- Puntos de las escuchas terminadas antes de existir (con la racha que tenía cada día). Solo rellena las vacías.
+do $$
+declare st uuid; first_day date; d date; cur integer; tz constant text := 'Europe/Madrid';
+        today date := (now() at time zone 'Europe/Madrid')::date;
+begin
+  for st in select distinct student_id from public.listening_assignments where completed_at is not null and points is null loop
+    select min((assigned_at at time zone tz)::date) into first_day from public.listening_assignments where student_id = st;
+    cur := 0;
+    for d in select g::date from generate_series(first_day, today, interval '1 day') g loop
+      if exists (select 1 from public.listening_assignments where student_id = st and completed_at is not null
+                 and (completed_at at time zone tz)::date = d) then
+        cur := cur + 1;
+        update public.listening_assignments a
+           set points = round((20 + coalesce(i.duration_sec, 0) / 60) * (1 + least(cur, 14) / 14.0))
+          from public.listening_items i
+         where i.id = a.item_id and a.student_id = st and a.points is null and a.completed_at is not null
+           and (a.completed_at at time zone tz)::date = d;
+      elsif d < today and exists (select 1 from public.listening_assignments where student_id = st
+                                  and (assigned_at at time zone tz)::date < d
+                                  and (completed_at is null or (completed_at at time zone tz)::date >= d)) then
+        cur := 0;
+      end if;
+    end loop;
+  end loop;
+end $$;

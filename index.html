@@ -257,6 +257,49 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .chip.goalchip{background:rgba(var(--ok-rgb),.14);color:var(--ok);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hwgoal-t{display:flex;flex-direction:column;gap:2px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:rgba(var(--ok-rgb),.12)}
 .hwgoal-t b{color:var(--strong);font-size:16px}
+.rank-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px 16px;margin:0 0 14px;padding:6px 16px 12px 6px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(110deg,rgba(var(--accent-rgb),.10),var(--panel) 55%)}
+.rk-medal{display:block;width:150px;padding:0;border:0;background:none;cursor:pointer;line-height:0}
+.rk-medal .emb{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.rk-medal.lg{width:260px;margin:0 auto}
+.rk-medal.xl{width:min(340px,80vw);margin:0 auto}
+.rk-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rk-name{font-size:20px;color:var(--strong);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rk-pts{font-size:13.5px;color:var(--muted)}
+.rk-bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;margin:4px 0 2px}
+.rk-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--neon));box-shadow:0 0 10px rgba(var(--neon-rgb),.5)}
+.rk-pips{display:inline-flex;gap:3px}
+.rk-pips i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.rk-pips i.on{background:var(--neon);box-shadow:0 0 6px rgba(var(--neon-rgb),.7)}
+.rk-streak{display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;padding-left:14px;border-left:1px solid var(--line)}
+.rk-streak b{color:var(--strong)}
+.rk-streak:not(.on) b{color:var(--muted)}
+.rk-mult{font-size:22px;font-weight:800;color:var(--warn);line-height:1.1}
+.rk-streak:not(.on) .rk-mult{color:var(--muted)}
+.rank-card .sk-how{grid-column:1/-1}
+.rk-show{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.pf-rank{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 4px}
+.pf-rank:empty{display:none}
+.pf-rank .rk-medal{width:130px;cursor:default}
+.pf-rank > div:last-child{display:flex;flex-direction:column;gap:2px}
+.rk-ficha{display:flex;align-items:center;gap:12px}
+.rk-ficha .rk-medal{width:120px;flex:none;cursor:default}
+.rk-ladder{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rk-rung{position:relative;display:flex;flex-direction:column;align-items:center;padding:8px 6px;border-radius:14px;background:var(--panel2);border:1px solid transparent}
+.rk-rung.cur{border-color:var(--neon);box-shadow:0 0 0 1px rgba(var(--neon-rgb),.35),0 0 18px rgba(var(--neon-rgb),.18)}
+.rk-rung .rk-medal{width:100%;max-width:190px;cursor:default}
+.rk-rung.locked .emb{filter:saturate(.45) brightness(.8);opacity:.7}
+.rk-lock{position:absolute;top:8px;right:8px;color:var(--muted)}
+.rk-rung ul{list-style:none;margin:4px 0 0;padding:0;width:100%;font-size:12.5px}
+.rk-rung li{display:flex;justify-content:space-between;gap:6px;padding:2px 4px;color:var(--faint)}
+.rk-rung li.on{color:var(--strong)}
+.rk-celebrate h2{margin:6px 0 0}
+.emb.pop{animation:trophy .9s cubic-bezier(.2,1.6,.4,1) both}
+.emb-rays{transform-box:view-box;transform-origin:90px 80px;animation:embspin 90s linear infinite}
+.emb-stars{animation:embtw 2.6s ease-in-out infinite alternate}
+@keyframes embspin{to{transform:rotate(360deg)}}
+@keyframes embtw{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.emb-rays,.emb-stars,.emb.pop{animation:none}}
+@media (max-width:760px){.rank-card{grid-template-columns:auto minmax(0,1fr)}.rk-medal{width:120px}.rk-streak{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;text-align:left;padding:8px 0 0;border-left:0;border-top:1px solid var(--line)}.rk-ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .streak-card{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px;padding:12px 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
 .streak-card.on{border-color:rgba(var(--warn-rgb),.45);background:linear-gradient(90deg,rgba(var(--warn-rgb),.10),var(--panel) 70%)}
 .sk-fire{font-size:30px;line-height:1;filter:grayscale(1);opacity:.55}
@@ -1330,7 +1373,7 @@ const S = {
   stories: [], storyViews: [], storyRx: [],
   dms: [], dmRx: [], ansRx: [], blocks: [], dmContacts: [], dmCan: {}, dmWith: null, notifs: [], mates: [],
   homework: [], payPlans: [], payRecords: [], payMonth: null,
-  goalStages: [], goalItems: [], goalDone: [], goalPending: false, streakAwards: [], streakPending: false,
+  goalStages: [], goalItems: [], goalDone: [], goalPending: false, streakAwards: [], rankPending: false,
   lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
@@ -3575,7 +3618,7 @@ async function closeModal(fromHistory = false) {
   if (wasOpen && !fromHistory && history.state && history.state.modal) { histSkip++; history.back(); }
   if (uiStale) softRender(); // aplica lo que llegó en directo mientras la ventana estaba abierta
   if (S.goalPending) setTimeout(goalsCelebrate, 300); // celebración que esperaba a que se cerrara la ventana
-  else if (S.streakPending) setTimeout(streakCelebrate, 300);
+  else if (S.rankPending) setTimeout(rankCelebrate, 300);
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
@@ -3707,7 +3750,7 @@ async function route() {
     histRestoreOnLoad();
     render(); rtStart(); backfillThumbs(); avatarLgBackfill();
     setTimeout(goalsCelebrate, 700); // logros nuevos que aún no ha visto
-    setTimeout(streakCelebrate, 900); // insignias de racha nuevas (si hay un logro, espera a que se cierre)
+    setTimeout(rankCelebrate, 900); // rango nuevo (si hay un logro, espera a que se cierre)
     const fromNotif = new URLSearchParams(location.search).has('n');
     pushInit().catch(e => console.warn('Push:', e)).finally(() => installCheck(fromNotif).catch(e => console.warn('Instalar:', e)));
     if (fromNotif) { // llegamos desde un aviso del móvil
@@ -3793,7 +3836,6 @@ async function loadData(quiet = false) {
     catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
     try { await loadLibrary(); } catch (e) { console.warn('Carpetas y géneros:', e.message || e); S.folders = []; S.genres = []; S.itemGenres = []; }
     try { await loadGoals(); } catch (e) { console.warn('Objetivos:', e.message || e); S.goalStages = []; S.goalItems = []; S.goalDone = []; }
-    try { await loadStreakAwards(); } catch (e) { console.warn('Racha:', e.message || e); S.streakAwards = []; }
     S.blocked = [];
     if (S.profile.role === 'teacher') { // correos y dominios que no pueden registrarse
       try { const { data, error } = await sb.from('blocked_emails').select('*').order('created_at', { ascending: false }); if (error) throw error; S.blocked = data || []; }
@@ -4256,7 +4298,7 @@ function profileView() {
   <div class="two prof-grid">
     ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
     ${!isTeacher() ? goalsPanel() : ''}
-    ${!isTeacher() ? streakPanel() : ''}
+    ${!isTeacher() ? rankPanel() : ''}
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
       <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
@@ -4748,7 +4790,7 @@ function slRefresh() { // repinta la lista y los filtros (por el botón "Quitar 
 function studentListening() {
   const all = S.assigns;
   const pend = all.filter(a => !a.listened), done = all.filter(a => a.listened);
-  return `${streakCard()}<div class="tabs">
+  return `${rankCard()}<div class="tabs">
       <button class="tab ${S.filter === 'pend' ? 'on' : ''}" data-action="filter" data-f="pend">Pendientes<span class="n">${pend.length}</span></button>
       <button class="tab ${S.filter === 'done' ? 'on' : ''}" data-action="filter" data-f="done">Escuchados<span class="n">${done.length}</span></button>
       <button class="tab ${S.filter === 'all' ? 'on' : ''}" data-action="filter" data-f="all">Todos<span class="n">${all.length}</span></button>
@@ -4859,7 +4901,7 @@ async function saveNow() {
   }
   Object.assign(a, data[0]);
   updateAnsRead(a.id); // si ha cambiado respuestas ya leídas, la marca de "leído" se quita
-  if (!wasDone && a.completed_at && !isTeacher()) streakAfterComplete(before);
+  if (!wasDone && a.completed_at && !isTeacher()) streakAfterComplete(before, a);
   setSaveState('Guardado ✓', 'ok');
   if (c.dirty) c.timer = setTimeout(saveNow, 300); // se escribió algo mientras guardaba
 }
@@ -5604,6 +5646,7 @@ async function profileModal(id) {
       ${chips.length ? `<div class="chips" style="justify-content:center">${chips.map(c => `<span class="chip acc">${esc(c)}</span>`).join('')}</div>` : ''}
       ${p.bio ? `<p class="pf-bio">${linkify(p.bio)}</p>` : ''}
     </div>
+    ${p.role === 'student' ? `<div class="pf-rank" data-rankbox="${id}"></div>` : ''}
     ${field('Grupos y estilos favoritos', p.favorites)}
     ${field('Su equipo', p.gear)}
     ${!p.bio && !p.favorites && !p.gear && !chips.length ? `<p class="sub center">${mine ? 'Aún no has rellenado tu perfil.' : 'Todavía no ha rellenado su perfil.'}</p>` : ''}
@@ -5617,6 +5660,7 @@ async function profileModal(id) {
         ? '<span class="sub">🚩 Denunciado</span>'
         : `<button class="linkbtn mute" data-action="report" data-type="profile" data-id="${id}">🚩 Denunciar a esta persona</button>`}</div>` : ''}`);
   $('.modal').classList.add('narrow');
+  if (p.role === 'student') rankFillProfile(id);
 }
 
 /* ========================= MENSAJES PRIVADOS =========================
@@ -5896,6 +5940,7 @@ function notifText(n) {
     case 'account_deleted': return `<b>${esc(n.extra || 'Un alumno')}</b> ha borrado su cuenta`;
     case 'goal': return `🏆 ¡Objetivo conseguido! <b>${esc(n.extra || '')}</b>`;
     case 'streak': return `🔥 ${who} lleva <b>${esc(n.extra || '')} días seguidos</b> terminando escuchas`;
+    case 'rank': return `🛡️ ${who} ha ascendido a <b>${esc(n.extra || '')}</b> en Escucha analítica`;
     case 'listening_feedback': return `${who} ha revisado tus respuestas de <b>${esc(n.extra || 'una escucha')}</b>`;
     case 'report': return 'Hay una denuncia nueva para revisar';
     case 'homework': return `Deberes nuevos: <b>${esc(n.extra || '')}</b>`;
@@ -5913,7 +5958,7 @@ function notifText(n) {
     default: return 'Novedad';
   }
 }
-function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', streak: 'listening', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart', mention_story: 'chat', reply_feed: 'chat', reply_listening: 'listening' }[kind] || 'bell'; }
+function notifIcon(kind) { return { board_post: 'board', assignment: 'listening', dm: 'chat', comment: 'chat', reaction: 'heart', signup: 'students', account_deleted: 'students', goal: 'check', streak: 'listening', rank: 'listening', report: 'flag', homework: 'homework', mention_feed: 'chat', mention_board: 'board', mention_listening: 'listening', listening_feedback: 'listening', lesson: 'calendar', classmate_request: 'students', classmate_accept: 'students', story_reaction: 'heart', mention_story: 'chat', reply_feed: 'chat', reply_listening: 'listening' }[kind] || 'bell'; }
 function notifsModal() {
   const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
   openModal(`<div class="modal-head"><h2>Notificaciones</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
@@ -5951,7 +5996,7 @@ async function openNotif(n) {
     case 'dm': await openDm(n.actor_id); break;
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
     case 'signup': case 'account_deleted': S.section = 'students'; render(); break;
-    case 'streak': render(); if (S.students.some(s => s.id === n.actor_id)) studentDetailModal(n.actor_id); break;
+    case 'streak': case 'rank': render(); if (S.students.some(s => s.id === n.actor_id)) studentDetailModal(n.actor_id); break;
     case 'goal': S.section = 'profile'; render(); { const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
     case 'report': S.section = 'mod'; render(); break;
     case 'homework': case 'lesson': S.section = 'homework'; render(); break;
@@ -7478,19 +7523,36 @@ function confetti() {
   setTimeout(() => box.remove(), 4500);
 }
 
-/* ============================ RACHA DE ESCUCHAS ============================
-   Días seguidos terminando escuchas (terminada = escuchada + las 6 respuestas; la fecha la pone la base de datos
-   en completed_at, la primera vez, y no cambia). Hora local (Madrid):
+/* ============================ RANGO DE GUERRERO Y RACHA ============================
+   Racha: días seguidos terminando escuchas (terminada = escuchada + las 6 respuestas; la fecha la pone la base de
+   datos en completed_at, la primera vez, y no cambia). Hora local (Madrid):
    · un día con alguna escucha terminada suma 1;
    · un día que acaba con escuchas pendientes y ninguna terminada la rompe;
    · un día sin nada pendiente no la toca (si el profesor no manda escuchas, no se pierde);
    · una escucha cuenta como pendiente desde el día siguiente a asignarla; hoy nunca rompe.
-   Es lo mismo que calcula listening_streak() en la base de datos, que es quien da las insignias
-   (listening_streak_awards) y avisa al profesor. Privada: el alumno ve la suya; el profesor, la de todos. */
-const STREAK_STEPS = [3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365];
-const STREAK_NAMES = { 3: 'Primera chispa', 5: 'Calentando motores', 7: 'Una semana entera', 10: 'Diez de diez', 15: 'Quincena musical', 20: 'Imparable',
-  30: 'Un mes seguido', 50: 'Medio centenar', 75: 'Oído de oro', 100: 'Centenario', 150: 'Leyenda', 200: 'Maestro del oído', 365: 'Un año entero' };
-const streakTier = d => d >= 100 ? 4 : d >= 30 ? 3 : d >= 10 ? 2 : 1;
+   Es lo mismo que calcula listening_streak() en la base de datos. La racha actual es privada (alumno y profesor).
+   Rango (2026-11-28): cada escucha terminada da puntos una sola vez (listening_assignments.points, los pone la base
+   de datos): (20 + 1 por minuto) × multiplicador de racha (1 + días/14, hasta ×2 a los 14 días). La suma da el
+   rango: 7 rangos × 3 divisiones + Mito. RANK_STEPS debe coincidir con listening_rank_step() del SQL.
+   Las medallas y el récord de racha son públicos (get_listening_rank). Al subir, celebración (profiles.rank_seen). */
+const RANK_STEPS = [0, 150, 350, 600, 900, 1250, 1700, 2200, 2800, 3500, 4300, 5200, 6200, 7400, 8800, 10500, 12500, 15000, 18000, 22000, 27000, 35000];
+const RANK_TIERS = ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro', 'Leyenda', 'Mito'];
+const RANK_DIV = ['III', 'II', 'I'];
+const STREAK_MAX = 14;
+const stepName = s => s >= 21 ? 'Mito' : `${RANK_TIERS[Math.floor(s / 3)]} ${RANK_DIV[s % 3]}`;
+function rankOf(points) {
+  points = points || 0; let step = 0;
+  RANK_STEPS.forEach((v, i) => { if (points >= v) step = i; });
+  const next = step < RANK_STEPS.length - 1 ? RANK_STEPS[step + 1] : null, from = RANK_STEPS[step];
+  return { step, tier: Math.min(Math.floor(step / 3), 7), name: stepName(step), points, next, from, pct: next ? (points - from) / (next - from) : 1 };
+}
+const pointsOf = sid => S.assigns.filter(a => a.student_id === sid).reduce((t, a) => t + (a.points || 0), 0);
+const nfmt = n => Number(n || 0).toLocaleString('es-ES');
+const multOf = days => 1 + Math.min(days, STREAK_MAX) / STREAK_MAX;
+const multTxt = m => '×' + m.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
+// Multiplicador que tendría la próxima escucha terminada (hoy cuenta como un día más si aún no ha sumado)
+const nextMult = st => multOf(st.cur + (st.todayDone ? 0 : 1));
+
 const localDay = iso => dayKey(new Date(iso));
 const addDays = (key, n) => { const d = new Date(key + 'T12:00:00'); d.setDate(d.getDate() + n); return dayKey(d); };
 function streakOf(sid) {
@@ -7507,94 +7569,227 @@ function streakOf(sid) {
   }
   return { cur, best, todayDone: act, atRisk: !act && rows.some(r => !r.done && r.from < today) };
 }
-const myAwards = sid => S.streakAwards.filter(w => w.student_id === sid).sort((a, b) => a.days - b.days);
-const nextStep = n => STREAK_STEPS.find(s => s > n) || null;
 const daysTxt = n => `${n} día${n === 1 ? '' : 's'}`;
-function badgeHtml(days, locked) {
-  return `<div class="bdg t${streakTier(days)} ${locked ? 'locked' : ''}" title="${esc(STREAK_NAMES[days] + ' · ' + daysTxt(days) + (locked ? ' (aún no)' : ''))}">
-    <span class="bdg-n">${locked ? ic('lock') : days}</span><span class="bdg-t">${esc(STREAK_NAMES[days])}</span><span class="bdg-d">${esc(daysTxt(days))}</span></div>`;
-}
 function streakState(st) {
   if (st.todayDone) return { cls: 'ok', text: '✔ Hoy ya has sumado un día' };
   if (st.atRisk) return { cls: 'warn', text: st.cur ? 'Termina una escucha hoy para no perder la racha' : 'Termina una escucha hoy para empezar tu racha' };
   return { cls: '', text: 'Sin escuchas pendientes: tu racha está a salvo' };
 }
-// Alumno: arriba de Escucha analítica
-function streakCard() {
+
+/* ---- Medallas (SVG). Diseño de Yuri (2026-11-28): escudo con ornamentación barroca asimétrica (volutas, acantos,
+   cintas con cola de golondrina), alas y urnas simétricas; Leyenda y Mito celestiales (plumas, rayos, halo). ---- */
+const EMB_PAL = [
+  { p: ['#ffe6cc', '#f0a46a', '#b8622c', '#5a2a0c', '#d98a52', '#3a1606'], g1: '#ff8a8a', g2: '#8b1020' },
+  { p: ['#ffffff', '#dfe6ef', '#9aa6b6', '#3f4856', '#c5cfdc', '#262c36'], g1: '#9ad2ff', g2: '#123e8c' },
+  { p: ['#fff6c4', '#ffd257', '#d48a12', '#6a3f02', '#f2b440', '#3e2400'], g1: '#ff7a90', g2: '#7a0a26' },
+  { p: ['#effffb', '#8ff5e2', '#2fb3a0', '#08463e', '#63dcc7', '#042a25'], g1: '#8dffc0', g2: '#0b6b3a' },
+  { p: ['#f3f9ff', '#9cc9ff', '#3f6fe8', '#14248c', '#7fb0ff', '#0b1555'], g1: '#ffffff', g2: '#4f9bff', fl: ['#e8f4ff', '#6fb6ff', '#2f5fff'] },
+  { p: ['#fbf4ff', '#d5b3ff', '#8a50e6', '#3a168a', '#b98af5', '#220b55'], g1: '#f0c2ff', g2: '#5b1aa6', fl: ['#f6ecff', '#c08cff', '#7a3cf0'] },
+  { p: ['#ffffff', '#c9f9ff', '#3ff0ff', '#1747c0', '#8ff5ff', '#0b2a7a'], g1: '#ffffff', g2: '#3ff0ff', glow: '#3ff0ff', gold: '#ffe08a', fl: ['#ffffff', '#3ff0ff', '#2f86ff'] },
+  { p: ['#ffffff', '#fff0b8', '#ffc93d', '#9a5206', '#ffe08a', '#5e3002'], g1: '#ffffff', g2: '#ffb300', glow: '#ffd34d', gold: '#ffffff', fl: ['#ffffff', '#ffe27a', '#ffb300'] }
+];
+const EMB_SHIELD = [
+  'M50 42 H90 V64 C90 80 81 90 70 97 C59 90 50 80 50 64Z',
+  'M48 39 Q54 45 60 41 Q65 45 70 37 Q75 45 80 41 Q86 45 92 39 L90 64 C90 80 81 90 70 98 C59 90 50 80 50 64Z',
+  'M45 36 Q54 45 60 40 Q65 44 70 34 Q75 44 80 40 Q86 45 95 36 L90 53 L95 59 L89 66 C88 81 80 91 70 99 C60 91 52 81 51 66 L45 59 L50 53Z'
+];
+let embSeq = 0;
+function emblemSvg(tier, cls = '') {
+  const f1 = v => (+v).toFixed(1), t = EMB_PAL[tier], P = t.p, i = tier, cel = i >= 6;
+  const c = { c: P[0], a: P[1], b: P[5], dk: P[3] }, S = c.b, u = 'em' + (++embSeq);
+  const F = `url(#${u}g)`, H = `url(#${u}h)`, B = `url(#${u}k)`, sh = EMB_SHIELD[i < 2 ? 0 : i < 4 ? 1 : 2];
+  const spiral = (cx, cy, r, turns, st, dir) => { let d = ''; for (let k = 0; k <= 40; k++) { const q = k / 40, a = st + dir * q * turns * 2 * Math.PI, rr = r * (1 - q * .82); d += (k ? 'L' : 'M') + f1(cx + Math.cos(a) * rr) + ' ' + f1(cy + Math.sin(a) * rr); } return d; };
+  const metal = (d, w) => `<path d="${d}" fill="none" stroke="${S}" stroke-width="${w + 2}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${F}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${c.c}" stroke-width=".6" stroke-linecap="round" opacity=".8"/>`;
+  const leaf = (x, y, ang, len, bend, lob) => { const pts = [], inn = []; for (let k = 0; k <= lob; k++) { const s = k / lob, a = (ang + bend * s * s) * Math.PI / 180, px = x + Math.cos(a) * len * s, py = y - Math.sin(a) * len * s, nx = Math.sin(a), ny = Math.cos(a), w = len * .32 * (1 - s) * (k % 2 ? .55 : 1) + .5; pts.push([px + nx * w, py + ny * w]); inn.push([px - nx * w * .45, py - ny * w * .45]); }
+    let d = `M${x} ${y}`; pts.forEach((p, k) => { const q = pts[k + 1] || p; d += ` Q${f1(p[0])} ${f1(p[1])} ${f1((p[0] + q[0]) / 2)} ${f1((p[1] + q[1]) / 2)}`; }); inn.reverse().forEach(p => { d += ` L${f1(p[0])} ${f1(p[1])}`; });
+    return `<path d="${d}Z" fill="${F}" stroke="${S}" stroke-width=".8" stroke-linejoin="round"/>`; };
+  const blade = (bx, by, deg, len, w, fill, stroke) => { const a = deg * Math.PI / 180, cs = Math.cos(a), si = Math.sin(a), tx = bx + cs * len, ty = by - si * len, nx = si * w, ny = cs * w, mx = bx + cs * len * .55, my = by - si * len * .55;
+    return `<path d="M${bx} ${by} Q${f1(mx + nx)} ${f1(my + ny)} ${f1(tx)} ${f1(ty)} Q${f1(mx - nx * .3)} ${f1(my - ny * .3)} ${bx} ${f1(by - w * 1.4)}Z" fill="${fill}" stroke="${stroke}" stroke-width=".9"/>`; };
+  const feather = (x, y, deg, len, w, fill) => { const a = deg * Math.PI / 180, cs = Math.cos(a), si = Math.sin(a), tx = x + cs * len, ty = y - si * len, mx = x + cs * len * .55, my = y - si * len * .55, nx = si * w, ny = cs * w;
+    return `<path d="M${x} ${y} Q${f1(mx + nx)} ${f1(my + ny)} ${f1(tx)} ${f1(ty)} Q${f1(mx - nx)} ${f1(my - ny)} ${x} ${y}Z" fill="${fill}" stroke="${S}" stroke-width=".6"/>`; };
+  const star4 = (x, y, r, fill) => `<path d="M${x} ${y - r} L${f1(x + r * .22)} ${f1(y - r * .22)} L${x + r} ${y} L${f1(x + r * .22)} ${f1(y + r * .22)} L${x} ${y + r} L${f1(x - r * .22)} ${f1(y + r * .22)} L${x - r} ${y} L${f1(x - r * .22)} ${f1(y - r * .22)}Z" fill="${fill}"/>`;
+  const qp = (p0, cc, p1, n) => { const o = []; for (let k = 0; k <= n; k++) { const s = k / n, a = (1 - s) * (1 - s), b = 2 * (1 - s) * s, d = s * s; o.push([a * p0[0] + b * cc[0] + d * p1[0], a * p0[1] + b * cc[1] + d * p1[1]]); } return o; };
+  const band = (pts, w0, w1, fill, tail, hl) => { const L = [], R = [], N = pts.length - 1; let nx = 0, ny = 0, dx = 0, dy = 0;
+    pts.forEach((p, k) => { const q = pts[Math.min(k + 1, N)], r = pts[Math.max(k - 1, 0)]; dx = q[0] - r[0]; dy = q[1] - r[1]; const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m; nx = -dy; ny = dx; const w = w0 + (w1 - w0) * k / N; L.push([p[0] + nx * w, p[1] + ny * w]); R.push([p[0] - nx * w, p[1] - ny * w]); });
+    let d = 'M' + L.map(p => f1(p[0]) + ' ' + f1(p[1])).join(' L'); const e = pts[N];
+    if (tail) d += ` L${f1(e[0] + dx * 3 + nx * w1)} ${f1(e[1] + dy * 3 + ny * w1)} L${f1(e[0] + dx * .4)} ${f1(e[1] + dy * .4)} L${f1(e[0] + dx * 3 - nx * w1)} ${f1(e[1] + dy * 3 - ny * w1)}`;
+    d += ' L' + R.reverse().map(p => f1(p[0]) + ' ' + f1(p[1])).join(' L') + 'Z';
+    return `<path d="${d}" fill="${fill}" stroke="${S}" stroke-width=".9" stroke-linejoin="round"/>` + (hl ? `<path d="M${L.slice(1, -1).map(p => f1(p[0]) + ' ' + f1(p[1])).join(' L')}" fill="none" stroke="${hl}" stroke-width=".7" opacity=".85"/>` : ''); };
+  const urn = (fx, fy) => { const y = fy - 7;
+    return `<circle cx="${fx}" cy="${fy - 12}" r="7" fill="url(#${u}fo)"/><path d="M${fx - 3.5} ${fy} h7 l-1.2 -2 q2 -3 -1 -5 h-2.6 q-3 2 -1 5z" fill="${F}" stroke="${S}" stroke-width=".7"/>
+      <g transform="translate(${fx} ${y}) scale(.75) translate(${-fx} ${-y})"><path d="M${fx} ${fy - 7} C${fx - 5.6} ${fy - 10} ${fx - 3.4} ${fy - 16} ${fx + .6} ${fy - 24} C${fx + 3} ${fy - 17} ${fx + 5.4} ${fy - 11} ${fx} ${fy - 7}Z" fill="url(#${u}f)"/>
+      <path d="M${fx} ${fy - 7} C${fx - 3.8} ${fy - 9.5} ${fx - 2.4} ${fy - 14} ${fx + .4} ${fy - 19} C${fx + 2} ${fy - 14} ${fx + 3.8} ${fy - 10} ${fx} ${fy - 7}Z" fill="${t.fl[1]}" opacity=".9"/>
+      <path d="M${fx} ${fy - 7} C${fx - 2.2} ${fy - 8.8} ${fx - 1.4} ${fy - 11.5} ${fx + .2} ${fy - 14.5} C${fx + 1.3} ${fy - 11.5} ${fx + 2.2} ${fy - 9} ${fx} ${fy - 7}Z" fill="${t.fl[0]}"/></g>`; };
+  // Un lado del emblema (el izquierdo se dibuja reflejado). P1 = asimetría de los adornos; alas y urnas, simétricas.
+  const side = Pq => { let s = ''; const X = v => f1(v * Pq.sc + (1 - Pq.sc) * 78), Q = { sc: 1.03, tw: 1.5 };
+    if (i >= 6) { const np = i === 7 ? 9 : 7; for (let k = 0; k < np; k++) { const deg = -30 + k * (i === 7 ? 104 : 92) / (np - 1) + Q.tw * 2, len = (i === 7 ? 42 : 36) * Q.sc + Math.sin(k / (np - 1) * Math.PI) * 13 - (k > np - 3 ? 7 : 0); s += feather(96, 66, deg, len, 5.2, F); } for (let k = 0; k < 6; k++) s += feather(94, 64, -4 + k * 13 + Q.tw, 19 * Q.sc, 4, H); }
+    else if (i >= 4) { const n = i === 5 ? 4 : 3; for (let k = 0; k < n; k++) { const deg = -16 + k * 64 / (n - 1) + Q.tw; s += blade(96, 62 - k * 3, deg, (26 + i * 3 - k * 2) * Q.sc, 4.4, S, S) + blade(96, 61 - k * 3, deg + 2, (22 + i * 3 - k * 2) * Q.sc, 2.8, F, 'none'); } }
+    if (i >= 1) { const L = (12 + i * 2.2) * Pq.sc; s += leaf(95, 68, -28 + Pq.tw, L, -40, 7); if (i >= 3) s += leaf(94, 54, 30 + Pq.tw, L * .85, 50, 7); if (i >= 5) s += leaf(88, 92, -70, L * .8, -60, 6); }
+    s += metal(`M92 48 C${f1(104 * Q.sc + (1 - Q.sc) * 78)} 56 ${f1(104 * Q.sc + (1 - Q.sc) * 78)} 72 92 80`, 2.6); // banda lateral, simétrica
+    s += metal(spiral(93, 45, (6 + i * .45) * Pq.sc, 1.6, Math.PI * .9, 1), 2.4);
+    if (i >= 3) s += metal(spiral(93, 82, (4.5 + i * .4) * Pq.sc, 1.4, -Math.PI * .4, -1), 2);
+    // Cintas: en la misma posición a los dos lados (Yuri); la irregularidad queda en acantos y volutas
+    if (i >= 2) { const XS = v => f1(v * Q.sc + (1 - Q.sc) * 78), a = [76, 25.5], b = [+XS(100), 37.5], e = [+XS(101), 44];
+      s += band(qp(b, [+XS(103.5), 39], e, 6), 2.3, 2.4, F, true, null) + band(qp(a, [89, 28.5], b, 12), 2.5, 2.4, F, false, c.c)
+        + `<path d="M${f1(b[0] - 2)} ${f1(b[1] + 2)} Q${f1(b[0] + 1.5)} ${f1(b[1] + 1)} ${f1(b[0] + 2.2)} ${f1(b[1] - 1.6)}" fill="none" stroke="${c.dk}" stroke-width="1.2" opacity=".7"/><path d="M${f1(b[0] - 1)} ${f1(b[1] + 2.2)} L${f1(b[0] + 2.6)} ${f1(b[1] + .2)} L${f1(b[0] + 2.4)} ${f1(b[1] + 3.6)}Z" fill="${B}" stroke="${S}" stroke-width=".6"/>`; }
+    if (i >= 4) s += urn(101, 33);
+    return s; };
+  let bg = '';
+  if (cel) { let rays = ''; const nr = i === 7 ? 30 : 20;
+    for (let k = 0; k < nr; k++) { const a = k * 2 * Math.PI / nr - Math.PI / 2, len = (k % 2 ? 40 : 58) + (i === 7 ? 8 : 0) + (k % 4 === 0 ? 3 : 0), px = -Math.sin(a) * 3.2, py = Math.cos(a) * 3.2;
+      rays += `<path d="M${f1(70 + px)} ${f1(66 + py)} L${f1(70 + Math.cos(a) * len)} ${f1(66 + Math.sin(a) * len)} L${f1(70 - px)} ${f1(66 - py)}Z" fill="url(#${u}r)"/>`; }
+    bg = `<circle cx="70" cy="66" r="${i === 7 ? 52 : 46}" fill="${t.glow}" opacity=".14"/><g class="emb-rays">${rays}</g>`
+      + `<g class="emb-stars">${(i === 7 ? [[10, 26, 5], [130, 22, 6], [18, 92, 3.5], [124, 96, 4], [46, 6, 3], [100, 4, 3.5], [2, 60, 3]] : [[14, 30, 4], [126, 26, 5], [24, 94, 3], [118, 98, 3], [56, 8, 2.6]]).map(s => star4(s[0], s[1], s[2], i === 7 ? '#fff' : t.glow)).join('')}</g>`; }
+  else if (i >= 4) bg = `<circle cx="70" cy="64" r="38" fill="${c.a}" opacity=".08"/>`;
+  const sw = rot => `<g transform="rotate(${rot} 70 66)"><path d="M68.6 14 L70 7 L71.4 14 V82 H68.6Z" fill="${F}" stroke="${S}" stroke-width=".8"/><path d="M61 82 Q70 79 79 82 L79 85 Q70 82 61 85Z" fill="${S}"/><rect x="68.5" y="85" width="3" height="9" fill="${S}"/><circle cx="70" cy="96" r="2.4" fill="${t.g1}" stroke="${S}" stroke-width=".8"/></g>`;
+  let top = '';
+  if (i >= 5) top = cel ? (i === 7 ? `<ellipse cx="70" cy="8" rx="17" ry="4.5" fill="none" stroke="#fff" stroke-width="2.4"/><ellipse cx="70" cy="8" rx="17" ry="4.5" fill="none" stroke="${t.glow}" stroke-width="5" opacity=".35"/>` : '')
+      + [-10, -5, 0, 5, 10].map((dx, j) => { const hh = [9, 14, 20, 14, 9][j]; return `<path d="M${70 + dx - 2.4} 33 L${70 + dx} ${33 - hh} L${70 + dx + 2.4} 33Z" fill="${F}" stroke="${S}" stroke-width=".8"/>` + star4(70 + dx, 31 - hh, 3, i === 7 ? '#fff' : t.gold); }).join('')
+    : `<path d="M59 33 L60 21 L64 26 L67 14 L70 23 L73 14 L76 26 L80 21 L81 33Z" fill="${F}" stroke="${S}"/><circle cx="70" cy="28" r="2.4" fill="${t.g1}" stroke="${S}" stroke-width=".6"/>`;
+  else if (i >= 2) top = `<path d="M64 37 L70 ${22 - i} L76 37Z" fill="${F}" stroke="${S}"/>` + metal(spiral(70, 19 - i, 3, 1.2, 0, 1), 1.4);
+  else if (i === 1) top = `<path d="M66 42 L70 32 L74 42Z" fill="${F}" stroke="${S}"/>`;
+  const inT = 'translate(70 67) scale(.78) translate(-70 -67)';
+  let charge;
+  if (i === 7) { let sr = ''; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6 + .1, r = k % 2 ? 11 : 15; sr += `<path d="M70 67 L${f1(70 + Math.cos(a) * r)} ${f1(67 + Math.sin(a) * r)}" stroke="${c.dk}" stroke-width="1.5"/>`; }
+    charge = `<g clip-path="url(#${u}c)">${sr}</g><circle cx="70" cy="67" r="7.5" fill="#fff" stroke="${c.dk}" stroke-width="1.2"/><circle cx="70" cy="67" r="3.8" fill="${t.glow}"/>`; }
+  else if (i === 6) { let p = ''; for (let k = 0; k < 16; k++) { const a = -Math.PI / 2 + k * Math.PI / 8, r = k % 2 ? 4.6 : 12; p += (k ? 'L' : 'M') + f1(70 + Math.cos(a) * r) + ' ' + f1(67 + Math.sin(a) * r); }
+    charge = `<path d="${p}Z" fill="#fff" stroke="${c.dk}" stroke-width=".8"/><circle cx="70" cy="67" r="3.6" fill="${t.glow}"/>`; }
+  else { const R = 6 + i * .9, l = 70 - R * .8, r = 70 + R * .8, tp = 67 - R, bt = 67 + R * 1.15;
+    charge = (i >= 3 ? metal(`M${f1(l - 3)} 67 C${f1(l - 8)} 61 ${f1(l - 4)} 56 ${f1(l)} 60`, 1.2) + metal(`M${f1(r + 3)} 67 C${f1(r + 9)} 73 ${f1(r + 5)} 79 ${f1(r)} 75`, 1.2) : '')
+      + `<path d="M70 ${f1(tp)} L${f1(r)} 67 L70 ${f1(bt)} L${f1(l)} 67Z" fill="${t.g2}" stroke="${S}"/><path d="M70 ${f1(tp)} L${f1(l)} 67 L70 67Z" fill="${t.g1}"/><path d="M70 ${f1(tp)} L${f1(r)} 67 L70 67Z" fill="${t.g1}" opacity=".6"/><path d="M${f1(l)} 67 L70 ${f1(bt)} L70 67Z" fill="${t.g2}" opacity=".7"/><path d="M${f1(70 - R * .35)} ${f1(67 - R * .45)} L${f1(70 - R * .1)} ${f1(67 - R * .75)}" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>`; }
+  const riv = i >= 1 && !cel ? [[55, 47], [85, 47], [54, 70], [86, 70], [70, 91]].map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="1.4" fill="${c.c}" stroke="${S}" stroke-width=".5"/>`).join('') : '';
+  const pend = i >= 3 ? metal('M66 99 C62 105 66 110 70 107 C74 110 78 105 74 99', 1.8) + `<path d="M70 107 l3 5 -3 6 -3 -6z" fill="${t.g2}" stroke="${S}" stroke-width=".7"/>` : '';
+  const clouds = i === 7 ? '<g fill="#fff" opacity=".92"><circle cx="38" cy="116" r="8"/><circle cx="50" cy="112" r="11"/><circle cx="64" cy="117" r="8"/><circle cx="84" cy="115" r="10"/><circle cx="98" cy="110" r="12"/><circle cx="112" cy="117" r="8"/></g>' : '';
+  const ry = 120, fl = t.fl || ['#fff', '#fff', '#fff'];
+  const ribbon = `<path d="M20 ${ry - 4} L36 ${ry - 2} L34 ${ry + 10} L18 ${ry + 12} L25 ${ry + 3}Z" fill="${c.dk}" stroke="${S}"/><path d="M124 ${ry + 2} L106 ${ry + 1} L108 ${ry + 13} L126 ${ry + 18} L118 ${ry + 9}Z" fill="${c.dk}" stroke="${S}"/><path d="M32 ${ry - 5} C48 ${ry + 3} 58 ${ry - 4} 70 ${ry} C84 ${ry + 5} 96 ${ry - 2} 110 ${ry + 2} L110 ${ry + 14} C96 ${ry + 10} 84 ${ry + 17} 70 ${ry + 12} C58 ${ry + 8} 48 ${ry + 15} 32 ${ry + 7}Z" fill="${H}" stroke="${S}"/><text x="71" y="${ry + 10}" text-anchor="middle" font-size="8" font-weight="700" letter-spacing="1.4" fill="${S}">${RANK_TIERS[i].toUpperCase()}</text>`;
+  return `<svg class="emb ${cls}" viewBox="0 0 180 168" role="img" aria-label="Medalla ${RANK_TIERS[i]}"><defs>
+    <linearGradient id="${u}g" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${P[0]}"/><stop offset=".22" stop-color="${P[1]}"/><stop offset=".48" stop-color="${P[2]}"/><stop offset=".7" stop-color="${P[3]}"/><stop offset=".86" stop-color="${P[4]}"/><stop offset="1" stop-color="${P[5]}"/></linearGradient>
+    <linearGradient id="${u}h" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="${P[0]}"/><stop offset=".3" stop-color="${P[1]}"/><stop offset=".62" stop-color="${P[2]}"/><stop offset=".85" stop-color="${P[4]}"/><stop offset="1" stop-color="${P[3]}"/></linearGradient>
+    <linearGradient id="${u}k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${P[2]}"/><stop offset=".6" stop-color="${P[3]}"/><stop offset="1" stop-color="${P[5]}"/></linearGradient>
+    <linearGradient id="${u}f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${fl[2]}"/><stop offset=".5" stop-color="${fl[1]}"/><stop offset="1" stop-color="${fl[1]}" stop-opacity=".3"/></linearGradient>
+    <radialGradient id="${u}fo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${fl[1]}" stop-opacity=".55"/><stop offset="1" stop-color="${fl[1]}" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${u}r" cx="70" cy="66" r="78" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${t.glow || c.a}" stop-opacity=".9"/><stop offset="1" stop-color="${t.glow || c.a}" stop-opacity="0"/></radialGradient>
+    <clipPath id="${u}c"><path d="${sh}"/></clipPath></defs>
+    <g transform="translate(20 14)">${bg}${i >= 2 && !cel ? sw(-40) + sw(34) : ''}<g>${side({ sc: 1.12, tw: 6 })}</g><g transform="translate(140 0) scale(-1 1)">${side({ sc: .94, tw: -3 })}</g>${top}
+    <path d="${sh}" fill="${F}" stroke="${S}" stroke-width="2.4" stroke-linejoin="round"/>
+    <g clip-path="url(#${u}c)"><path d="M70 20 L110 20 L110 110 L70 110Z" fill="#000" opacity=".2"/><path d="M30 20 H110 L30 56Z" fill="#fff" opacity=".12"/></g>
+    <path d="${sh}" transform="${inT}" fill="${H}" stroke="${S}" stroke-width="1.3"/><path d="${sh}" transform="${inT}" fill="none" stroke="${c.c}" stroke-width=".7" opacity=".7"/>
+    ${riv}${charge}${pend}${clouds}${ribbon}</g></svg>`;
+}
+const rankDivPips = step => step >= 21 ? '' : `<span class="rk-pips" aria-hidden="true">${[0, 1, 2].map(k => `<i class="${k <= step % 3 ? 'on' : ''}"></i>`).join('')}</span>`;
+
+// Alumno: arriba de Escucha analítica. Medalla, puntos, progreso y racha con su multiplicador.
+function rankCard() {
   if (isTeacher() || !S.assigns.length) return '';
-  const st = streakOf(S.user.id), s = streakState(st), nx = nextStep(st.cur);
-  return `<section class="streak-card ${st.cur ? 'on' : ''}" data-streak>
-    <div class="sk-fire" aria-hidden="true">🔥</div>
-    <div class="sk-main"><b>${st.cur ? `${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}` : 'Tu racha de escuchas'}</b>
+  const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), m = nextMult(st);
+  return `<section class="rank-card" data-rank-card>
+    <button class="rk-medal" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(rk.tier)}</button>
+    <div class="rk-main">
+      <span class="sub">Tu rango</span>
+      <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
+      <span class="rk-pts">${nfmt(rk.points)} puntos</span>
+      <div class="rk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(rk.pct * 100)}"><i style="width:${Math.round(rk.pct * 100)}%"></i></div>
+      <span class="sub">${rk.next !== null ? `Te faltan <b>${nfmt(rk.next - rk.points)}</b> para ${esc(stepName(rk.step + 1))}` : '¡Has llegado a lo más alto!'}</span>
+    </div>
+    <div class="rk-streak ${st.cur ? 'on' : ''}">
+      <b>🔥 ${st.cur ? `${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}` : 'Sin racha'}</b>
+      <span class="rk-mult" title="Multiplicador de tu próxima escucha terminada">${multTxt(m)}</span>
       <span class="sk-state ${s.cls}">${esc(s.text)}</span>
-      <span class="sub">Récord: ${daysTxt(st.best)}${nx ? ` · Próxima insignia: ${daysTxt(nx)}` : ''}</span></div>
+      <span class="sub">Récord: ${daysTxt(st.best)}</span>
+    </div>
     <details class="sk-how"><summary>¿Cómo funciona?</summary>
-      <p>Cada día que terminas una escucha (marcada como escuchada y con las 6 respuestas) suma un día. Si un día acaba con escuchas pendientes y no has terminado ninguna, la racha vuelve a cero. Si no tienes nada pendiente, la racha no se toca.</p>
-      <p>Solo la ves tú y tu profesor. Tus insignias están en tu Perfil.</p></details>
+      <p>Cada escucha que terminas (marcada como escuchada y con las 6 respuestas) te da <b>20 puntos más 1 por cada minuto</b> que dura. Da igual cuándo la escuches.</p>
+      <p>La <b>racha</b> multiplica esos puntos: cada día seguido que terminas alguna escucha suma, y a los ${STREAK_MAX} días seguidos ganas el doble (×2). Si un día acaba con escuchas pendientes y no has terminado ninguna, la racha vuelve a cero, pero nunca pierdes puntos. Si no tienes nada pendiente, la racha no se toca.</p>
+      <p>Tu medalla y tu récord de racha salen en tu perfil. Tus puntos exactos y la racha de hoy solo los ves tú y tu profesor.</p>
+      <button class="btn sm" data-action="rank-ladder">Ver todos los rangos</button></details>
   </section>`;
 }
-// Alumno: insignias en su Perfil (privadas)
-function streakPanel() {
-  if (!S.assigns.length && !myAwards(S.user.id).length) return '';
-  const st = streakOf(S.user.id), got = new Set(myAwards(S.user.id).map(w => w.days));
-  const locked = STREAK_STEPS.filter(d => !got.has(d)).slice(0, 3);
-  return `<section class="panel streaks" id="streakPanel">
-    <div class="dhead" style="margin:0 0 10px"><h2 class="h2" style="margin:0">🔥 Mi racha de escuchas</h2><span class="chip">${ic('lock')} Solo tú y tu profesor</span></div>
-    <div class="sk-nums"><div><b>${st.cur}</b><span class="sub">días seguidos</span></div><div><b>${st.best}</b><span class="sub">tu récord</span></div><div><b>${got.size}</b><span class="sub">insignia${got.size === 1 ? '' : 's'}</span></div></div>
-    <div class="bdgs">${[...got].sort((a, b) => a - b).map(d => badgeHtml(d, false)).join('')}${locked.map(d => badgeHtml(d, true)).join('')}</div>
+// Alumno: en su Perfil
+function rankPanel() {
+  if (!S.assigns.length) return '';
+  const st = streakOf(S.user.id), rk = rankOf(pointsOf(S.user.id));
+  return `<section class="panel rank-panel" id="rankPanel">
+    <div class="dhead" style="margin:0 0 6px"><h2 class="h2" style="margin:0">Tu rango</h2><span class="chip">${ic('eye')} Lo ven tus compañeros</span></div>
+    <div class="rk-show"><button class="rk-medal lg" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(rk.tier)}</button>
+      <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
+      <span class="sub">${nfmt(rk.points)} puntos · récord de racha: ${daysTxt(st.best)}</span>
+      <button class="btn sm" data-action="rank-ladder" style="margin-top:8px">Ver todos los rangos</button></div>
   </section>`;
+}
+// Perfil de otra persona: medalla y récord (públicos). Se rellena al abrir.
+async function rankFillProfile(id) {
+  const box = document.querySelector(`[data-rankbox="${id}"]`); if (!box) return;
+  try {
+    const { data, error } = await sb.rpc('get_listening_rank', { p_user: id });
+    if (error) throw error;
+    const r = data && data[0]; if (!r) { box.remove(); return; }
+    const rk = rankOf(r.points);
+    box.innerHTML = `<div class="rk-medal">${emblemSvg(rk.tier)}</div><div><b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
+      <span class="sub">Récord de racha: ${daysTxt(r.best_days || 0)}</span></div>`;
+    box.classList.add('ready');
+  } catch (e) { box.remove(); }
 }
 // Profesor: en la ficha del alumno
 function streakFichaHtml(sid) {
-  const st = streakOf(sid), got = myAwards(sid);
   if (!S.assigns.some(a => a.student_id === sid)) return '';
+  const st = streakOf(sid), rk = rankOf(pointsOf(sid));
   const s = st.todayDone ? 'hoy ya ha sumado' : st.atRisk ? 'hoy aún no ha terminado ninguna' : 'sin escuchas pendientes';
-  return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">🔥 Racha de escuchas</h2></div>
-    <div class="agebox"><p style="margin:0"><b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">· récord ${daysTxt(st.best)} · ${s}</span></p>
-      ${got.length ? `<div class="bdgs sm">${got.map(w => badgeHtml(w.days, false)).join('')}</div>` : '<p class="sub" style="margin:6px 0 0">Aún sin insignias.</p>'}</div>`;
+  return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">Rango y racha</h2></div>
+    <div class="agebox rk-ficha"><div class="rk-medal">${emblemSvg(rk.tier)}</div>
+      <div><p style="margin:0"><b>${esc(rk.name)}</b> <span class="sub">· ${nfmt(rk.points)} puntos${rk.next !== null ? ` · le faltan ${nfmt(rk.next - rk.points)} para ${esc(stepName(rk.step + 1))}` : ''}</span></p>
+      <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">· ${multTxt(nextMult(st))} · récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
 }
 // Alumno: chip en "Para ti" del Inicio
 function streakChip(chip) {
   const st = streakOf(S.user.id);
   if (!st.cur) return '';
-  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)}`,
+  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)} · ${multTxt(nextMult(st))}`,
     st.todayDone ? '¡Hoy ya has sumado!' : st.atRisk ? 'Termina una escucha hoy' : 'Racha a salvo');
 }
-async function loadStreakAwards() {
-  const { data, error } = await sb.from('listening_streak_awards').select('*');
-  if (error) throw error;
-  S.streakAwards = data || [];
+// Todos los rangos, a la vista desde el principio (Yuri: que se vea hasta dónde se puede llegar)
+function rankLadderModal() {
+  const mine = !isTeacher() ? rankOf(pointsOf(S.user.id)) : null;
+  openModal(`<div class="modal-head"><h2 class="h2" style="margin:0">Rangos de Escucha analítica</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
+    <p class="sub" style="margin:0 0 14px">Cada escucha terminada da 20 puntos más 1 por minuto, multiplicados por tu racha (hasta ×2 a los ${STREAK_MAX} días seguidos). Los puntos nunca se pierden.</p>
+    <div class="rk-ladder">${RANK_TIERS.map((n, t) => {
+      const first = t * 3, steps = t === 7 ? [21] : [first, first + 1, first + 2];
+      const got = mine && mine.step >= first, cur = mine && mine.tier === t;
+      return `<div class="rk-rung ${cur ? 'cur' : ''} ${mine && !got ? 'locked' : ''}">
+        <div class="rk-medal">${emblemSvg(t)}</div>
+        ${mine && !got ? `<span class="rk-lock">${ic('lock')}</span>` : ''}
+        <ul>${steps.map(s => `<li class="${mine && mine.step >= s ? 'on' : ''}"><span>${esc(stepName(s))}</span><span>${nfmt(RANK_STEPS[s])}</span></li>`).join('')}</ul></div>`;
+    }).join('')}</div>`);
 }
-// Celebración: insignias nuevas que el alumno aún no ha visto
-let streakCelebrating = false;
-function streakCelebrate() {
-  if (isTeacher() || streakCelebrating || goalCelebrating || !S.user) return;
-  const fresh = myAwards(S.user.id).filter(w => !w.seen_at);
-  if (!fresh.length) return;
-  if ($('#modalRoot').firstChild) { S.streakPending = true; return; }
-  S.streakPending = false; streakCelebrating = true;
-  const top = fresh[fresh.length - 1].days, st = streakOf(S.user.id);
-  openModal(`<div class="celebrate"><div class="trophy">🔥</div>
-      <h2>¡${daysTxt(top)} seguidos!</h2>
-      <p style="margin:0 0 10px">${fresh.length > 1 ? 'Nuevas insignias' : 'Nueva insignia'} para tu colección:</p>
-      <div class="bdgs center">${fresh.map(w => badgeHtml(w.days, false)).join('')}</div>
-      <p class="sub" style="margin:10px 0 14px">Tu récord: ${daysTxt(st.best)}.${nextStep(top) ? ` La siguiente, a los ${daysTxt(nextStep(top))}.` : ''}</p>
-      <div class="actions" style="justify-content:center"><button class="btn primary" data-action="close">¡A por más! 🤘</button></div></div>`, async () => {
-    streakCelebrating = false;
-    const now = new Date().toISOString(); fresh.forEach(w => { w.seen_at = now; });
-    await sb.from('listening_streak_awards').update({ seen_at: now }).eq('student_id', S.user.id).is('seen_at', null);
+// Celebración al subir de división o de rango (una vez por escalón; profiles.rank_seen)
+let rankCelebrating = false;
+function rankCelebrate() {
+  if (isTeacher() || rankCelebrating || goalCelebrating || !S.user || !S.profile) return;
+  const rk = rankOf(pointsOf(S.user.id)), seen = S.profile.rank_seen;
+  if (!rk.points || (seen !== null && seen !== undefined && rk.step <= seen)) return;
+  if ($('#modalRoot').firstChild) { S.rankPending = true; return; }
+  S.rankPending = false; rankCelebrating = true;
+  const first = seen === null || seen === undefined, newTier = first || Math.min(Math.floor(seen / 3), 7) < rk.tier;
+  // Se marca como vista al abrir (si desde aquí abre la lista de rangos, la ventana se sustituye sin "cerrarse")
+  S.profile.rank_seen = rk.step;
+  sb.from('profiles').update({ rank_seen: rk.step }).eq('id', S.user.id).then(() => {}, () => {});
+  openModal(`<div class="celebrate rk-celebrate"><div class="rk-medal xl">${emblemSvg(rk.tier, 'pop')}</div>
+      <h2>${first ? `Tu rango: ${esc(rk.name)}` : newTier ? `¡Has ascendido a ${esc(rk.name)}!` : `¡Subes a ${esc(rk.name)}!`}</h2>
+      <p class="sub" style="margin:4px 0 14px">${nfmt(rk.points)} puntos${rk.next !== null ? ` · el siguiente, ${esc(stepName(rk.step + 1))}, a los ${nfmt(rk.next)}` : ''}</p>
+      <div class="actions" style="justify-content:center"><button class="btn" data-action="rank-ladder">Ver todos los rangos</button><button class="btn primary" data-action="close">¡A por más! 🤘</button></div></div>`, async () => {
+    rankCelebrating = false;
   });
+  setTimeout(() => { rankCelebrating = false; }, 1500); // por si se sustituye la ventana sin cerrarla
   $('.modal').classList.add('narrow');
   confetti();
 }
-// Tras guardar una escucha: si acaba de quedar terminada, +1 día (si hoy no había sumado) e insignias nuevas
-async function streakAfterComplete(before) {
+// Tras guardar una escucha: si acaba de quedar terminada, +1 día de racha, puntos y, si sube, celebración
+function streakAfterComplete(before, a) {
   const st = streakOf(S.user.id);
-  if (!before.todayDone && st.todayDone) toast(`🔥 ¡Racha: ${daysTxt(st.cur)}!`, 'ok');
-  const card = $('[data-streak]'); if (card) card.outerHTML = streakCard();
-  try { await loadStreakAwards(); } catch (e) { return; }
-  if (myAwards(S.user.id).some(w => !w.seen_at)) streakCelebrate();
+  toast(`+${nfmt(a.points || 0)} puntos${!before.todayDone && st.todayDone ? ` · 🔥 racha: ${daysTxt(st.cur)}` : ''}`, 'ok');
+  const card = $('[data-rank-card]'); if (card) card.outerHTML = rankCard();
+  rankCelebrate();
 }
+Object.assign(actions, { 'rank-ladder'() { rankLadderModal(); } });
 
 const goalActions = {
   'goals-open'(el) { goalsModal(el.dataset.id); },
@@ -7988,7 +8183,7 @@ async function openNotifFromUrl(url) {
      lo privado del alumno (sus escuchas, respuestas, deberes, mensajes, clase…) es inventado. */
 const PREVIEW_ID = '00000000-0000-4000-8000-0000000a1a1a';
 const PREVIEW_ERR = { code: 'preview', message: 'Vista de alumno: es solo para mirar, no se guarda nada.' };
-const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large', 'video_quota']);
+const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large', 'video_quota', 'get_listening_rank']);
 function previewStub() { // imita una consulta de supabase-js (encadenable y con await) que siempre falla con PREVIEW_ERR
   const res = { data: null, error: PREVIEW_ERR, count: null, status: 403 };
   const p = new Proxy(function () { }, { get: (_, k) => k === 'then' ? (ok, no) => Promise.resolve(res).then(ok, no) : () => p, apply: () => p });
@@ -8031,7 +8226,7 @@ async function enterPreview() {
     email: 'alumno@ejemplo.com', role: 'student', approved: true, archived_at: null, created_at: iso(-60 * DAY),
     bio: 'Aprendiendo a tocar las canciones que me gustan.', instrument: 'electric', level: 'intermediate',
     favorites: 'Rock, blues y metal', gear: 'Guitarra eléctrica y un ampli pequeño',
-    birth_date: '2000-01-01', family_dm_ok: false, install_prompted_at: iso(-30 * DAY), app_installed_at: null
+    birth_date: '2000-01-01', family_dm_ok: false, install_prompted_at: iso(-30 * DAY), app_installed_at: null, rank_seen: 5
   };
   // Escuchas: las 6 más recientes del catálogo real (con su portada), cada una en un estado distinto
   let items = S.items.slice(0, 6);
@@ -8040,7 +8235,7 @@ async function enterPreview() {
   const fullAns = { highlights: 'Los cambios de dinámica entre las estrofas y el estribillo.', likes: 'El sonido de las guitarras y cómo se reparten a izquierda y derecha.', dislikes: 'Alguna canción se me hace larga.', learned: 'Que un riff sencillo bien tocado funciona mejor que uno complicado.', would_use: 'La idea de doblar la guitarra rítmica.', would_never_use: 'Tanto efecto en la voz.' };
   const states = [
     { due_date: date(4), note: 'Fíjate sobre todo en los solos.' },
-    { listened: true, listened_at: iso(-5 * DAY), answers: fullAns, teacher_read_at: iso(-4 * DAY), completed_at: iso(-DAY) },
+    { listened: true, listened_at: iso(-5 * DAY), answers: fullAns, teacher_read_at: iso(-4 * DAY), completed_at: iso(-DAY), points: 1320 },
     { due_date: date(-3) },
     { listened: true, listened_at: iso(-DAY), answers: { highlights: fullAns.highlights, likes: fullAns.likes } },
     {},
@@ -8086,7 +8281,7 @@ async function enterPreview() {
     ],
     goalStages: S.goalStages.slice(), goalItems,
     goalDone: doneGoals.map(g => ({ id: fid(), goal_id: g.id, student_id: PREVIEW_ID, done_at: iso(-7 * DAY), seen_at: iso(-7 * DAY) })), goalPending: false,
-    streakAwards: [3].map(days => ({ student_id: PREVIEW_ID, days, reached_at: iso(-DAY), seen_at: iso(-DAY) })), streakPending: false,
+    rankPending: false,
     lessons: [{ id: fid(), event_key: 'preview', student_id: PREVIEW_ID, title: 'Clase de guitarra', starts_at: lessonStart.toISOString(), ends_at: new Date(lessonStart.getTime() + 3600000).toISOString() }],
     section: ['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].includes(S.section) ? S.section : 'feed'
   });
