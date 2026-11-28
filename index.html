@@ -449,7 +449,8 @@ html[data-theme="light"] .rk-tag{text-shadow:none;filter:brightness(.75)}
 @keyframes embspin{to{transform:rotate(360deg)}}
 @keyframes embtw{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.emb-rays,.emb-stars,.emb.pop{animation:none}}
-@media (max-width:760px){.rank-card{grid-template-columns:auto minmax(0,1fr)}.rk-medal{width:120px}.rk-streak{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;text-align:left;padding:8px 0 0;border-left:0;border-top:1px solid var(--line)}.rk-ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Móvil (2026-11-28, Yuri: la tarjeta ocupaba casi toda la pantalla): medalla pequeña, racha en dos líneas y lo explicativo (.rk-x) solo en "¿Cómo funciona?" */
+@media (max-width:760px){.rank-card{grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:6px 12px 8px 4px;margin-bottom:10px}.rk-medal{width:120px}.rank-card .rk-medal{width:86px}.rank-card .rk-tag{margin-top:4px;font-size:9.5px;gap:5px}.rank-card .rk-tag::before,.rank-card .rk-tag::after{width:12px}.rank-card .rk-name{font-size:18px}.rank-card .rk-x{display:none}.rk-streak{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 10px;text-align:left;padding:6px 0 0 8px;border-left:0;border-top:1px solid var(--line)}.rk-streak .sk-state{flex-basis:100%;order:3}.rank-card .sk-how{padding-left:8px}.rk-ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .streak-card{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px;padding:12px 16px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
 .streak-card.on{border-color:rgba(var(--warn-rgb),.45);background:linear-gradient(90deg,rgba(var(--warn-rgb),.10),var(--panel) 70%)}
 .sk-fire{font-size:30px;line-height:1;filter:grayscale(1);opacity:.55}
@@ -8637,7 +8638,7 @@ function rankCard() {
   return `<section class="rank-card" data-rank-card>
     <button class="rk-medal${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, streakLabel(st.cur))}</button>
     <div class="rk-main">
-      <span class="sub">Tu rango</span>
+      <span class="sub rk-x">Tu rango</span>
       <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
       <span class="rk-pts">${nfmt(rk.points)} puntos</span>
       <div class="rk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(rk.pct * 100)}"><i style="width:${Math.round(rk.pct * 100)}%"></i></div>
@@ -8645,8 +8646,8 @@ function rankCard() {
     </div>
     <div class="rk-streak ${st.cur ? 'on' : ''}">
       <b>🔥 ${st.cur ? `${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}` : 'Sin racha'}</b>
-      <span class="rk-fl">${f ? flameTxt(f) : 'Medalla sin chispas'}</span>
-      <span class="sub">${nf ? `${f ? 'Chispas ' + FLAME_NAME[f + 1] : 'Chispas'} a los ${daysTxt(nf)} · te faltan ${daysTxt(nf - st.cur)}` : '¡Chispas doradas, el máximo!'}</span>
+      <span class="rk-fl${f ? '' : ' rk-x'}">${f ? flameTxt(f) : 'Medalla sin chispas'}</span>
+      <span class="sub rk-x">${nf ? `${f ? 'Chispas ' + FLAME_NAME[f + 1] : 'Chispas'} a los ${daysTxt(nf)} · te faltan ${daysTxt(nf - st.cur)}` : '¡Chispas doradas, el máximo!'}</span>
       <span class="sk-state ${s.cls}">${esc(s.text)}</span>
       <span class="sub">Récord: ${daysTxt(st.best)}</span>
     </div>
