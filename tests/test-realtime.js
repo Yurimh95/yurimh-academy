@@ -41,7 +41,7 @@ const navTo = async (p, s) => {
   ok((await p.locator('.fpost:has-text("Post en directo de Luis")').count())===1 && (await p.locator('.newposts').count())===0, 'Al pulsar el botón aparece arriba');
 
   await ext(p,'__rtExternal','reactions',{target_type:'feed_post',target_id:'rt1',user_id:'s2',emoji:'love'}); await wait(p);
-  ok((await p.textContent('.fpost:has-text("Post en directo") .rx-list')).includes('❤️1'), 'Reacción de otro aparece sola');
+  ok(await p.locator('.fpost:has-text("Post en directo") [data-rxwho] .rx-em[data-e=love]').count()===1 && (await p.textContent('.fpost:has-text("Post en directo") .rxb.main')).includes('1'), 'Reacción de otro aparece sola');
   await ext(p,'__rtExternal','feed_comments',{id:'rtc1',post_id:'rt1',author_id:'t1',body:'¡Muy bien!'}); await wait(p);
   ok(await p.locator('.fpost:has-text("Post en directo") .peek-cmt').count() === 1, 'Comentario de otro: aparece solo en la vista previa');
   await ext(p,'__rtExternalDelete','feed_posts','rt1'); await wait(p);
