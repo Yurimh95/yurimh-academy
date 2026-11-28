@@ -75,7 +75,7 @@ const navTo = async (p, s) => {
   const lnot = await p.evaluate(() => notifText(S.notifs.find(n => n.kind === 'classmate_request')).replace(/<[^>]+>/g, ''));
   ok(lnot === 'Marta te ha enviado una solicitud para ser compañeros', 'Texto de la notificación: ' + lnot);
   await goto(p, 'profile');
-  ok(await p.locator('.prof-grid > .panel.mates:first-child').count() === 1, 'Con solicitudes pendientes, el bloque Compañeros sale arriba del todo');
+  ok(await p.locator('.prof-bar + .prof-mates > .panel.mates').count() === 1, 'Con solicitudes pendientes, el bloque Compañeros sale arriba del todo');
   await shot(p, 'c2-solicitud-recibida.png');
   await p.click('.panel.mates [data-action=mate-accept]'); await p.waitForTimeout(300);
   db = await dbOf(p);

@@ -167,13 +167,23 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .qrwrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .qr{width:150px;height:150px;flex:none;border-radius:12px;background:#fff;padding:8px;display:grid;place-items:center;color:#555;font-size:12px;text-align:center}
 .qr svg{width:100%;height:100%}
-.two.prof-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
-@media (max-width:760px){.two.prof-grid{grid-template-columns:1fr}}
+/* Perfil compacto (2026-11-28, Yuri): un panel con foto, nombre y Sobre ti; el rango a la derecha */
+.prof-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.prof-sec+.prof-sec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.prof-me .h2{margin:0 0 10px}
+.prof-me .avrow{gap:14px;margin-bottom:12px}
+.prof-avbtns{display:flex;flex-wrap:wrap;gap:8px}
+.prof-hint{margin:6px 0 0;font-size:12.5px}
+.prof-bar+.prof-mates{margin-bottom:16px}.prof-cols+.prof-mates{margin-top:16px}
+@media (max-width:900px){.prof-cols{grid-template-columns:minmax(0,1fr)}}
+.name-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+.name-row .f{margin:0}
+@media (max-width:560px){.name-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.name-row .btn{grid-column:1/-1;justify-self:start}}
 .about,.panel.mates{grid-column:1/-1}
 /* "Sobre ti" a lo ancho en el ordenador: bio arriba, 3 campos cortos en fila y 2 largos debajo */
 .about-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 14px}
 .about-grid .a-bio{grid-column:1/-1}.about-grid .a-3{grid-column:span 2}.about-grid .a-2{grid-column:span 3}
-@media (max-width:760px){.about-grid{grid-template-columns:1fr}.about-grid .a-3,.about-grid .a-2{grid-column:1/-1}}
+@media (max-width:760px){.about-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}.about-grid .a-3,.about-grid .a-2{grid-column:1/-1}.about-grid .a-half{grid-column:auto}}
 /* ---- Deberes ---- */
 .sec-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 16px}
 .hwgroups{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
@@ -4678,41 +4688,43 @@ function profileView() {
   return `<div class="prof-bar"><span class="sub">Esto es lo que ven los demás de ti.</span>
     <span style="display:flex;gap:8px">${isTeacher() ? `<button class="btn sm pvbtn only-m" data-action="preview-on">${ic('eye')} Ver como alumno</button>` : ''}
     <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></span></div>
-  <div class="two prof-grid">
-    ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
-    ${!isTeacher() ? rankPanel() : teacherRankPanel()}
-    <form id="nameForm" class="panel">
-      <h2 class="h2" style="margin-top:0">Tu nombre</h2>
-      <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
-      <label class="f">Nombre<input type="text" name="display_name" required maxlength="60" value="${esc(p.display_name)}"></label>
-      <label class="f">Apodo (opcional)<input type="text" name="nickname" maxlength="30" value="${esc(p.nickname || '')}" placeholder="Cómo quieres que te vea el grupo"></label>
-      <button class="btn" type="submit">Guardar</button>
-    </form>
-    <div class="panel">
-      <h2 class="h2" style="margin-top:0">Foto de perfil</h2>
-      <div class="avrow">${avatarHtml(S.user.id, 84, false)}
-        <div class="stack">
-          <label class="btn primary" for="avatarFile">${safeAvatar(p.avatar) ? 'Cambiar foto' : 'Elegir foto'}</label>
-          <input type="file" id="avatarFile" accept="image/*" hidden>
-          ${safeAvatar(p.avatar) && p.avatar_src ? '<button class="btn sm" data-action="avatar-edit">Editar encuadre</button>' : ''}
-          ${safeAvatar(p.avatar) ? '<button class="btn ghost sm" data-action="avatar-remove">Quitar foto</button>' : ''}
-        </div></div>
-      <p class="sub" style="margin:0">Al elegirla podrás moverla y ampliarla para encuadrarla. La verán tus compañeros cuando participes, así que elige una que quieras compartir.</p>
-    </div>
-    <form id="aboutForm" class="panel about">
-      <h2 class="h2" style="margin-top:0">Sobre ti</h2>
-      <p class="sub" style="margin:0 0 12px">Lo verán tus compañeros al pulsar en tu nombre o tu foto. Todo es opcional.</p>
-      <div class="about-grid">
-        <label class="f a-bio">Bio corta<textarea name="bio" maxlength="200" rows="3" placeholder="Un par de frases sobre ti y tu música">${esc(p.bio || '')}</textarea></label>
-        <label class="f a-3">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label class="f a-3">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label class="f a-3">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
-        <label class="f a-bio">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, Iron Maiden, blues, power metal"></label>
+  ${!isTeacher() && mateRequestsIn().length ? `<div class="prof-mates">${matesPanel()}</div>` : ''}
+  <div class="prof-cols">
+    <div class="panel prof-me">
+      <div class="prof-sec">
+        <h2 class="h2">Foto y nombre</h2>
+        <div class="avrow">${avatarHtml(S.user.id, 72, false)}
+          <div class="prof-avbtns">
+            <label class="btn primary sm" for="avatarFile">${safeAvatar(p.avatar) ? 'Cambiar foto' : 'Elegir foto'}</label>
+            <input type="file" id="avatarFile" accept="image/*" hidden>
+            ${safeAvatar(p.avatar) && p.avatar_src ? '<button class="btn sm" data-action="avatar-edit">Editar encuadre</button>' : ''}
+            ${safeAvatar(p.avatar) ? '<button class="btn ghost sm" data-action="avatar-remove">Quitar foto</button>' : ''}
+          </div></div>
+        <form id="nameForm">
+          <div class="name-row">
+            <label class="f">Nombre<input type="text" name="display_name" required maxlength="60" value="${esc(p.display_name)}"></label>
+            <label class="f">Apodo (opcional)<input type="text" name="nickname" maxlength="30" value="${esc(p.nickname || '')}" placeholder="Cómo te ve el grupo"></label>
+            <button class="btn" type="submit">Guardar</button>
+          </div>
+          <p class="sub prof-hint">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Los demás alumnos verán tu apodo si pones uno; tu profesor, siempre tu nombre.'}</p>
+        </form>
       </div>
-      <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
-    </form>
-    ${isTeacher() || mateRequestsIn().length ? '' : matesPanel()}
-  </div>`;
+      <form id="aboutForm" class="prof-sec about">
+        <h2 class="h2">Sobre ti</h2>
+        <p class="sub prof-hint" style="margin:0 0 10px">Lo verán tus compañeros al pulsar en tu nombre o tu foto. Todo es opcional.</p>
+        <div class="about-grid">
+          <label class="f a-bio">Bio corta<textarea name="bio" maxlength="200" rows="2" placeholder="Un par de frases sobre ti y tu música">${esc(p.bio || '')}</textarea></label>
+          <label class="f a-2 a-half">Instrumento<select name="instrument"><option value="">—</option>${Object.entries(INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${p.instrument === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="f a-2 a-half">Nivel<select name="level"><option value="">—</option>${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}" ${p.level === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="f a-2">Mi equipo<input type="text" name="gear" maxlength="150" value="${esc(p.gear || '')}" placeholder="Ej.: Ibanez RG, ampli Boss Katana 50"></label>
+          <label class="f a-2">Grupos y estilos favoritos<input type="text" name="favorites" maxlength="200" value="${esc(p.favorites || '')}" placeholder="Ej.: Metallica, blues, power metal"></label>
+        </div>
+        <div class="actions"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-action="open-profile" data-id="${S.user.id}">Ver cómo lo ven</button></div>
+      </form>
+    </div>
+    ${!isTeacher() ? rankPanel() : teacherRankPanel()}
+  </div>
+  ${isTeacher() || mateRequestsIn().length ? '' : `<div class="prof-mates">${matesPanel()}</div>`}`;
 }
 
 /* ================================ AJUSTES ============================= */
