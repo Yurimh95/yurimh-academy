@@ -68,6 +68,19 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail
   await p.goBack(); await w(p, 300);
   ok(await p.locator('.stu-page').count() === 0 && await p.evaluate(() => S.section) === 'students', 'Y Atrás sigue llevando a la lista');
 
+  // Escuchas de la ficha: se ven 4 y la flecha despliega el resto en un panel con scroll propio
+  await p.evaluate(() => { const b = S.assigns.find(a => a.student_id === 's1'); for (let k = 0; k < 11; k++) S.assigns.push({ ...b, id: 'zz' + k, note: 'Nota larga de prueba ' + k }); studentDetailModal('s1'); }); await w(p, 300);
+  const vis = () => p.evaluate(() => [...document.querySelectorAll('.sp-ls .arow')].filter(e => e.offsetParent).length);
+  ok(await vis() === 4 && await p.locator('.sp-more:has-text("Ver las 12")').count() === 1, 'Ficha: solo se ven 4 escuchas y una flecha "Ver las 12"');
+  const h0 = await p.evaluate(() => document.documentElement.scrollHeight);
+  await p.click('.sp-more'); await w(p);
+  const box = await p.evaluate(() => { const l = document.querySelector('.sp-ls'); return { sh: l.scrollHeight, ch: l.clientHeight, ov: getComputedStyle(l).overflowY }; });
+  ok(await vis() === 12 && box.ov === 'auto' && box.sh > box.ch, 'Al desplegar salen todas en un panel con su propio scroll');
+  ok(await p.evaluate(() => document.documentElement.scrollHeight) <= h0 + 700, 'La página no crece hasta abajo del todo');
+  await p.screenshot({ path: path.join(__dirname, 'shots', 'alumnos-ficha-escuchas.png'), fullPage: true });
+  await p.click('.sp-more'); await w(p);
+  ok(await vis() === 4, '"Mostrar menos" las vuelve a plegar');
+
   // ---------- Móvil ----------
   const m = await open({ width: 375, height: 800 }, true);
   await m.click('.tabbar button[data-s=students]'); await w(m);
