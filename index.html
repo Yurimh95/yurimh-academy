@@ -1442,8 +1442,8 @@ html[data-theme="light"] :is(.panel,.card,.dcard,.fpost){box-shadow:0 1px 2px rg
 /* Stories en la barra de arriba (PC; Yuri: así el Inicio empieza a la misma altura que las columnas de los lados).
    Empiezan justo encima de la columna central; en el móvil siguen encima de las publicaciones. */
 .top-st{flex:1;min-width:0;margin-left:20px;display:flex;align-items:center;height:100%}
-.top-st .stories{margin:0;overflow:hidden;min-width:0}
-.top-st .st-row{gap:10px;padding:0 2px;align-items:center}
+.top-st .stories{margin:0;overflow:hidden;min-width:0;height:100%;display:flex;align-items:center} /* centradas en la barra, sin cortar el aro */
+.top-st .st-row{gap:10px;padding:6px 4px;align-items:center}
 .top-st .st-item{width:auto}
 .top-st .st-name{display:none}
 .top-st .st-ring{padding:2px}
