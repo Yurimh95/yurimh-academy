@@ -9254,6 +9254,9 @@ document.addEventListener('submit', async e => {
     if (!(classes >= 1 && classes <= 30)) return toast('Las clases deben ir de 1 a 30', 'bad');
     if (amount != null && !(amount >= 0 && amount < 100000)) return toast('El importe no es válido', 'bad');
     const row = { period: day.slice(0, 8) + '01', amount, classes, paid_on: day }, rid = f.dataset.rid;
+    // Pago repetido (Yuri, 2026-11-28: un bono quedó apuntado dos veces): si ya hay otro ese mismo día, avisa antes
+    const dup = S.payRecords.find(r => r.student_id === id && r.kind === 'monthly' && r.paid_on === day && r.id !== rid);
+    if (dup && !confirm(`${studentName(id)} ya tiene un pago${dup.amount != null ? ' de ' + money(dup.amount) : ''} el ${fmtDate(day)}${dup.classes ? ` (${dup.classes} clases)` : ''}.\n\n¿Apuntar otro? Si querías cambiar ese, cancela y usa el lápiz ✎ junto al pago.`)) return;
     const { data, error } = rid ? await sb.from('payments_records').update(row).eq('id', rid).select()
       : await sb.from('payments_records').insert({ student_id: id, kind: 'monthly', ...row }).select();
     if (error || !data || !data.length) return toast('No se pudo guardar' + (error ? ': ' + errEs(error) : ''), 'bad');

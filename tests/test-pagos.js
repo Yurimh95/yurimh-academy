@@ -59,6 +59,23 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail
   await p.goBack(); await w(p, 300);
   ok(await p.evaluate(() => S.section) === 'payments', 'Atrás vuelve a Pagos');
 
+  // Pago repetido: si ya hay uno ese mismo día, avisa antes de apuntar otro
+  await p.click('.nav [data-s=students]'); await w(p); await p.click('.stu-tabs [data-s=payments]'); await w(p);
+  const n0 = await p.evaluate(() => __DB.payments_records.length), day = await p.evaluate(() => shiftMonth(monthStart(), -1).slice(0, 8) + '10');
+  await p.evaluate(() => payPackModal('s1')); await w(p);
+  await p.fill('#payPackForm [name=day]', day);
+  let msg = ''; p.once('dialog', d => { msg = d.message(); d.dismiss(); });
+  await p.click('#payPackForm button[type=submit]'); await w(p, 300);
+  ok(msg.includes('ya tiene un pago de 120 €') && await p.evaluate(() => __DB.payments_records.length) === n0 && await p.locator('#payPackForm').count() === 1, 'Avisa del pago repetido y, si cancelas, no apunta nada');
+  p.once('dialog', d => d.accept());
+  await p.click('#payPackForm button[type=submit]'); await w(p, 300);
+  ok(await p.evaluate(() => __DB.payments_records.length) === n0 + 1, 'Si aceptas, lo apunta igualmente');
+  await p.evaluate(() => payPackModal('s1')); await w(p);
+  await p.fill('#payPackForm [name=day]', await p.evaluate(() => dayKey(new Date()))); msg = '';
+  p.once('dialog', d => { msg = d.message(); d.accept(); });
+  await p.click('#payPackForm button[type=submit]'); await w(p, 300);
+  ok(msg === '', 'Un día sin pagos no pregunta nada');
+
   // Móvil
   const m = await open({ width: 375, height: 800 }, true);
   await m.click('.tabbar button[data-s=students]'); await w(m);
