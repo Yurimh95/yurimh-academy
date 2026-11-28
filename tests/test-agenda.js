@@ -85,7 +85,7 @@ const navTo = async (p, s) => {
   ok(sneak[3] && sneak[1]===0 && sneak[2]===0, 'Privacidad: solo lee sus propias clases; ni nombres de calendario ni estado de sincronización');
   ok(!(await p.locator('.nav button[data-s=agenda]').count()), 'La alumna no tiene Agenda');
   await goto(p,'homework');
-  ok((await p.textContent('#app')).includes('Tu próxima clase'), 'En Deberes también ve cuándo es su próxima clase');
+  ok((await p.textContent('#app')).includes('Próxima clase: '), 'En Deberes también ve cuándo es su próxima clase');
   // Recordatorio de clase (lo crea la función del servidor): así se ve en la campanita
   await p.evaluate(()=>window.__rtExternal('notifications',{id:'nl',user_id:'s1',kind:'lesson',actor_id:null,target_id:'l2',extra:'hoy a las 16:30 · 2 deberes pendientes',read_at:null,pushed_at:null})); await wait(p,300);
   await p.click('.bell'); await wait(p,250);

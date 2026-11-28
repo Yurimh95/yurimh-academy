@@ -190,7 +190,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
 
   // Deberes con objetivo
   await goto(t, 'homework');
-  await t.click('.sec-head [data-action="hw-new"]'); await t.waitForTimeout(250);
+  await t.click('.hwnew'); await t.waitForTimeout(250);
   ok(await t.locator('#hwForm select[name=goal_id]').count() === 1, 'Nuevos deberes: campo "Le acerca al objetivo"');
   await t.check('#hwForm input[name=pick][value=s1]');
   ok(await t.locator('#hwForm select[name=goal_id] option[value=g5]').count() === 1, 'Con un alumno salen sus objetivos personales');
@@ -203,7 +203,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   let tdb = await snapshot(t);
   const hw = tdb.homework_tasks.find(h => h.title === 'Rasgueo de Wonderwall');
   ok(hw && hw.goal_id === 'g5' && hw.student_id === 's1', 'Deber guardado con el objetivo g5');
-  ok(await t.locator('.hw .goalchip', { hasText: 'Wonderwall entera' }).count() >= 1, 'El deber muestra el objetivo');
+  ok(await t.locator('.hw .hwgoal', { hasText: 'Wonderwall entera' }).count() >= 1, 'El deber muestra el objetivo');
   const badGoal = await t.evaluate(async () => (await sb.from('homework_tasks').insert({ student_id: 's2', title: 'x', goal_id: 'g5' })).error);
   ok(!!badGoal, 'No se puede ligar un deber al objetivo personal de otro alumno');
   // Copiar a Luis: el objetivo personal de Marta no viaja
@@ -217,7 +217,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   // ================= ALUMNA: marca el deber =================
   p = await open('s1', tdb);
   await goto(p, 'homework');
-  ok(await p.locator('.hw .goalchip', { hasText: 'Wonderwall entera' }).count() === 1, 'La alumna ve a qué objetivo le acerca');
+  ok(await p.locator('.hw .hwgoal', { hasText: 'Wonderwall entera' }).count() === 1, 'La alumna ve a qué objetivo le acerca');
   const forgeG = await p.evaluate(async id => (await sb.from('homework_tasks').update({ goal_id: 'g1' }).eq('id', id).select()).error, hw.id);
   ok(!!forgeG, 'La alumna no puede cambiar el objetivo');
   await p.click(`[data-action="hw-toggle"][data-id="${hw.id}"]`); await p.waitForTimeout(400);

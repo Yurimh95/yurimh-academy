@@ -37,7 +37,9 @@ const navTo = async (p, s) => {
   await goto(p,'profile');
   ok(await p.locator('#goalsPanel').count()===0, 'Perfil: ya no lleva los objetivos');
   await goto(p,'homework');
-  ok(await p.locator('#goalsPanel').count()===1, 'Deberes: bloque "Mis objetivos" al final');
+  ok(await p.locator('#goalsPanel').count()===0 && await p.locator('.tab[data-t=goals]').count()===1, 'Deberes: "Mis objetivos" va en su pestaña');
+  await p.click('.tab[data-t=goals]'); await p.waitForTimeout(200);
+  ok(await p.locator('#goalsPanel').count()===1 && await p.locator('.hwcard').count()===0, 'Pestaña "Mis objetivos": solo los objetivos');
   const txt = await p.textContent('#goalsPanel');
   ok(txt.includes('Solo tú y tu profesor'), 'Marcado como privado');
   ok(txt.includes('2/5'), 'Progreso 2/5 (4 generales + 1 personal)');
@@ -55,7 +57,7 @@ const navTo = async (p, s) => {
 
   // móvil
   p = await open('s1', {width:390,height:844});
-  await goto(p,'homework'); await p.locator('#goalsPanel').scrollIntoViewIfNeeded();
+  await goto(p,'homework'); await p.click('.tab[data-t=goals]'); await p.waitForTimeout(200); await p.locator('#goalsPanel').scrollIntoViewIfNeeded();
   const over = await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
   ok(!over, 'Móvil: sin desbordamiento horizontal');
   await shot(p,'objetivos-movil.png');

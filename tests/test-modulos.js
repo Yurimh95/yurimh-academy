@@ -37,7 +37,8 @@ const navTo = async (p, s) => {
   ok((await p.textContent('.foryou')).includes('deberes') && (await p.locator('.fy-chip.bad:has-text("Vencidos")').count())===1, 'Inicio: el bloque "Para ti" recuerda los deberes (y que hay vencidos)');
   await goto(p,'homework');
   ok((await p.locator('.hw:not(.done)').count())===2 && !(await p.textContent('#app')).includes('Walking bass'), 'Ve solo sus 2 deberes pendientes (no los de Luis)');
-  ok((await p.locator('.hw:has-text("Acordes con cejilla") .chip.bad').count())===1, 'El deber con fecha pasada sale como vencido');
+  ok((await p.locator('.hw:has-text("Acordes con cejilla") .hwdate.bad').count())===1, 'El deber con fecha pasada sale como vencido');
+  ok((await p.locator('.hwprog').textContent()).includes('1 de 3 practicadas'), 'Barra de progreso: 1 de 3 practicadas');
   ok((await p.locator('.hwdone summary').textContent()).includes('Practicadas (1)'), 'Historial de practicadas (1)');
   ok((await p.locator('[data-action=hw-edit], [data-action=hw-delete], [data-action=hw-new], [data-action=hw-copy], [data-action=hw-copy-all]').count())===0, 'La alumna no puede crear, editar, copiar ni borrar deberes');
   const sneak = await p.evaluate(async()=>{
@@ -61,8 +62,10 @@ const navTo = async (p, s) => {
   // ================= PROFESOR: deberes =================
   const t = await open('t1');
   await goto(t,'homework');
-  ok((await t.locator('.hwgroup').count())===2, 'Profesor: deberes agrupados por alumno (2)');
-  await t.click('.sec-head [data-action=hw-new]'); await wait(t);
+  ok((await t.locator('.hwstu').count())===2 && (await t.locator('.hwstu.on').textContent()).includes('Marta'), 'Profesor: lista de alumnos, con Marta (tiene algo vencido) elegida primero');
+  ok((await t.locator('.hwstu:has-text("Marta") .hwcnt.bad').count())===1, 'Marta lleva el contador en rojo (vencido)');
+  const sel = async n => { await t.click(`.hwstu:has-text("${n}")`); await wait(t,200); };
+  await t.click('.hwnew'); await wait(t);
   await t.click('[data-action=hw-all]');
   await t.fill('#hwForm [name=title]','Improvisar 2 min sobre un blues en La');
   await t.fill('#hwForm [name=details]','Usa solo 3 notas. Grábate si puedes.');
@@ -71,13 +74,14 @@ const navTo = async (p, s) => {
   const nuevos = await db(t,()=>window.__DB.homework_tasks.filter(h=>h.title==='Improvisar 2 min sobre un blues en La'));
   ok(nuevos.length===2 && nuevos.every(h=>h.due_date==='2099-01-15'), 'Pone el mismo deber a todos de golpe (2 filas, con fecha)');
   ok((await db(t,()=>window.__DB.notifications.filter(n=>n.kind==='homework').map(n=>n.user_id).sort().join(','))) === 's1,s2', 'A cada alumno le llega su notificación');
-  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Walking bass") [data-action=hw-edit]'); await wait(t);
+  await sel('Luis'); ok((await t.textContent('.hwdetail')).includes('Walking bass') && !(await t.textContent('.hwdetail')).includes('Acordes con cejilla'), 'Al pulsar a Luis se ven solo sus deberes');
+  await t.click('.hwdetail .hw:has-text("Walking bass") [data-action=hw-edit]'); await wait(t);
   ok((await t.locator('#hwForm input[name=pick]').count())===0, 'Al editar no se puede cambiar de alumno');
   await t.fill('#hwForm [name=title]','Walking bass sobre Autumn Leaves (negras)'); await t.click('#hwForm button[type=submit]'); await wait(t,350);
   ok((await db(t,()=>window.__DB.homework_tasks.find(h=>h.id==='h4').title))==='Walking bass sobre Autumn Leaves (negras)', 'Edita un deber');
-  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Walking bass") [data-action=hw-toggle]'); await wait(t,300);
+  await t.click('.hwdetail .hw:has-text("Walking bass") [data-action=hw-toggle]'); await wait(t,300);
   ok(!!(await db(t,()=>window.__DB.homework_tasks.find(h=>h.id==='h4').done_at)), 'El profe también puede marcarlo como practicado (en clase)');
-  await t.click('.hwgroup:has-text("Marta") .hw:has-text("Acordes con cejilla") [data-action=hw-delete]'); await wait(t,300);
+  await sel('Marta'); await t.click('.hwdetail .hw:has-text("Acordes con cejilla") [data-action=hw-delete]'); await wait(t,300);
   ok(!(await db(t,()=>window.__DB.homework_tasks.some(h=>h.id==='h2'))), 'Borra un deber');
   await shot(t,'deberes_profe.png');
   const afterT = await snapshot(t);
@@ -114,14 +118,15 @@ const navTo = async (p, s) => {
   await t.keyboard.press('Escape'); await wait(t,250);
   // Copiar una sola tarea, con fecha nueva, desde la sección Deberes
   await goto(t,'homework');
-  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Pentatónica") [data-action=hw-copy]'); await wait(t);
+  await t.click('.hwstu:has-text("Luis")'); await wait(t,200);
+  await t.click('.hwdetail .hw:has-text("Pentatónica") [data-action=hw-copy]'); await wait(t);
   ok(await t.locator('#hwCopyForm input[name=task]:checked').count()===1, 'Copiar una tarea: viene marcada solo esa');
   await t.check('#hwCopyForm input[name=pick][value=s1]');
   await t.click('#hwCopyForm button[type=submit]'); await wait(t,300);
   ok((await db(t,()=>window.__DB.homework_tasks.filter(h=>h.student_id==='s1'&&h.title.startsWith('Pentatónica')).length))===1, 'No se la vuelve a poner a Marta si ya la tiene pendiente');
   await t.click('#hwCopyForm [data-action=hw-cancel]').catch(()=>{}); await wait(t,250);
-  await t.click('.hwgroup:has-text("Luis") .hwdone summary');
-  await t.click('.hwgroup:has-text("Luis") .hw:has-text("Walking bass") [data-action=hw-copy]'); await wait(t);
+  await t.click('.hwdetail .hwdone summary');
+  await t.click('.hwdetail .hw:has-text("Walking bass") [data-action=hw-copy]'); await wait(t);
   await t.click('[data-action=hw-all]');
   await t.fill('#hwCopyForm [name=due_date]','2099-02-01'); await t.locator('#hwCopyForm [name=due_date]').dispatchEvent('change');
   ok(await t.locator('#hwCopyForm input[name=due][value=new]').isChecked(), 'Elegir una fecha marca "Otra"');

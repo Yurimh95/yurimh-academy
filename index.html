@@ -205,6 +205,66 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .hwmeta:empty{display:none}
 .hwtools{display:flex;gap:4px;flex:none}
 .hwdone{margin-top:14px}
+/* Deberes v2 (2026-11-28): casilla cuadrada, tarjetas del alumno y lista + detalle del profesor */
+.hwcheck.sq{border-radius:8px;width:26px;height:26px}
+.hwcheck.sq:not([aria-pressed="true"]){border-color:var(--muted)}
+.hw.late{box-shadow:inset 3px 0 0 var(--bad)}
+.hwmeta{gap:6px 14px;font-size:13px}
+.hwdate{color:var(--muted);font-weight:500}
+.hwdate.bad{color:var(--bad)}.hwdate.warn{color:var(--warn)}.hwdate.acc{color:var(--accent-hi)}.hwdate.ok{color:var(--ok)}
+.hwgoal{color:var(--ok);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hwago{color:var(--faint)}
+.hwprog{display:flex;align-items:center;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 16px}
+.hwp-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hwp-t b{color:var(--strong);font-size:16px}
+.hwp-bar{flex:0 0 34%;height:10px;border-radius:99px;background:var(--field);overflow:hidden}
+.hwp-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--neon));transition:width .4s}
+.hwprog.full .hwp-bar i{background:var(--ok)}
+.hwgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;align-items:start}
+.hwcard{flex-direction:column;gap:8px;padding:14px}
+.hwc-top{display:flex;gap:12px;align-items:flex-start}
+.hwc-top .hwtitle{padding-top:2px}
+.hwcard .hwdet{margin:0;font-size:13.5px;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.hwcard .hwmeta{margin:auto 0 0}
+.hwcard.done{opacity:.75}
+.hwhint{margin:16px 0 0;font-size:13px}
+.hwmd{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.hwside{padding:8px;position:sticky;top:12px;max-height:calc(100vh - 40px);overflow:auto}
+.hwq{width:100%;margin:0 0 6px}
+.hwstus{display:flex;flex-direction:column;gap:2px}
+.hwstu{display:flex;align-items:center;gap:10px;width:100%;font:inherit;text-align:left;cursor:pointer;color:var(--text);background:none;border:0;border-radius:10px;padding:7px 8px}
+.hwstu:hover{background:var(--hover)}
+.hwstu.on{background:var(--hover);box-shadow:inset 3px 0 0 var(--accent)}
+.hwstu .nm{flex:1;min-width:0;font-weight:600;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hwcnt{flex:none;font-size:12px;font-weight:700;padding:1px 9px;border-radius:99px;background:rgba(var(--accent-rgb),.16);color:var(--accent-hi)}
+.hwcnt.bad{background:rgba(var(--bad-rgb),.16);color:var(--bad)}
+.hwcnt.ok{background:rgba(var(--ok-rgb),.12);color:var(--ok);font-weight:600}
+.hwcnt.none{background:none;color:var(--faint)}
+.hwdetail{padding:16px;min-width:0}
+.hwback{display:none;margin:0 0 10px}
+.hwd-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+.hwd-t{flex:1;min-width:0}.hwd-t h2{margin:0;font-size:18px;color:var(--strong)}
+.hwd-tools{display:flex;gap:6px;flex:none}
+.hwrows{gap:0}
+.hwrows .hw{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 4px}
+.hwrows .hw.late{box-shadow:inset 3px 0 0 var(--bad);padding-left:12px}
+.hwnone{margin:6px 0 0;padding:12px 0;border-top:1px solid var(--line)}
+.hwnew{width:100%;justify-content:center;margin:0 0 8px}
+@media (hover:hover){.hwrows .hwtools{opacity:0;transition:opacity .15s}.hwrows .hw:hover .hwtools,.hwrows .hw:focus-within .hwtools{opacity:1}}
+@media (max-width:760px){
+  .hwmd{grid-template-columns:minmax(0,1fr)}
+  .hwside{position:static;max-height:none}
+  .hwmd:not(.open) .hwdetail{display:none}
+  .hwmd.open .hwside{display:none}
+  .hwback{display:inline-block}
+  .hwprog{flex-direction:column;align-items:stretch;gap:10px}
+  .hwp-bar{flex:none;width:100%}
+  .hwgrid{grid-template-columns:minmax(0,1fr)}
+  .hwd-head{flex-wrap:wrap}
+  .hwd-tools{width:100%}.hwd-tools .btn{flex:1;justify-content:center}
+  .hwrows .hw{flex-wrap:wrap;row-gap:6px}
+  .hwrows .hwtools{width:100%;justify-content:flex-end}
+}
 /* Objetivos */
 .goals{grid-column:1/-1;margin-top:22px}
 .gprog{display:flex;align-items:center;gap:10px}
@@ -1668,6 +1728,7 @@ const S = {
   homework: [], payPlans: [], payRecords: [], payMonth: null,
   goalStages: [], goalItems: [], goalDone: [], goalPending: false, streakAwards: [], rankPending: false,
   lessons: [], lessonNames: [], lessonSync: null, agendaWeek: null,
+  hwTab: 'tasks', hwSel: null, hwOpen: false, // Deberes: pestaña del alumno; alumno elegido por el profesor (y si en el móvil está abierto)
   section: 'feed', filter: 'pend',
   feedQueue: [] // publicaciones nuevas de otros que llegan en directo y esperan al botón "↑ nuevas"
 };
@@ -6715,7 +6776,7 @@ const actions = {
     S.meOpen = !S.meOpen; const tr = $('.top-r'); if (tr) tr.outerHTML = topRight(sections());
     const f = $('.memenu [role=menuitem]'); if (f) f.focus({ preventScroll: true });
   },
-  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; render(); if (changed) window.scrollTo(0, 0); },
+  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; if (S.section === 'homework') S.hwTab = 'tasks'; render(); if (changed) window.scrollTo(0, 0); },
   theme(el) {
     setTheme(el.dataset.t);
     if ($('.shell')) return render();
@@ -7205,6 +7266,7 @@ document.addEventListener('input', e => {
   if (e.target.matches('#itemForm [name=url]')) itemUrlChanged(e.target);
   if (e.target.id === 'catQ') { catState().q = e.target.value; const l = $('#catList'); if (l) l.innerHTML = catalogList(); }
   if (e.target.id === 'slQ') { const had = slActive(); slState().q = e.target.value; if (had !== slActive()) slRefresh(); else { const l = $('#slList'); if (l) l.innerHTML = studentListList(); } }
+  if (e.target.id === 'hwQ') { const q = amNorm(e.target.value.trim()); $$('.hwstu').forEach(b => { b.hidden = !!q && !b.dataset.name.includes(q); }); } // Deberes: buscar alumno
   if (e.target.id === 'amFilter') amRefresh(); // buscar escucha en "Asignar varias" (sin tildes; las marcadas no se esconden)
 });
 // Carpetas plegadas del catálogo (se recuerdan mientras dura la sesión). 'toggle' no burbujea: se escucha en captura.
@@ -7522,51 +7584,121 @@ function hwGoalCelebrate(h) {
       <div class="actions" style="justify-content:center"><button class="btn" data-action="hw-goal-see">Ver mis objetivos</button><button class="btn primary" data-action="close">¡Seguimos! 🤘</button></div></div>`);
   $('.modal').classList.add('narrow');
 }
-function hwRow(h, teacher) {
-  const d = hwDue(h), g = hwGoal(h);
-  return `<div class="hw ${h.done_at ? 'done' : ''}" data-hw="${h.id}">
-    <button class="hwcheck" data-action="hw-toggle" data-id="${h.id}" aria-pressed="${!!h.done_at}" title="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}" aria-label="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}">${ic('check')}</button>
+/* Rediseño (2026-11-28, Yuri: "lo menos intuitivo que he visto"):
+   - Alumno: pestañas Deberes / Mis objetivos, barra de progreso y tarjetas en rejilla con una casilla cuadrada.
+   - Profesor: alumnos a la izquierda con su contador y, a la derecha, los deberes del elegido (S.hwSel).
+     En el móvil, primero la lista y al pulsar un alumno su detalle con "← Alumnos" (S.hwOpen). */
+const hwDayText = iso => { const [y, m, d] = iso.split('-').map(Number); return `${WEEKDAYS[new Date(y, m - 1, d).getDay()]} ${d} de ${MONTHS[m - 1]}`; };
+function hwDueText(h) { // texto de la fecha, con "tu próxima clase" si coincide con ella (solo el alumno)
+  const d = hwDue(h); if (!d) return null;
+  if (h.done_at) return { cls: '', text: 'Era para el ' + hwDayText(h.due_date) };
+  const n = daysDiff(h.due_date);
+  const nl = !isTeacher() && nextLesson(S.user.id);
+  const isNext = nl && dayKey(new Date(nl.starts_at)) === h.due_date;
+  if (n < 0) return { cls: 'bad', text: 'Se pasó la fecha · era para el ' + hwDayText(h.due_date) };
+  if (isNext) return { cls: n <= 2 ? 'warn' : 'acc', text: `Para tu próxima clase (${relDay(nl.starts_at)})` };
+  if (n === 0) return { cls: 'warn', text: 'Para hoy' };
+  if (n === 1) return { cls: 'warn', text: 'Para mañana' };
+  return { cls: n <= 2 ? 'warn' : '', text: 'Para el ' + hwDayText(h.due_date) };
+}
+const hwCheck = h => `<button class="hwcheck sq" data-action="hw-toggle" data-id="${h.id}" aria-pressed="${!!h.done_at}" title="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}" aria-label="${h.done_at ? 'Marcar como pendiente' : 'Marcar como practicada'}">${ic('check')}</button>`;
+// Fila del profesor (sección Deberes y ficha del alumno)
+function hwRow(h, teacher = true) {
+  const d = hwDueText(h), g = hwGoal(h);
+  return `<div class="hw ${h.done_at ? 'done' : ''} ${hwOverdue(h) ? 'late' : ''}" data-hw="${h.id}">
+    ${hwCheck(h)}
     <div class="hwbody"><div class="hwtitle">${esc(h.title)}</div>
       ${h.details ? `<div class="hwdet">${linkify(h.details)}</div>` : ''}
-      <div class="hwmeta">${g ? `<span class="chip goalchip" title="${esc(goalWhere(g))}">🎯 ${esc(g.title)}</span>` : ''}${d ? `<span class="chip ${d.cls}">${esc(d.text)}</span>` : ''}
-        ${h.done_at ? `<span class="chip ok">Practicada · ${timeAgo(h.done_at)}</span>` : ''}
-        ${teacher ? '' : `<span class="sub">${timeAgo(h.created_at)}</span>`}</div></div>
+      <div class="hwmeta">${d ? `<span class="hwdate ${d.cls}">${esc(d.text)}</span>` : '<span class="hwdate">Sin fecha</span>'}
+        ${g ? `<span class="hwgoal" title="${esc(goalWhere(g))}">🎯 ${esc(g.title)}</span>` : ''}
+        ${h.done_at ? `<span class="hwdate ok">Practicada ${timeAgo(h.done_at)}</span>` : ''}</div></div>
     ${teacher ? `<div class="hwtools"><button class="iconbtn sm" data-action="hw-copy" data-id="${h.id}" title="Copiar a otros alumnos" aria-label="Copiar a otros alumnos">${ic('copy')}</button>
       <button class="iconbtn sm" data-action="hw-edit" data-id="${h.id}" title="Editar" aria-label="Editar">${ic('edit')}</button>
       <button class="iconbtn sm" data-action="hw-delete" data-id="${h.id}" title="Borrar" aria-label="Borrar">×</button></div>` : ''}
   </div>`;
 }
+// Tarjeta del alumno: casilla + título arriba, detalle, y abajo fecha y objetivo
+function hwCard(h) {
+  const d = hwDueText(h), g = hwGoal(h);
+  return `<article class="hw hwcard ${h.done_at ? 'done' : ''} ${hwOverdue(h) ? 'late' : ''}" data-hw="${h.id}">
+    <div class="hwc-top">${hwCheck(h)}<div class="hwtitle">${esc(h.title)}</div></div>
+    ${h.details ? `<div class="hwdet">${linkify(h.details)}</div>` : ''}
+    <div class="hwmeta">${d ? `<span class="hwdate ${d.cls}">${esc(d.text)}</span>` : ''}
+      ${g ? `<span class="hwgoal" title="${esc(goalWhere(g))}">🎯 ${esc(g.title)}</span>` : ''}
+      ${h.done_at ? `<span class="hwdate ok">Practicada ${timeAgo(h.done_at)}</span>` : `<span class="hwago">Puesto ${timeAgo(h.created_at)}</span>`}</div>
+  </article>`;
+}
+// Progreso: lo pendiente + lo practicado desde la última clase (o en los últimos 7 días si no hay clases)
+function hwProgress(sid) {
+  const now = new Date(), past = S.lessons.filter(l => l.student_id === sid && new Date(l.starts_at) <= now).sort((a, b) => b.starts_at.localeCompare(a.starts_at))[0];
+  const since = past ? new Date(past.starts_at) : new Date(now - 7 * 864e5);
+  const mine = S.homework.filter(h => h.student_id === sid);
+  const pend = mine.filter(h => !h.done_at), done = mine.filter(h => h.done_at && new Date(h.done_at) >= since);
+  return { pend: pend.length, done: done.length, total: pend.length + done.length, since: past ? 'desde tu última clase' : 'esta semana' };
+}
+function hwProgressHtml() {
+  const p = hwProgress(S.user.id), nl = nextLesson(S.user.id);
+  const pct = p.total ? Math.round(p.done / p.total * 100) : 100;
+  const title = !p.total ? 'Nada pendiente 🤘' : !p.pend ? `¡Todo practicado! ${p.done} de ${p.total} 🤘` : `${p.done} de ${p.total} practicada${p.total > 1 ? 's' : ''}`;
+  return `<div class="hwprog ${!p.pend ? 'full' : ''}">
+    <div class="hwp-t"><b>${title}</b><span class="sub">${p.total ? esc(p.since) : 'Cuando tu profesor te ponga deberes, saldrán aquí'}${nl ? ` · Próxima clase: ${esc(relDay(nl.starts_at))} a las ${hhmm(nl.starts_at)}` : ''}</span></div>
+    <div class="hwp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+  </div>`;
+}
 function homeworkStudent() {
   const list = S.homework.slice().sort(hwSort), pend = list.filter(h => !h.done_at), done = list.filter(h => h.done_at);
-  const nl = nextLessonHtml();
-  return `${nl ? `<section class="foryou" style="margin-bottom:14px">${nl}</section>` : ''}<p class="sub" style="margin:0 0 14px">Lo que tienes que practicar para tus próximas clases. Márcalo cuando lo hayas trabajado: tu profesor lo verá.</p>
-    ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, false)).join('')}</div>`
-      : '<div class="empty">No tienes deberes pendientes. 🤘</div>'}
-    ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 40).map(h => hwRow(h, false)).join('')}</div></details>` : ''}
-    ${goalsPanel()}`;
+  const hasGoals = goalsFor(S.user.id).length > 0;
+  const tab = hasGoals && S.hwTab === 'goals' ? 'goals' : 'tasks';
+  return `${hasGoals ? `<div class="tabs">
+      <button class="tab ${tab === 'tasks' ? 'on' : ''}" data-action="hw-tab" data-t="tasks">Deberes${pend.length ? `<span class="n">${pend.length}</span>` : ''}</button>
+      <button class="tab ${tab === 'goals' ? 'on' : ''}" data-action="hw-tab" data-t="goals">🎯 Mis objetivos</button></div>` : ''}
+    ${tab === 'goals' ? goalsPanel() : `${hwProgressHtml()}
+    ${pend.length ? `<div class="hwlist hwgrid">${pend.map(hwCard).join('')}</div>` : list.length ? '' : '<div class="empty">No tienes deberes. 🤘</div>'}
+    ${done.length ? `<details class="hwdone" ${pend.length ? '' : 'open'}><summary>Practicadas (${done.length})</summary><div class="hwlist hwgrid">${done.slice(0, 40).map(hwCard).join('')}</div></details>` : ''}
+    <p class="sub hwhint">Marca la casilla cuando lo hayas trabajado: tu profesor lo verá.</p>`}`;
 }
-// Lleva a "Mis objetivos" (al final de Deberes)
-function goGoals() { S.section = 'homework'; render(); const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+// Lleva a "Mis objetivos" (pestaña de Deberes)
+function goGoals() { S.section = 'homework'; S.hwTab = 'goals'; render(); scrollTo(0, 0); }
+// Profesor: estado de cada alumno para la lista de la izquierda
+function hwStu(id) {
+  const l = S.homework.filter(h => h.student_id === id), pend = l.filter(h => !h.done_at);
+  return { l, pend, late: pend.filter(hwOverdue).length };
+}
+function hwStuBadge(st) {
+  if (!st.pend.length) return st.l.length ? '<span class="hwcnt ok">Al día</span>' : '<span class="hwcnt none">—</span>';
+  return `<span class="hwcnt ${st.late ? 'bad' : ''}" title="${st.pend.length} pendiente${st.pend.length > 1 ? 's' : ''}${st.late ? ` · ${st.late} vencido${st.late > 1 ? 's' : ''}` : ''}">${st.pend.length}${st.late ? ` · ${st.late} ⚠` : ''}</span>`;
+}
 function homeworkTeacher() {
   const ok = S.students.filter(s => s.approved);
-  const by = id => S.homework.filter(h => h.student_id === id).sort(hwSort);
-  const withTasks = ok.filter(s => by(s.id).length), without = ok.filter(s => !by(s.id).some(h => !h.done_at));
-  return `<div class="sec-head"><p class="sub" style="margin:0">Tareas que cada alumno tiene que practicar. Ellos marcan lo que han trabajado; tú también puedes marcarlo en clase.</p>
-      <button class="btn primary" data-action="hw-new">+ Nuevos deberes</button></div>
-    ${!ok.length ? '<div class="empty">Aún no tienes alumnos aprobados.</div>' : ''}
-    <div class="hwgroups">${withTasks.map(s => {
-      const l = by(s.id), pend = l.filter(h => !h.done_at), done = l.filter(h => h.done_at);
-      return `<section class="dcard hwgroup"><div class="dhead"><h2>${whoLink(s.id, avatarHtml(s.id, 30))} ${esc(s.display_name)}</h2>
-          <div class="chips">${pend.length ? `<span class="chip acc">${pend.length} pendiente${pend.length > 1 ? 's' : ''}</span>` : '<span class="chip ok">Al día</span>'}
-          ${pend.some(hwOverdue) ? '<span class="chip bad">Vencidos</span>' : ''}
-          <button class="btn sm" data-action="hw-copy-all" data-id="${s.id}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>
-          <button class="btn sm" data-action="hw-new" data-id="${s.id}">+ Añadir</button></div></div>
-        ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, true)).join('')}</div>` : '<p class="sub" style="margin:0">Sin deberes pendientes.</p>'}
-        ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
-      </section>`;
-    }).join('')}</div>
-    ${without.length && withTasks.length ? `<p class="sub" style="margin-top:14px">Sin deberes pendientes: ${without.map(s => esc(s.display_name)).join(', ')}.</p>` : ''}
-    ${ok.length && !withTasks.length ? '<div class="empty">Todavía no has puesto deberes. Pulsa <b>+ Nuevos deberes</b>.</div>' : ''}`;
+  if (!ok.length) return '<div class="empty">Aún no tienes alumnos aprobados.</div>';
+  // Orden: primero los que tienen algo vencido, luego pendientes, luego el resto; dentro, por nombre
+  const rank = s => { const st = hwStu(s.id); return st.late ? 0 : st.pend.length ? 1 : st.l.length ? 2 : 3; };
+  const list = ok.slice().sort((a, b) => rank(a) - rank(b) || studentName(a.id).localeCompare(studentName(b.id), 'es'));
+  if (!S.hwSel || !ok.some(s => s.id === S.hwSel)) S.hwSel = list[0].id;
+  const sid = S.hwSel, s = ok.find(x => x.id === sid), st = hwStu(sid);
+  const l = st.l.slice().sort(hwSort), done = l.filter(h => h.done_at), nl = nextLesson(sid);
+  const sum = [st.pend.length ? `${st.pend.length} pendiente${st.pend.length > 1 ? 's' : ''}` : 'Sin deberes pendientes',
+    st.late ? `<span style="color:var(--bad)">${st.late} vencido${st.late > 1 ? 's' : ''}</span>` : '',
+    done.length ? `${done.length} practicada${done.length > 1 ? 's' : ''}` : '',
+    nl ? `próxima clase ${esc(relDay(nl.starts_at))}` : ''].filter(Boolean).join(' · ');
+  return `<div class="hwmd ${S.hwOpen ? 'open' : ''}">
+      <aside class="hwside panel">
+        <button class="btn primary hwnew" data-action="hw-new" title="Poner deberes a uno o a varios alumnos">+ Nuevos deberes</button>
+        ${ok.length > 6 ? '<input type="search" id="hwQ" class="hwq" placeholder="Buscar alumno…" aria-label="Buscar alumno" data-no-emoji>' : ''}
+        <div class="hwstus">${list.map(x => `<button class="hwstu ${x.id === sid ? 'on' : ''}" data-action="hw-sel" data-id="${x.id}" data-name="${esc(amNorm(studentName(x.id)))}">
+          ${avatarHtml(x.id, 30, false)}<span class="nm">${esc(studentName(x.id))}</span>${hwStuBadge(hwStu(x.id))}</button>`).join('')}</div>
+      </aside>
+      <section class="hwdetail panel">
+        <button class="linkbtn hwback" data-action="hw-back">← Alumnos</button>
+        <div class="hwd-head">${whoLink(sid, avatarHtml(sid, 44, false))}
+          <div class="hwd-t"><h2>${esc(studentName(sid))}</h2><span class="sub">${sum}</span></div>
+          <div class="hwd-tools">${l.length ? `<button class="btn sm" data-action="hw-copy-all" data-id="${sid}" title="Copiar sus deberes a otros alumnos">${ic('copy')} Copiar</button>` : ''}
+          <button class="btn sm primary" data-action="hw-new" data-id="${sid}">+ Añadir</button></div></div>
+        ${st.pend.length ? `<div class="hwlist hwrows">${l.filter(h => !h.done_at).map(h => hwRow(h, true)).join('')}</div>`
+          : `<p class="sub hwnone">${esc(s.display_name)} no tiene deberes pendientes.</p>`}
+        ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist hwrows">${done.slice(0, 20).map(h => hwRow(h, true)).join('')}</div></details>` : ''}
+      </section>
+    </div>`;
 }
 function hwFormModal(id, forStudent) {
   const h = id ? S.homework.find(x => x.id === id) : null;
@@ -7994,6 +8126,9 @@ Object.assign(actions, {
   'hw-copy-all'(el) { hwReturn = hwFromCard(el); hwCopyModal(el.dataset.id); },
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
   'hw-goal-see'() { closeModal(); goGoals(); },
+  'hw-tab'(el) { S.hwTab = el.dataset.t; render(); },
+  'hw-sel'(el) { S.hwSel = el.dataset.id; S.hwOpen = true; render(); if (matchMedia('(max-width:760px)').matches) scrollTo(0, 0); },
+  'hw-back'() { S.hwOpen = false; render(); },
   'hw-all'() { const boxes = $$('#hwForm input[name=pick], #hwCopyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;
