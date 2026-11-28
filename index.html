@@ -4690,24 +4690,48 @@ function forYou() {
    el borde se difumina, bien ancho, por donde hay más (.more-l / .more-r en .foryou; Yuri no quiere flechas) y,
    la primera vez que sale en cada carga, un pequeño empujón de ida y vuelta (sin él si el sistema pide menos movimiento). */
 let fyNudged = false;
+const fyMobile = () => matchMedia('(max-width:760px)').matches;
 function fyEdges(row) {
   const fy = row.closest('.foryou'); if (!fy) return;
+  if (row.dataset.loop) { fy.classList.add('more-l', 'more-r'); return; } // en bucle siempre hay más a los dos lados
   const max = row.scrollWidth - row.clientWidth;
   fy.classList.toggle('more-l', row.scrollLeft > 4);
   fy.classList.toggle('more-r', max > 4 && row.scrollLeft < max - 4);
 }
+/* Bucle infinito (Yuri, 2026-11-28): en el móvil, si la fila no cabe, se añaden dos copias de las cápsulas
+   detrás (`.fy-clone`, ocultas para lectores de pantalla y sin tabulador; los clics funcionan igual por
+   data-action) y se empieza en la copia del medio. Al pasar de media copia hacia un lado, se salta una
+   copia entera hacia el otro: se ve igual y nunca se llega al final. */
+function fyLoop(row) {
+  if (row.dataset.loop || !fyMobile() || row.scrollWidth - row.clientWidth <= 4) return;
+  const orig = [...row.children];
+  for (let k = 0; k < 2; k++) orig.forEach(c => { const x = c.cloneNode(true); x.classList.add('fy-clone'); x.setAttribute('aria-hidden', 'true'); x.tabIndex = -1; row.appendChild(x); });
+  row.dataset.loop = '1';
+  row.scrollLeft = fyLoopW(row) - 44; // que asome por la izquierda el final de la última cápsula
+}
+const fyLoopW = row => { const n = row.querySelectorAll('.fy-chip:not(.fy-clone)').length, c = row.children; return c[n] ? c[n].offsetLeft - c[0].offsetLeft : 0; };
+function fyLoopFix(row) {
+  const w = fyLoopW(row); if (!w) return;
+  if (row.scrollLeft < w * 0.5) row.scrollLeft += w;
+  else if (row.scrollLeft > w * 1.5) row.scrollLeft -= w;
+}
+function fyUnloop(row) { row.querySelectorAll('.fy-clone').forEach(x => x.parentNode.removeChild(x)); delete row.dataset.loop; row.scrollLeft = 0; }
 function fyInit() {
   $$('.foryou .fy-chips').forEach(row => {
-    fyEdges(row);
-    if (fyNudged || !row.closest('.foryou').classList.contains('more-r') || !row.offsetParent) return;
+    if (!row.offsetParent) return;
+    fyLoop(row); fyEdges(row);
+    if (fyNudged || !row.closest('.foryou').classList.contains('more-r')) return;
     fyNudged = true;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     // con una animación CSS de las cápsulas (no con scroll: un scroll suave a medias podía dejar la fila movida)
     setTimeout(() => { row.classList.add('nudge'); setTimeout(() => row.classList.remove('nudge'), 1300); }, 600);
   });
 }
-document.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('fy-chips')) fyEdges(e.target); }, true);
-addEventListener('resize', () => $$('.foryou .fy-chips').forEach(fyEdges));
+document.addEventListener('scroll', e => {
+  const row = e.target; if (!row.classList || !row.classList.contains('fy-chips')) return;
+  if (row.dataset.loop) fyLoopFix(row); else fyEdges(row);
+}, true);
+addEventListener('resize', () => $$('.foryou .fy-chips').forEach(row => { if (row.dataset.loop && !fyMobile()) fyUnloop(row); fyInit(); }));
 let fyQueued = false;
 new MutationObserver(() => { if (!fyQueued) { fyQueued = true; requestAnimationFrame(() => { fyQueued = false; fyInit(); }); } })
   .observe(document.body, { childList: true, subtree: true });
