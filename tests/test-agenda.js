@@ -89,7 +89,7 @@ const navTo = async (p, s) => {
   // Recordatorio de clase (lo crea la función del servidor): así se ve en la campanita
   await p.evaluate(()=>window.__rtExternal('notifications',{id:'nl',user_id:'s1',kind:'lesson',actor_id:null,target_id:'l2',extra:'hoy a las 16:30 · 2 deberes pendientes',read_at:null,pushed_at:null})); await wait(p,300);
   await p.click('.bell'); await wait(p,250);
-  ok((await p.textContent('.modal')).includes('Tienes clase hoy a las 16:30 · 2 deberes pendientes'), 'Recordatorio: "Tienes clase hoy a las 16:30 · 2 deberes pendientes"');
+  ok((await p.textContent('#notifBox')).includes('Tienes clase hoy a las 16:30 · 2 deberes pendientes'), 'Recordatorio: "Tienes clase hoy a las 16:30 · 2 deberes pendientes"');
   await p.click('.nrow:has-text("Tienes clase")'); await wait(p,300);
   ok(await p.evaluate(()=>S.section==='homework'), 'Al tocarlo abre sus Deberes');
   // Privacidad

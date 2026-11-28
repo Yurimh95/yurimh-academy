@@ -79,7 +79,9 @@ const navTo = async (p, s) => {
 
   // Notificaciones
   await p.click('.bell'); await wait(p,300);
-  ok(!(await p.textContent('.modal')).includes('te ha enviado un mensaje'), 'Notificaciones: los mensajes privados no salen en la lista');
+  ok((await p.locator('.modal').count())===0 && (await p.locator('#notifBox').count())===1, 'Notificaciones: se abren como desplegable bajo la campanita, no como ventana');
+  { const b=await p.locator('.bell').boundingBox(), n=await p.locator('#notifBox').boundingBox(); ok(n.y>=b.y+b.height && n.y-(b.y+b.height)<20 && n.x+n.width<=b.x+b.width+12, 'El desplegable sale justo debajo de la campanita, alineado a su derecha'); }
+  ok(!(await p.textContent('#notifBox')).includes('te ha enviado un mensaje'), 'Notificaciones: los mensajes privados no salen en la lista');
   ok(!!(await db(p,()=>window.__DB.notifications.find(n=>n.id==='n1').read_at)), 'Al abrir la conversación, su aviso de mensaje queda leído (así el siguiente vuelve a llegar al móvil)');
   await p.keyboard.press('Escape'); await wait(p);
   await p.evaluate(()=>openNotifFromUrl('?n=n1')); await wait(p,400);
@@ -101,12 +103,15 @@ const navTo = async (p, s) => {
   await p.goBack(); await wait(p,300);
   ok((await p.evaluate(()=>S.section))==='messages' && (await p.locator('.top-r [data-s=messages].on').count())===1, 'Atrás: vuelve de Avisos a Mensajes');
   await p.click('.bell'); await wait(p,300);
-  ok((await p.locator('.modal').count())===1, 'Abre las notificaciones');
+  ok((await p.locator('#notifBox').count())===1, 'Abre las notificaciones');
   await p.goBack(); await wait(p,300);
-  ok((await p.locator('.modal').count())===0 && (await p.evaluate(()=>S.section))==='messages', 'Atrás: cierra la ventana sin cambiar de sección');
-  await p.click('.bell'); await wait(p,250); await p.click('.modal .x'); await wait(p,300);
+  ok((await p.locator('#notifBox').count())===0 && (await p.evaluate(()=>S.section))==='messages', 'Atrás: cierra el desplegable sin cambiar de sección');
+  await p.click('.bell'); await wait(p,250); await p.click('.bell'); await wait(p,300);
+  ok((await p.locator('#notifBox').count())===0, 'La campanita cierra su desplegable');
+  await p.click('.bell'); await wait(p,250); await p.mouse.click(5,600); await wait(p,300);
+  ok((await p.locator('#notifBox').count())===0, 'Tocar fuera cierra el desplegable');
   await p.goBack(); await wait(p,300);
-  ok((await p.textContent('.nav button.on')).includes('Inicio'), 'Tras cerrar una ventana con la ✕, Atrás sigue funcionando bien (Inicio)');
+  ok((await p.textContent('.nav button.on')).includes('Inicio'), 'Tras cerrar el desplegable, Atrás sigue funcionando bien (Inicio)');
 
   // Escucha analítica en lista con iconos y botón ▶
   await goto(p,'listening'); await p.click('[data-action=filter][data-f=all]'); await wait(p);
@@ -119,10 +124,10 @@ const navTo = async (p, s) => {
   ok((await p.textContent('#app')).includes('Notificaciones en el móvil'), 'Ajustes: apartado de notificaciones en el móvil');
   ok((await p.textContent('#app')).includes('Solo lo ve tu profesor') && (await p.textContent('#app')).includes('Personas bloqueadas'), 'Ajustes: privacidad explicada y lista de bloqueados');
   await p.click('.bell'); await wait(p,250);
-  ok((await p.locator('.modal .push-box').count())===0, 'La campanita no muestra ajustes de push si no se pueden activar (eso va en Ajustes)');
+  ok((await p.locator('#notifBox .push-box').count())===0, 'La campanita no muestra ajustes de push si no se pueden activar (eso va en Ajustes)');
   await p.keyboard.press('Escape'); await wait(p,200);
   await p.evaluate(()=>{ S.push='off'; }); await p.click('.bell'); await wait(p,250);
-  ok((await p.locator('.modal .push-box [data-action=push-on]').count())===1, 'Si se pueden activar y están apagadas, la campanita invita a activarlas');
+  ok((await p.locator('#notifBox .push-box [data-action=push-on]').count())===1, 'Si se pueden activar y están apagadas, la campanita invita a activarlas');
   await p.keyboard.press('Escape'); await wait(p);
   let state = await snapshot(p);
 
