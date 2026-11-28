@@ -3679,3 +3679,84 @@ begin
     end loop;
   end loop;
 end $$;
+
+-- =====================================================================
+-- Rango v2 (2026-11-28, Yuri): el multiplicador de racha ya no es progresivo ni se cobra al terminar.
+--   · listening_assignments.mult: ×2 si el alumno llevaba 14 días o más de racha el día en que se le mandó
+--     la escucha; si no, ×1. Se fija al insertarla y nadie con sesión lo cambia. Así guardarse escuchas
+--     para terminarlas con racha alta no sirve de nada.
+--   · Terminada tarde = mitad de puntos (castigo único, no por día): con fecha límite, si se termina después
+--     de ese día (hora de Madrid); sin fecha, si se termina más de 30 días después de mandarla.
+--   · Puntos = round((20 + minutos) × mult × (0,5 si tarde)). listening_points_calc() queda sin uso.
+-- =====================================================================
+alter table public.listening_assignments add column if not exists mult smallint not null default 1;
+
+create or replace function public.listening_points_for(p_item uuid, p_mult integer, p_due date,
+                                                       p_assigned timestamptz, p_done timestamptz)
+returns integer language sql stable set search_path = public as $$
+  select round((20 + coalesce(i.duration_sec, 0) / 60) * greatest(coalesce(p_mult, 1), 1)
+         * case when p_done > coalesce(((p_due + 1)::timestamp at time zone 'Europe/Madrid'),
+                                       p_assigned + interval '30 days') then 0.5 else 1 end)::int
+  from public.listening_items i where i.id = p_item;
+$$;
+revoke execute on function public.listening_points_for(uuid, integer, date, timestamptz, timestamptz) from public, anon;
+grant execute on function public.listening_points_for(uuid, integer, date, timestamptz, timestamptz) to authenticated;
+
+-- Al mandarla: ×2 si el alumno lleva 14 días o más de racha
+create or replace function public.listening_assignments_mult()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if auth.uid() is not null then
+    new.mult := case when coalesce((select s.current_days from public.listening_streak(new.student_id) s), 0) >= 14 then 2 else 1 end;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.listening_assignments_mult() from public, anon, authenticated;
+create or replace trigger listening_assignments_mult_trg before insert on public.listening_assignments
+  for each row execute function public.listening_assignments_mult();
+
+create or replace function public.listening_assignments_guard()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_teacher() then
+    if new.item_id     is distinct from old.item_id
+    or new.student_id  is distinct from old.student_id
+    or new.note        is distinct from old.note
+    or new.due_date    is distinct from old.due_date
+    or new.assigned_at is distinct from old.assigned_at then
+      raise exception 'Solo el profesor puede modificar esos campos';
+    end if;
+    -- "Leído" solo lo pone el profesor; si el alumno cambia sus respuestas, deja de estar leído
+    new.teacher_read_at := case when new.answers is distinct from old.answers then null else old.teacher_read_at end;
+  end if;
+  -- updated_at solo cambia cuando el ALUMNO toca su progreso (respuestas o check),
+  -- no cuando el profesor edita fecha o nota. Así "respuestas recientes" es fiable.
+  if new.answers is distinct from old.answers or new.listened is distinct from old.listened then
+    new.updated_at = now();
+  end if;
+  -- El multiplicador se fija al mandarla; solo el servidor (sin sesión) lo cambia
+  if auth.uid() is not null then new.mult := old.mult; end if;
+  -- Terminada (para la racha): la primera vez que está escuchada y con las 6 respuestas. Nadie la cambia a mano.
+  -- (El servidor, sin sesión, puede fijarla a mano: escuchas contestadas por WhatsApp antes de la app.)
+  new.completed_at := case when old.completed_at is not null then old.completed_at
+                           when auth.uid() is null and new.completed_at is not null then new.completed_at
+                           when new.listened and public.listening_answers_full(new.answers) then now()
+                           else null end;
+  -- Puntos de rango: se calculan una vez, al quedar terminada. Solo el servidor (sin sesión) puede ponerlos o corregirlos.
+  new.points := case when auth.uid() is null then new.points
+                     when old.completed_at is not null then old.points
+                     when new.completed_at is not null then
+                       public.listening_points_for(new.item_id, new.mult, new.due_date, new.assigned_at, new.completed_at)
+                     else null end;
+  return new;
+end;
+$$;
+
+-- Recalcula con la regla nueva los puntos ya dados (todas las existentes quedan con ×1)
+update public.listening_assignments
+   set points = public.listening_points_for(item_id, mult, due_date, assigned_at, completed_at)
+ where completed_at is not null;

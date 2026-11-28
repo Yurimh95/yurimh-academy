@@ -7532,7 +7532,9 @@ function confetti() {
    · una escucha cuenta como pendiente desde el día siguiente a asignarla; hoy nunca rompe.
    Es lo mismo que calcula listening_streak() en la base de datos. La racha actual es privada (alumno y profesor).
    Rango (2026-11-28): cada escucha terminada da puntos una sola vez (listening_assignments.points, los pone la base
-   de datos): (20 + 1 por minuto) × multiplicador de racha (1 + días/14, hasta ×2 a los 14 días). La suma da el
+   de datos): (20 + 1 por minuto) × mult × (½ si se termina tarde). mult (v2, Yuri) = ×2 si el alumno llevaba 14 días
+   o más de racha EL DÍA QUE SE LE MANDÓ (listening_assignments.mult, al insertarla); si no, ×1. Así guardarse escuchas
+   no sirve. Tarde = después de su fecha límite o, sin fecha, más de 30 días después de mandarla. La suma da el
    rango: 7 rangos × 3 divisiones + Mito. RANK_STEPS debe coincidir con listening_rank_step() del SQL.
    Las medallas y el récord de racha son públicos (get_listening_rank). Al subir, celebración (profiles.rank_seen). */
 const RANK_STEPS = [0, 150, 350, 600, 900, 1250, 1700, 2200, 2800, 3500, 4300, 5200, 6200, 7400, 8800, 10500, 12500, 15000, 18000, 22000, 27000, 35000];
@@ -7548,10 +7550,16 @@ function rankOf(points) {
 }
 const pointsOf = sid => S.assigns.filter(a => a.student_id === sid).reduce((t, a) => t + (a.points || 0), 0);
 const nfmt = n => Number(n || 0).toLocaleString('es-ES');
-const multOf = days => 1 + Math.min(days, STREAK_MAX) / STREAK_MAX;
-const multTxt = m => '×' + m.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
-// Multiplicador que tendría la próxima escucha terminada (hoy cuenta como un día más si aún no ha sumado)
-const nextMult = st => multOf(st.cur + (st.todayDone ? 0 : 1));
+const multTxt = m => '×' + m;
+// Multiplicador de las escuchas que le manden a partir de ahora: ×2 con 14 días o más de racha
+const streakMult = st => st.cur >= STREAK_MAX ? 2 : 1;
+const LATE_DAYS = 30;
+// Terminada tarde (mitad de puntos): después de su fecha límite o, sin fecha, más de 30 días después de mandarla
+function lateOf(a) {
+  if (!a.completed_at) return false;
+  const lim = a.due_date ? new Date(a.due_date + 'T23:59:59') : new Date(new Date(a.assigned_at).getTime() + LATE_DAYS * 86400000);
+  return new Date(a.completed_at) > lim;
+}
 
 const localDay = iso => dayKey(new Date(iso));
 const addDays = (key, n) => { const d = new Date(key + 'T12:00:00'); d.setDate(d.getDate() + n); return dayKey(d); };
@@ -7681,7 +7689,7 @@ const rankDivPips = step => step >= 21 ? '' : `<span class="rk-pips" aria-hidden
 // Alumno: arriba de Escucha analítica. Medalla, puntos, progreso y racha con su multiplicador.
 function rankCard() {
   if (isTeacher() || !S.assigns.length) return '';
-  const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), m = nextMult(st);
+  const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), m = streakMult(st);
   return `<section class="rank-card" data-rank-card>
     <button class="rk-medal" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(rk.tier)}</button>
     <div class="rk-main">
@@ -7693,13 +7701,15 @@ function rankCard() {
     </div>
     <div class="rk-streak ${st.cur ? 'on' : ''}">
       <b>🔥 ${st.cur ? `${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}` : 'Sin racha'}</b>
-      <span class="rk-mult" title="Multiplicador de tu próxima escucha terminada">${multTxt(m)}</span>
+      <span class="rk-mult" title="Lo que valen las escuchas que te manden a partir de ahora">${multTxt(m)}</span>
+      <span class="sub">${m > 1 ? 'Las escuchas nuevas valen el doble' : `Te faltan ${daysTxt(STREAK_MAX - st.cur)} para ×2`}</span>
       <span class="sk-state ${s.cls}">${esc(s.text)}</span>
       <span class="sub">Récord: ${daysTxt(st.best)}</span>
     </div>
     <details class="sk-how"><summary>¿Cómo funciona?</summary>
       <p>Cada escucha que terminas (marcada como escuchada y con las 6 respuestas) te da <b>20 puntos más 1 por cada minuto</b> que dura. Da igual cuándo la escuches.</p>
-      <p>La <b>racha</b> multiplica esos puntos: cada día seguido que terminas alguna escucha suma, y a los ${STREAK_MAX} días seguidos ganas el doble (×2). Si un día acaba con escuchas pendientes y no has terminado ninguna, la racha vuelve a cero, pero nunca pierdes puntos. Si no tienes nada pendiente, la racha no se toca.</p>
+      <p>La <b>racha</b> cuenta los días seguidos que terminas alguna escucha. Si un día acaba con escuchas pendientes y no has terminado ninguna, vuelve a cero; si no tienes nada pendiente, no se toca. <b>Con ${STREAK_MAX} días seguidos o más, las escuchas que te mande tu profesor valen el doble (×2)</b>, las termines cuando las termines.</p>
+      <p>Si terminas una escucha <b>tarde</b> (después de su fecha límite o, si no tiene, más de ${LATE_DAYS} días después de recibirla), da la mitad de puntos. Nunca pierdes los puntos que ya tienes.</p>
       <p>Tu medalla y tu récord de racha salen en tu perfil. Tus puntos exactos y la racha de hoy solo los ves tú y tu profesor.</p>
       <button class="btn sm" data-action="rank-ladder">Ver todos los rangos</button></details>
   </section>`;
@@ -7737,20 +7747,20 @@ function streakFichaHtml(sid) {
   return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">Rango y racha</h2></div>
     <div class="agebox rk-ficha"><div class="rk-medal">${emblemSvg(rk.tier)}</div>
       <div><p style="margin:0"><b>${esc(rk.name)}</b> <span class="sub">· ${nfmt(rk.points)} puntos${rk.next !== null ? ` · le faltan ${nfmt(rk.next - rk.points)} para ${esc(stepName(rk.step + 1))}` : ''}</span></p>
-      <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">· ${multTxt(nextMult(st))} · récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
+      <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">· escuchas nuevas ${multTxt(streakMult(st))} · récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
 }
 // Alumno: chip en "Para ti" del Inicio
 function streakChip(chip) {
   const st = streakOf(S.user.id);
   if (!st.cur) return '';
-  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)} · ${multTxt(nextMult(st))}`,
+  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)}${streakMult(st) > 1 ? ' · ×2' : ''}`,
     st.todayDone ? '¡Hoy ya has sumado!' : st.atRisk ? 'Termina una escucha hoy' : 'Racha a salvo');
 }
 // Todos los rangos, a la vista desde el principio (Yuri: que se vea hasta dónde se puede llegar)
 function rankLadderModal() {
   const mine = !isTeacher() ? rankOf(pointsOf(S.user.id)) : null;
   openModal(`<div class="modal-head"><h2 class="h2" style="margin:0">Rangos de Escucha analítica</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <p class="sub" style="margin:0 0 14px">Cada escucha terminada da 20 puntos más 1 por minuto, multiplicados por tu racha (hasta ×2 a los ${STREAK_MAX} días seguidos). Los puntos nunca se pierden.</p>
+    <p class="sub" style="margin:0 0 14px">Cada escucha terminada da 20 puntos más 1 por minuto. Con ${STREAK_MAX} días seguidos de racha, las escuchas nuevas valen el doble; terminada tarde, la mitad. Los puntos nunca se pierden.</p>
     <div class="rk-ladder">${RANK_TIERS.map((n, t) => {
       const first = t * 3, steps = t === 7 ? [21] : [first, first + 1, first + 2];
       const got = mine && mine.step >= first, cur = mine && mine.tier === t;
@@ -7785,7 +7795,7 @@ function rankCelebrate() {
 // Tras guardar una escucha: si acaba de quedar terminada, +1 día de racha, puntos y, si sube, celebración
 function streakAfterComplete(before, a) {
   const st = streakOf(S.user.id);
-  toast(`+${nfmt(a.points || 0)} puntos${!before.todayDone && st.todayDone ? ` · 🔥 racha: ${daysTxt(st.cur)}` : ''}`, 'ok');
+  toast(`+${nfmt(a.points || 0)} puntos${a.mult > 1 ? ' (×2)' : ''}${lateOf(a) ? ' (la mitad, por terminarla tarde)' : ''}${!before.todayDone && st.todayDone ? ` · 🔥 racha: ${daysTxt(st.cur)}` : ''}`, lateOf(a) ? '' : 'ok');
   const card = $('[data-rank-card]'); if (card) card.outerHTML = rankCard();
   rankCelebrate();
 }

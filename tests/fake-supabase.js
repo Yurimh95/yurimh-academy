@@ -50,11 +50,12 @@
   const RSTEPS=[0,150,350,600,900,1250,1700,2200,2800,3500,4300,5200,6200,7400,8800,10500,12500,15000,18000,22000,27000,35000];
   const rStep = p => { let s=0; RSTEPS.forEach((v,i)=>{ if((p||0)>=v) s=i; }); return s; };
   const rName = s => s>=21?'Mito':['Bronce','Plata','Oro','Platino','Diamante','Maestro','Leyenda'][Math.floor(s/3)]+' '+['III','II','I'][s%3];
-  function pointsCalc(sid,itemId){
-    const it=DB.listening_items.find(i=>i.id===itemId)||{}, today=dk(new Date());
-    const todayDone=DB.listening_assignments.some(a=>a.student_id===sid&&a.completed_at&&dk(a.completed_at)===today);
-    const days=streakCur(sid)+(todayDone?0:1);
-    return Math.round((20+Math.floor((it.duration_sec||0)/60))*(1+Math.min(days,14)/14));
+  // v2: listening_points_for(): (20 + minutos) × mult (×2 si al mandarla llevaba 14+ días de racha) × ½ si tarde
+  function pointsCalc(r){
+    const it=DB.listening_items.find(i=>i.id===r.item_id)||{};
+    const lim = r.due_date ? new Date(r.due_date+'T23:59:59') : new Date(new Date(r.assigned_at).getTime()+30*86400000);
+    const late = new Date(r.completed_at) > lim;
+    return Math.round((20+Math.floor((it.duration_sec||0)/60))*Math.max(r.mult||1,1)*(late?.5:1));
   }
   function rankNotify(r){
     if(!(r.points>0)) return;
@@ -350,7 +351,8 @@
     }
     if (table==='listening_assignments' && (JSON.stringify(nw.answers)!==JSON.stringify(old.answers)||nw.listened!==old.listened)) nw.updated_at=new Date().toISOString();
     if (table==='listening_assignments') { nw.completed_at = old.completed_at ? old.completed_at : (nw.listened && answersFull(nw.answers) ? new Date().toISOString() : null);
-      nw.points = old.completed_at ? (old.points ?? null) : (nw.completed_at ? pointsCalc(nw.student_id, nw.item_id) : null); }
+      nw.mult = old.mult || 1;
+      nw.points = old.completed_at ? (old.points ?? null) : (nw.completed_at ? pointsCalc(nw) : null); }
     if (table==='listening_streak_awards' && (nw.student_id!==old.student_id||nw.days!==old.days||nw.reached_at!==old.reached_at)) throw new Error('Solo se puede marcar como vista');
     if (table==='board_posts'){ nw.updated_at=new Date().toISOString(); if(!checks.board_posts(nw)) throw new Error('new row for relation "board_posts" violates check constraint'); }
     if (table==='feed_posts'){ // feed_posts_guard: solo cambian texto y enlace; edited_at lo pone la base de datos
@@ -428,7 +430,7 @@
           if(table==='goals_done'){ row.done_at=row.done_at||new Date().toISOString(); row.seen_at=null; if(DB.goals_done.some(e=>e.goal_id===row.goal_id&&e.student_id===row.student_id)) return finish([],'duplicate key value violates unique constraint'); }
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; row.goal_id=row.goal_id||null;
             if(row.goal_id && !DB.goals_items.some(g=>g.id===row.goal_id&&(!g.student_id||g.student_id===row.student_id))) return finish([],'Ese objetivo no es de este alumno'); }
-          if(table==='listening_assignments') row.completed_at=null;
+          if(table==='listening_assignments'){ row.completed_at=null; row.points=null; row.mult=streakCur(row.student_id)>=14?2:1; }
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.classes===undefined) row.classes=null; }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
