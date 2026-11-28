@@ -1,5 +1,13 @@
 // Recargar (F5): la app vuelve a la sección (y al chat) donde estaba, no al Inicio
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 const path = require('path');
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -41,7 +49,7 @@ const path = require('path');
   ok(await s.evaluate(() => S.dmWith) === 't1', 'Y en el mismo chat');
   ok(await s.locator('.modal').count() === 0, 'La ventana no se vuelve a abrir');
   ok(await s.evaluate(() => !history.state.modal), 'Se limpia la marca de ventana del historial');
-  await s.click('.nav [data-s=profile]'); await s.waitForTimeout(150);
+  await navTo(s, 'profile'); await s.waitForTimeout(150);
   ok(await s.evaluate(() => history.state.s) === 'profile', 'Después de recargar, cambiar de sección se apunta en el historial');
   await reload(s);
   ok(await sec(s) === 'profile', 'Tras recargar en Perfil sigue en Perfil');

@@ -1,5 +1,13 @@
 // Previews de Spotify y YouTube (portada, título, tipo y duración) en Inicio, comentarios, Avisos y mensajes privados
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors = []; let fails = 0;
@@ -19,7 +27,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(400);
     return page;
   }
-  const goto = async (p, s) => { await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
+  const goto = async (p, s) => { await navTo(p, s); await p.waitForTimeout(150); };
   const shot = (p, n) => p.screenshot({ path: require('path').join(__dirname, 'shots', n) });
   const SP = 'https://open.spotify.com/album/1weenld61qoidwYuZ1GESA', YT = 'https://www.youtube.com/watch?v=YCNUd1yRo2E';
 

@@ -80,35 +80,70 @@ a{color:var(--accent-hi)}
 ::selection{background:rgba(var(--accent-rgb),.3)}
 svg.i{width:20px;height:20px;flex:none}
 
-/* ---------- Estructura estilo app ---------- */
-.shell{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;max-width:1280px;margin:0 auto;padding:0 24px}
-.main{min-width:0;padding:18px 0 60px}
-.sidebar{position:sticky;top:0;height:100vh;padding:20px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
-.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 20px;color:var(--strong)}
-.brand img{width:38px;height:38px;flex:none;border-radius:12px;object-fit:cover;box-shadow:var(--glow)}
-.brand b{display:block;font-size:15px;letter-spacing:-.02em;white-space:nowrap}
-.brand small{display:block;color:var(--faint);font-size:12px;font-weight:500}
+/* ---------- Estructura estilo plataforma (2026-11-28) ----------
+   Barra superior a lo ancho y fija (--toph), debajo menú lateral + contenido dentro de --wrap.
+   El Inicio añade su columna derecha (.home > .rail) a partir de 1100 px. */
+:root{--wrap:1440px;--toph:64px;--side:232px}
+.top{position:relative;z-index:45;height:var(--toph)} /* sin fondo ni línea: todo junto, sobre el mismo degradado (Yuri); no se queda fija */
+.top-in{max-width:var(--wrap);height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:12px}
+.tbrand{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;min-width:0;width:var(--side);color:var(--strong)}
+.tbrand img{width:36px;height:36px;flex:none;border-radius:10px;object-fit:cover}
+.tbrand:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:10px}
+.tb-name{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.tb-name b{font-size:15px;letter-spacing:-.015em;white-space:nowrap}
+.tb-name small{color:var(--faint);font-size:11.5px;font-weight:500}
+.tb-name .l-short{display:none}
+.top-r{display:flex;align-items:center;gap:4px;margin-left:auto}
+.top-r .installbtn{margin-right:8px}
+.iconbtn.tb{width:40px;height:40px;border-radius:50%;border-color:transparent;background:transparent;position:relative}
+.iconbtn.tb:hover{background:var(--hover);border-color:transparent}
+.iconbtn.tb.on{color:var(--accent-hi);background:rgba(var(--accent-rgb),.12)}
+.iconbtn.tb .dotn.static{top:2px;right:0}
+.me-wrap{position:relative;margin-left:6px}
+.avbtn{font:inherit;cursor:pointer;display:flex;align-items:center;gap:10px;padding:3px 12px 3px 3px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);position:relative;transition:background .15s,border-color .15s}
+.avbtn:hover,.avbtn.open{border-color:var(--line-strong);background:var(--hover)}
+.avbtn.on{border-color:rgba(var(--accent-rgb),.55)}
+.av-meta{display:flex;flex-direction:column;text-align:left;line-height:1.2;min-width:0;max-width:150px}
+.av-meta b{font-size:13.5px;color:var(--strong);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-meta small{font-size:11.5px;color:var(--faint)}
+.avbtn .chev{width:12px;height:12px;flex:none;transition:transform .15s}
+.avbtn.open .chev{transform:rotate(180deg)}
+.dotn.mini{position:absolute;top:1px;left:27px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--panel)}
+.memenu{position:absolute;right:0;top:calc(100% + 8px);z-index:46;width:264px;background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:rxIn .14s ease-out}
+.mm-head{display:flex;align-items:center;gap:11px;padding:10px 10px 12px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.mm-who{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.mm-who b{color:var(--strong);font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-who small{color:var(--faint);font-size:12px}
+.memenu [role=menuitem]{font:inherit;font-size:14px;cursor:pointer;width:100%;display:flex;align-items:center;gap:12px;padding:9px 10px;border:0;border-radius:9px;background:none;color:var(--text);text-align:left}
+.memenu [role=menuitem]:hover,.memenu [role=menuitem]:focus-visible{background:var(--hover);color:var(--strong);outline:none}
+.memenu [role=menuitem] svg{width:18px;height:18px;color:var(--muted)}
+.memenu [role=menuitem] span{flex:1}
+.memenu .mm-note{font-size:11.5px;color:var(--faint)}
+.memenu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+
+.shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);gap:32px;max-width:var(--wrap);margin:0 auto;padding:0 24px}
+.main{min-width:0;padding:24px 0 60px}
+.sidebar{position:sticky;top:0;height:100vh;padding:20px 0;overflow-y:auto}
 .nav{display:flex;flex-direction:column;gap:2px}
 .nav button{
   font:inherit;font-weight:500;font-size:14.5px;cursor:pointer;color:var(--muted);background:none;border:0;
-  display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 12px;border-radius:11px;position:relative;
+  display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:9px 12px;border-radius:10px;position:relative;
   transition:background .15s,color .15s;
 }
+.nav button .nav-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav button:hover{background:var(--hover);color:var(--strong)}
-.nav button.on{color:var(--strong);background:rgba(var(--accent-rgb),.13);font-weight:600}
-.nav button.on::before{content:"";position:absolute;left:-1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--neon);box-shadow:0 0 10px var(--neon)}
+.nav button.on{color:var(--strong);background:rgba(var(--accent-rgb),.12);font-weight:600}
+.nav button.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--neon);box-shadow:0 0 6px rgba(var(--neon-rgb),.6)}
 .nav button.on svg{color:var(--accent-hi)}
 .nbadge{margin-left:auto;font-size:11px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:999px;padding:1px 8px;white-space:nowrap}
 .nbadge.warn{background:var(--warn);color:#1a1200}
-.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:16px}
-.me{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
-.me .who{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.me .who small{display:block;color:var(--faint);font-weight:500;font-size:12px}
-/* Vista de alumno (profesor): botón para entrar y barra fija para salir */
+html[data-theme="light"] .nbadge.warn{color:#fff}
+.phead{display:flex;align-items:center;min-height:36px;margin:0 0 18px}
+.phead h1.sec{font-size:24px;letter-spacing:-.02em}
+/* Vista de alumno (profesor): barra fija para salir */
 .pvbtn{justify-content:center}
-.iconbtn.sm.pvicon{width:auto;padding:0 7px;gap:3px;display:inline-flex;align-items:center}
 .pvbtn svg,.pvbar svg{width:17px;height:17px}
-.pvbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:8px 8px 8px 14px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--neon);box-shadow:0 0 18px rgba(var(--neon-rgb),.18);color:var(--strong);font-size:14px}
+.pvbar{position:sticky;top:10px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:8px 8px 8px 14px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--neon);box-shadow:0 0 18px rgba(var(--neon-rgb),.18);color:var(--strong);font-size:14px}
 .pvbar .t{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
 .pvbar .t svg{color:var(--neon);flex:none}
 .pvbar .sub{font-size:12.5px}
@@ -118,16 +153,6 @@ svg.i{width:20px;height:20px;flex:none}
 .iconbtn.sm{width:32px;height:32px;border-radius:9px;border-color:transparent;background:transparent}
 .iconbtn.sm svg{width:18px;height:18px}
 
-/* Interruptor claro / oscuro */
-.theme{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
-.theme button{flex:1;font:inherit;cursor:pointer;border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center;justify-content:center;transition:background .15s,color .15s}
-.theme button svg{width:15px;height:15px}
-.theme button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:var(--glow-sm)}
-
-/* Barra superior */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0 0 18px}
-.top h1.sec{font-size:24px;letter-spacing:-.02em}
-.top-r{display:flex;align-items:center;gap:8px;margin-left:auto}
 /* Botón "Instalar app": visible mientras no tenga la app del móvil. Neón, pero quieto (sin parpadeos) */
 .installbtn{font:inherit;font-size:13.5px;font-weight:650;cursor:pointer;height:38px;padding:0 13px;border-radius:11px;display:inline-flex;align-items:center;gap:7px;color:var(--neon);background:rgba(var(--accent-rgb),.10);border:1.5px solid var(--neon);box-shadow:0 0 12px rgba(var(--neon-rgb),.35),inset 0 0 10px rgba(var(--neon-rgb),.10);white-space:nowrap;transition:filter .15s,background .15s}
 .installbtn:hover{background:rgba(var(--accent-rgb),.2);filter:brightness(1.1)}
@@ -332,8 +357,8 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .bdgs.sm .bdg-n{width:32px;height:32px;font-size:13px}
 .bdg.locked{border-style:dashed;border-color:var(--line);opacity:.6}
 .bdg.locked .bdg-n{color:var(--faint);border-color:var(--line);background:none}
-.fy-chip.warn{border-color:rgba(var(--warn-rgb),.55);background:rgba(var(--warn-rgb),.1)}
-.fy-chip.warn .fyc-ic{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
+
+
 .adue-list{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
 .adue-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
 .adue-row:hover,.adue-row:focus-visible{border-color:var(--accent)}
@@ -377,23 +402,29 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .install-how{padding:14px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
 @media (max-width:420px){.installbtn{padding:0 10px;font-size:13px}.installbtn .l-long{display:none}}
 @media (min-width:421px){.installbtn .l-short{display:none}}
-.mbrand{display:none;align-items:center;gap:10px;font-weight:700;color:var(--strong)}
-.mbrand img{width:34px;height:34px;border-radius:10px;box-shadow:var(--glow)}
 .only-m{display:none}
 
 /* Barra inferior (móvil) */
 .tabbar{display:none}
 
-
-
-@media (max-width:1180px){ .shell{grid-template-columns:220px minmax(0,1fr);gap:22px} }
+@media (max-width:1180px){ :root{--side:216px} .shell{gap:24px} .av-meta,.avbtn .chev{display:none} .avbtn{padding:3px} .dotn.mini{left:auto;right:-1px} }
 @media (max-width:760px){
+  :root{--toph:58px}
+  .top-in{padding:0 10px 0 16px;gap:8px}
+  .tbrand{width:auto}
+  .tbrand img{width:32px;height:32px}
+  .tb-name small,.tb-name .l-long{display:none}
+  .tb-name .l-short{display:block;font-size:16px}
+  .top-r{gap:2px}
+  .top-r .installbtn{margin-right:4px}
+  .only-d{display:none!important}
+  .me-wrap{margin-left:4px}
+  .avbtn{border-color:transparent;background:none}
   .shell{display:block;padding:0 16px}
   .sidebar{display:none}
-  .main{padding:10px 0 96px}
-  .top{margin-bottom:14px}
-  .top h1.sec{display:none}
-  .mbrand,.only-m{display:flex}
+  .main{padding:12px 0 96px}
+  .phead{display:none}
+  .only-m{display:flex}
   .iconbtn.only-m{display:inline-grid}
   .tabbar{
     display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
@@ -567,24 +598,55 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .composer-main textarea{min-height:64px}
 .composer .actions{justify-content:flex-end}
 .feed{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+/* "Para ti" (alumno) y "Tu día" (profesor). Base: fila de chips encima de las publicaciones (pantallas medianas y móvil). */
+.rail:empty{display:none}
 .foryou{margin-bottom:14px}
+.fy-head,.fy-empty,.foryou.is-empty,.rail-card{display:none}
 .fy-chips{display:flex;flex-wrap:wrap;gap:10px}
-.fy-chip{display:inline-flex;align-items:center;gap:10px;max-width:100%;min-width:0;flex:1 1 200px;font:inherit;text-align:left;cursor:pointer;color:var(--strong);background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:8px 18px 8px 8px;box-shadow:var(--shadow);transition:background .15s,border-color .15s}
-.fy-chip:hover{background:var(--hover)}
-.fyc-ic{width:34px;height:34px;border-radius:50%;background:rgba(var(--accent-rgb),.13);color:var(--accent-hi);display:grid;place-items:center;flex:none}
-.fyc-ic svg{width:17px;height:17px}
+.fy-chip{display:inline-flex;align-items:center;gap:10px;max-width:100%;min-width:0;flex:1 1 200px;font:inherit;text-align:left;cursor:pointer;color:var(--strong);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 16px 8px 8px;position:relative;transition:background .15s,border-color .15s}
+.fy-chip:hover{background:var(--hover);border-color:var(--line-strong)}
+.fyc-ic{width:36px;height:36px;border-radius:10px;background:rgba(var(--accent-rgb),.12);color:var(--accent-hi);display:grid;place-items:center;flex:none}
+.fyc-ic svg{width:18px;height:18px}
 .fyc-t{display:flex;flex-direction:column;min-width:0}
-.fyc-t b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fyc-t small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fy-chip.bad{border-color:rgba(var(--bad-rgb),.55);background:rgba(var(--bad-rgb),.1)}
-.fy-chip.bad .fyc-ic{background:rgba(var(--bad-rgb),.15);color:var(--bad)}
-.fy-chip.new{border-color:var(--accent);background:rgba(var(--accent-rgb),.14);box-shadow:var(--glow-sm)}
+.fyc-t b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fyc-t small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Estados: el color va en el icono y en el detalle, no en todo el bloque (sobrio; resalta lo que importa) */
+.fy-chip.bad .fyc-ic{background:rgba(var(--bad-rgb),.14);color:var(--bad)}
+.fy-chip.bad small{color:var(--bad)}
+.fy-chip.warn .fyc-ic{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
+
+.fy-chip.new::after{content:"";position:absolute;top:50%;right:12px;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
+.fy-chip.new{padding-right:30px}
+
+/* PC ancho: el Inicio en dos columnas y la de la derecha se queda fija al bajar */
+@media (min-width:1100px){
+  .home{display:grid;grid-template-columns:minmax(0,1fr) 312px;column-gap:28px;align-items:start}
+  .home>*{grid-column:1;min-width:0}
+  .home>.rail{grid-column:2;grid-row:1/span 30;position:sticky;top:24px;display:flex;flex-direction:column;gap:16px}
+  .home>.rail:empty{display:none}
+  .pvbar~.home>.rail{top:82px} /* en la vista de alumno, debajo de su barra */
+  .rail .foryou,.rail .rail-card{display:block;margin:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 8px 8px;box-shadow:var(--shadow)}
+  .rail .fy-head{display:block;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:2px 10px 10px;margin:0}
+  .rail .fy-empty{display:flex;align-items:center;gap:8px;margin:0;padding:4px 10px 8px;font-size:13.5px;color:var(--muted)}
+  .rail .fy-empty svg{color:var(--ok)}
+  .rail .fy-chips{flex-direction:column;flex-wrap:nowrap;gap:0}
+  .rail .fy-chip{flex:none;width:100%;border:0;border-radius:11px;background:none;padding:9px 10px;gap:12px;align-items:flex-start}
+  .rail .fy-chip+.fy-chip::before{content:"";position:absolute;left:60px;right:10px;top:0;height:1px;background:var(--line)}
+  .rail .fy-chip:hover{background:var(--hover)}
+  .rail .fy-chip:hover::before,.rail .fy-chip:hover+.fy-chip::before{opacity:0}
+  .rail .fyc-ic{width:38px;height:38px;border-radius:11px}
+  .rail .fyc-t{padding-top:1px}
+  .rail .fyc-t b{font-size:14.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+  .rail .fyc-t small{margin-top:2px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.35}
+  .rail .fy-chip.new::after{top:22px;margin-top:0}
+}
 @media (max-width:760px){
   .foryou{margin:0 -16px 12px}
   .fy-chips{flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .fy-chips::-webkit-scrollbar{display:none}
-  .fy-chip{flex:none;max-width:62vw;gap:7px;padding:7px 13px 7px 10px;box-shadow:none}
-  .fy-chip.new{box-shadow:var(--glow-sm)}
+  .fy-chip{flex:none;max-width:62vw;gap:7px;padding:7px 13px 7px 10px;border-radius:999px}
+  .fy-chip.new{padding-right:26px}
+  .fy-chip.new::after{right:10px;width:7px;height:7px;margin-top:-3.5px}
   .fyc-ic{width:auto;height:auto;background:none!important}
   .fyc-ic svg{width:16px;height:16px}
   .fyc-t b{font-size:13.5px;font-weight:650}
@@ -928,8 +990,6 @@ a[data-watch]{cursor:pointer;-webkit-touch-callout:none}
 /* ---------- Campanita y contadores ---------- */
 .bell{position:relative}
 .dotn.static{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:10.5px;font-weight:700;line-height:18px;font-style:normal;text-align:center;box-shadow:var(--glow-sm)}
-.avbtn{padding:0;overflow:hidden;border-radius:50%}
-.avbtn .av{width:100%!important;height:100%!important}
 .nlist{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
 .nrow{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;cursor:pointer;transition:background .15s}
 .nrow:hover{background:var(--hover)}
@@ -1282,6 +1342,115 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
 @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .loading{color:var(--muted);text-align:center;padding:60px 0}
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+
+/* ---------- Pulido estilo plataforma (2026-11-28, Yuri: "como los paneles de Evenant", con nuestra paleta) ----------
+   Paneles planos: radio 12, sin sombra ni brillo, borde muy suave. Los posts van por zonas, como en Evenant:
+   cabecera + contenido + reacciones arriba y, abajo, una franja algo más oscura con los comentarios. */
+:root,html[data-theme="dark"]{--pline:rgba(98,150,255,.10);--pfoot:#08112a;--bubble:#122045}
+html[data-theme="light"]{--pline:rgba(30,60,140,.10);--pfoot:#f6f8fd;--bubble:#eef2fa}
+.panel,.card,.dcard,.fpost{border-radius:12px}
+html[data-theme="dark"] :is(.panel,.card,.dcard,.fpost){box-shadow:none;border-color:var(--pline)}
+html[data-theme="light"] :is(.panel,.card,.dcard,.fpost){box-shadow:0 1px 2px rgba(20,33,61,.05);border-color:var(--pline)}
+.empty{border-radius:12px}
+.main{padding-top:8px}
+
+/* Caja de publicar: compacta (una línea) y crece al escribir */
+.composer{padding:14px 16px;align-items:flex-start}
+.composer-main{gap:10px}
+.composer-main textarea{min-height:44px;height:44px;resize:none;border-radius:10px;padding-top:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:height .15s}
+.composer-main textarea:focus,.composer-main textarea:not(:placeholder-shown){height:104px;overflow:auto;white-space:pre-wrap}
+.composer .actions .btn{padding:7px 12px;font-size:13.5px}
+.composer .actions .btn svg{width:16px;height:16px}
+
+/* Post */
+.fpost{padding:18px 20px;gap:12px}
+.fhead{gap:11px}
+.fhead b{font-size:15px}
+.fhead .sub{font-size:12.5px}
+.fbody{font-size:15px;line-height:1.6}
+.fpost>.factions{border-top:0;padding-top:0;gap:18px;margin-top:-2px}
+.fpost>.factions .linkbtn{font-size:13px}
+.fpost>.factions .linkbtn:not(.mute){color:var(--muted)}
+.fpost>.factions .linkbtn:not(.mute):hover{color:var(--accent-hi)}
+.fpost>.cm-peek{margin:2px -20px -18px;padding:14px 20px 16px;background:var(--pfoot);border-top:1px solid var(--pline);border-radius:0 0 12px 12px;gap:10px}
+.peek-bubble{background:var(--bubble);border:1px solid transparent;border-radius:10px}
+.peek-cmt:hover .peek-bubble{border-color:var(--pline);background:var(--bubble)}
+.peek-input{border-radius:10px;background:var(--panel);border-color:var(--pline)}
+.peek-rx{box-shadow:none;border-color:var(--pline)}
+.rxb{border-color:var(--pline);background:var(--panel2)}
+.rxb.mine{background:rgba(var(--accent-rgb),.13)}
+
+/* Columna derecha: títulos como los de Evenant (normales, en negrita), no en mayúsculas */
+@media (min-width:1100px){
+  .rail .foryou,.rail .rail-card{box-shadow:none;border-color:var(--pline);border-radius:12px;padding:16px 8px 8px}
+  .rail .fy-head{font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--strong);padding:0 10px 10px}
+}
+.fy-chip{border-color:var(--pline);border-radius:12px}
+
+/* Cápsulas con su color de siempre (Yuri: que llamen la atención): cada aviso es una ficha tintada según su estado */
+.fy-chip{background:rgba(var(--accent-rgb),.07);border-color:rgba(var(--accent-rgb),.22)}
+.fy-chip:hover{background:rgba(var(--accent-rgb),.12)}
+.fy-chip.bad{background:rgba(var(--bad-rgb),.10);border-color:rgba(var(--bad-rgb),.45)}
+.fy-chip.bad:hover{background:rgba(var(--bad-rgb),.15)}
+.fy-chip.warn{background:rgba(var(--warn-rgb),.10);border-color:rgba(var(--warn-rgb),.45)}
+.fy-chip.warn:hover{background:rgba(var(--warn-rgb),.15)}
+.fy-chip.new{background:rgba(var(--accent-rgb),.15);border-color:rgba(var(--accent-rgb),.65)}
+.fy-chip.new:hover{background:rgba(var(--accent-rgb),.2)}
+@media (min-width:1100px){
+  .rail .fy-chips{gap:8px;padding:0 4px}
+  .rail .fy-chip{border:1px solid rgba(var(--accent-rgb),.22);border-radius:10px;padding:10px 12px}
+  .rail .fy-chip.bad{border-color:rgba(var(--bad-rgb),.45)}
+  .rail .fy-chip.warn{border-color:rgba(var(--warn-rgb),.45)}
+  .rail .fy-chip.new{border-color:rgba(var(--accent-rgb),.65)}
+  .rail .fy-chip+.fy-chip::before{display:none}
+  .rail .fy-chip:hover{background:rgba(var(--accent-rgb),.12)}
+  .rail .fy-chip.bad:hover{background:rgba(var(--bad-rgb),.15)}
+  .rail .fy-chip.warn:hover{background:rgba(var(--warn-rgb),.15)}
+  .rail .fy-chip.new:hover{background:rgba(var(--accent-rgb),.2)}
+  .rail .fy-chip.new::after{top:16px}
+  .rail .fyc-ic{background:var(--panel)}
+}
+
+/* Pie del post como en Evenant: iconos de línea (me gusta y comentar), sin textos */
+.rxb.main{border-color:transparent;background:transparent;color:var(--muted);padding:4px 8px;gap:6px;font-size:14px;font-weight:600}
+.rxb.main:hover{background:var(--hover);border-color:transparent;color:var(--strong)}
+.rxb.main .rxe{display:inline-flex}
+.rxb.main svg.i{width:19px;height:19px}
+.rxb.main:not(.mine) .rxe{filter:none;opacity:1}
+.rxb.main.mine{background:transparent;border-color:transparent;color:var(--accent-hi)}
+.rxb.main.mine:hover{background:rgba(var(--accent-rgb),.10)}
+.rxb.main.mine svg.i{fill:rgba(var(--accent-rgb),.28)}
+.cmt-foot .rxb.main{padding:2px 6px}
+.cmt-foot .rxb.main svg.i{width:16px;height:16px}
+.fbar{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:-2px 0 0 -8px}
+.fbar>.rx,.fbar .rx-list{display:contents} /* me gusta, demás emojis y comentar en una fila; "Tú y Lu" a la derecha */
+.fbar-cm{order:1}
+.fbar .rx-who{order:2;margin-left:auto}
+.fbar-cm{font:inherit;cursor:pointer;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:4px 8px;display:inline-flex;align-items:center;height:30px;transition:background .15s,color .15s}
+.fbar-cm:hover{background:var(--hover);color:var(--strong)}
+.fbar-cm svg.i{width:19px;height:19px}
+/* Herramientas arriba a la derecha del post: editar / denunciar y la cruz de eliminar */
+.fpost>.fhead>div:not(.ftools){min-width:0;flex:1}
+.ftools{display:flex;gap:2px;margin-left:auto;align-self:flex-start;margin-top:-4px;margin-right:-8px}
+.ftool{font:inherit;cursor:pointer;color:var(--faint);background:transparent;border:0;border-radius:8px;width:32px;height:32px;display:grid;place-items:center;transition:background .15s,color .15s}
+.ftool svg.i{width:17px;height:17px}
+.ftool:hover{background:var(--hover);color:var(--strong)}
+.ftool.del:hover{background:rgba(var(--bad-rgb),.12);color:var(--bad)}
+.ftool.done{cursor:default;color:var(--bad);opacity:.7}
+.ftool.done:hover{background:transparent}
+
+/* Stories en la barra de arriba (PC; Yuri: así el Inicio empieza a la misma altura que las columnas de los lados).
+   Empiezan justo encima de la columna central; en el móvil siguen encima de las publicaciones. */
+.top-st{flex:1;min-width:0;margin-left:20px;display:flex;align-items:center;height:100%}
+.top-st .stories{margin:0;overflow:hidden;min-width:0}
+.top-st .st-row{gap:10px;padding:0 2px;align-items:center}
+.top-st .st-item{width:auto}
+.top-st .st-name{display:none}
+.top-st .st-ring{padding:2px}
+.top-st .st-plus{top:auto;bottom:-2px;right:-3px;width:18px;height:18px;font-size:13px;line-height:14px}
+.top-st .st-ring.new{box-shadow:none}
+@media (min-width:761px){ .home>.stories{display:none} .sidebar{padding-top:8px} } /* el menú empieza a la altura de los paneles */
+@media (max-width:760px){ .top-st{display:none} }
 </style>
 </head>
 <body>
@@ -1306,7 +1475,10 @@ code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;pad
   <symbol id="i-song" viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13a3 3 0 1 1-2-2.8V6.3L11 7.6V18a3 3 0 1 1-2-2.8z"/></symbol>
   <symbol id="i-playlist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h12M3 11h12M3 16h7"/><path d="M18 8v9.2a2.3 2.3 0 1 1-1.5-2.1V8z" fill="currentColor"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-thumb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v10H4.5A1.5 1.5 0 0 1 3 18.5v-7A1.5 1.5 0 0 1 4.5 10z"/><path d="M7 10l3.6-6.6a1.9 1.9 0 0 1 3.4 1.5L13 9.5h5.6a2 2 0 0 1 2 2.4l-1.4 6.6a2 2 0 0 1-2 1.5H7"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-chat"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
@@ -1873,7 +2045,7 @@ function rxBar(type, id) {
   const short = u => u === S.user.id ? 'Tú' : ((S.dir[u] || {}).public_name || 'Alumno');
   const sum = !people.length ? '' : people.length === 1 ? short(people[0]) : people.length === 2 ? `${short(people[0])} y ${short(people[1])}` : `${short(people[0])} y ${people.length - 1} más`;
   return `<div class="rx" data-rx="${type}:${id}">
-    <div class="rx-list"><button class="rxb main ${like.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="like" title="${esc(tip)}" aria-label="Me gusta" aria-haspopup="true"><span class="rxe">${like.e}</span>${like.n ? `<span>${like.n}</span>` : ''}</button>${rest.filter(x => x.n).map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" title="${esc(x.names)}">${x.e}<span>${x.n}</span></button>`).join('')}${sum ? `<button type="button" class="rx-who" data-rxwho="${type}:${id}" aria-haspopup="true" title="Ver quién ha reaccionado">${esc(sum)}</button>` : ''}</div>
+    <div class="rx-list"><button class="rxb main ${like.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="like" title="${esc(tip)}" aria-label="Me gusta" aria-haspopup="true"><span class="rxe">${ic('thumb')}</span>${like.n ? `<span>${like.n}</span>` : ''}</button>${rest.filter(x => x.n).map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" title="${esc(x.names)}">${x.e}<span>${x.n}</span></button>`).join('')}${sum ? `<button type="button" class="rx-who" data-rxwho="${type}:${id}" aria-haspopup="true" title="Ver quién ha reaccionado">${esc(sum)}</button>` : ''}</div>
     <div class="rx-pick" role="menu" hidden>${data.map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" role="menuitem" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" aria-label="${x.k}">${x.e}</button>`).join('')}</div>
   </div>`;
 }
@@ -2262,8 +2434,7 @@ function uiBusy() {
 }
 function refreshChrome() {
   const secs = sections();
-  $$('.bell').forEach(b => { b.outerHTML = bellHtml(); });
-  if (!installBtnHtml()) $$('.installbtn').forEach(b => b.remove());
+  const tr = $('.top-r'); if (tr) tr.outerHTML = topRight(secs); // campanita, Mensajes, menú de la cuenta (con sus contadores)
   const nav = $('.sidebar .nav'); if (nav) nav.outerHTML = navHtml(secs);
   const tb = $('.tabbar'); if (tb) tb.outerHTML = tabbar(secs);
 }
@@ -3034,17 +3205,19 @@ function storyGroups() { // tú primero; luego las que no has visto y después l
   return Object.entries(by).map(([author, l]) => ({ author, list: l.sort(storyTime), last: l[l.length - 1].created_at, seen: l.every(storySeen) }))
     .sort((a, b) => (b.author === S.user.id) - (a.author === S.user.id) || a.seen - b.seen || b.last.localeCompare(a.last));
 }
-function storiesBar() {
+// top: versión compacta para la barra superior del PC (en el Inicio), sin nombres debajo
+function storiesBar(top = false) {
+  const sz = top ? 40 : 58;
   const me = S.user.id, gs = storyGroups(), mine = gs.find(g => g.author === me);
-  const others = gs.filter(g => g.author !== me).map(g => `<button type="button" class="st-item" data-action="story-open" data-id="${g.author}" aria-label="Ver la story de ${esc(whoName(g.author))}">
-      <span class="st-ring${g.seen ? '' : ' new'}">${avatarHtml(g.author, 58)}</span><span class="st-name">${esc(whoName(g.author))}</span></button>`).join('');
-  return `<section class="stories" id="storiesBar" aria-label="Stories"><div class="st-row">
+  const others = gs.filter(g => g.author !== me).map(g => `<button type="button" class="st-item" data-action="story-open" data-id="${g.author}" aria-label="Ver la story de ${esc(whoName(g.author))}" title="${esc(whoName(g.author))}">
+      <span class="st-ring${g.seen ? '' : ' new'}">${avatarHtml(g.author, sz)}</span><span class="st-name">${esc(whoName(g.author))}</span></button>`).join('');
+  return `<section class="stories${top ? ' top' : ''}" data-stories="${top ? 1 : 0}" aria-label="Stories"><div class="st-row">
     <div class="st-item st-me">
-      <button type="button" class="st-ring${mine ? ' own' : ' add'}" data-action="${mine ? 'story-open' : 'story-add'}" data-id="${me}" aria-label="${mine ? 'Ver tu story' : 'Subir una story'}">${avatarHtml(me, 58)}</button>
+      <button type="button" class="st-ring${mine ? ' own' : ' add'}" data-action="${mine ? 'story-open' : 'story-add'}" data-id="${me}" aria-label="${mine ? 'Ver tu story' : 'Subir una story'}" title="${mine ? 'Tu story' : 'Subir una story'}">${avatarHtml(me, sz)}</button>
       <button type="button" class="st-plus" data-action="story-add" aria-label="Subir una story" title="Subir una story">+</button>
       <span class="st-name">Tu story</span></div>${others}</div></section>`;
 }
-function updateStoriesBar() { const el = $('#storiesBar'); if (el) el.outerHTML = storiesBar(); }
+function updateStoriesBar() { $$('[data-stories]').forEach(el => { el.outerHTML = storiesBar(el.dataset.stories === '1'); }); }
 
 // ---- Lo que lleva una story: vídeo o foto, y encima textos y dibujo (overlay) ----
 const ST_PHOTO_SEC = 5, ST_W = 1080, ST_H = 1920, ST_VBH = 1778; // el dibujo va en 1000 × 1778 (9:16)
@@ -3866,6 +4039,7 @@ async function loadDirectory() {
 function render() {
   if (!S.profile) return;
   const t = isTeacher();
+  S.meOpen = false; // el menú de la cuenta se cierra al repintar (cambiar de sección, de tema…)
   // 'feed' es el Inicio (lo primero que se ve). 'mod' es la Moderación, solo del profesor.
   if (!['feed', 'messages', 'board', 'listening', 'homework', 'profile', 'settings'].concat(t ? ['students', 'payments', 'agenda', 'mod'] : []).includes(S.section)) S.section = 'feed';
   let body;
@@ -3883,10 +4057,11 @@ function render() {
     default: body = feedView();
   }
   const secs = sections(), here = secs.find(s => s.id === S.section);
-  // Sin columna derecha (decisión de Yuri, 2026-11-23): escuchas y compañeros ya tienen su sección; menos distracciones
-  $('#app').innerHTML = `<div class="shell">
+  // Diseño 2026-11-28 (Yuri, inspirado en Evenant): barra superior a lo ancho con Mensajes, tema, campanita y
+  // menú de la cuenta; menú lateral solo con las secciones; el Inicio lleva columna derecha fija (forYou / homeRail).
+  $('#app').innerHTML = `${topbar(here, secs)}<div class="shell">
     ${sidebar(secs)}
-    <div class="main">${S.preview ? previewBar() : ''}${topbar(here)}${body}</div>
+    <div class="main">${S.preview ? previewBar() : ''}${S.section !== 'feed' && here ? `<div class="phead"><h1 class="sec">${esc(here.label)}</h1></div>` : ''}${body}</div>
   </div>
   ${tabbar(secs)}`;
   histSync();
@@ -3904,9 +4079,10 @@ function sections() {
   // icon: nombre del icono (si no, el id). mob: false = no sale en la barra inferior del móvil.
   const dmu = unreadDms();
   const hwn = t ? 0 : hwPending().length;
+  // top: va en la barra superior (Mensajes) o en el menú de la cuenta (Perfil, Ajustes), no en el menú lateral.
   const list = [
     { id: 'feed', label: 'Inicio', short: 'Inicio', icon: 'home' },
-    { id: 'messages', label: 'Mensajes', short: 'Mensajes', icon: 'chat', n: dmu, badge: dmu ? `${dmu} sin leer` : '' },
+    { id: 'messages', label: 'Mensajes', short: 'Mensajes', icon: 'chat', n: dmu, badge: dmu ? `${dmu} sin leer` : '', top: true },
     { id: 'board', label: 'Avisos', short: 'Avisos', n: unread, badge: unread ? `${unread} nuevo${unread > 1 ? 's' : ''}` : '' },
     { id: 'listening', label: MODULE_LISTENING, short: 'Escuchas' },
     { id: 'homework', label: MODULE_HOMEWORK, short: 'Deberes', icon: 'homework', n: hwn, badge: hwn ? `${hwn} pendiente${hwn > 1 ? 's' : ''}` : '' }
@@ -3918,46 +4094,56 @@ function sections() {
   if (t) list.push({ id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', mob: false });
   // En el móvil del profesor no cabe todo: a su Perfil se llega con su foto, arriba
   const mreq = t ? 0 : mateRequestsIn().length; // solicitudes de compañero sin responder
-  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t, n: mreq, badge: mreq ? `${mreq} solicitud${mreq > 1 ? 'es' : ''}` : '' });
+  list.push({ id: 'profile', label: 'Perfil', short: 'Perfil', mob: !t, n: mreq, badge: mreq ? `${mreq} solicitud${mreq > 1 ? 'es' : ''}` : '', top: true });
   if (t) list.push({ id: 'mod', label: 'Moderación', short: 'Moderar', icon: 'shield', n: reps, badge: reps ? `${reps} denuncia${reps > 1 ? 's' : ''}` : '', cls: 'warn' });
   // En el móvil, a Ajustes se llega desde el botón ⚙ de Perfil (como en Instagram)
-  list.push({ id: 'settings', label: 'Ajustes', short: 'Ajustes', icon: 'gear', mob: false });
+  list.push({ id: 'settings', label: 'Ajustes', short: 'Ajustes', icon: 'gear', mob: false, top: true });
   return list;
 }
-function themeSwitch() {
-  const th = document.documentElement.dataset.theme;
-  return `<div class="theme" role="group" aria-label="Tema">
-    <button data-action="theme" data-t="light" aria-pressed="${th === 'light'}">${ic('sun')}Claro</button>
-    <button data-action="theme" data-t="dark" aria-pressed="${th !== 'light'}">${ic('moon')}Oscuro</button></div>`;
+// Menú lateral: las secciones seguidas, sin grupos (Yuri). Lo personal (Mensajes, Perfil, Ajustes) va arriba.
+const navHtml = secs => `<nav class="nav">${secs.filter(s => !s.top).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.icon || s.id)}<span class="nav-l">${esc(s.label)}</span>${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
+const sidebar = secs => `<aside class="sidebar">${navHtml(secs)}</aside>`;
+/* Barra superior a lo ancho (PC y móvil). PC: marca, Mensajes, tema, campanita y la foto, que abre el menú de la
+   cuenta (Perfil, Ajustes, Ver como alumno, Salir). Móvil: Mensajes va abajo y la foto lleva directa al Perfil. */
+function topbar(cur, secs) {
+  return `<header class="top"><div class="top-in">
+    <button type="button" class="tbrand" data-action="section" data-s="feed" aria-label="Ir al Inicio"><img src="logo.png" alt=""><span class="tb-name"><b class="l-long">${esc(APP_NAME)}</b><b class="l-short">${esc(APP_SHORT)}</b><small>Clases de guitarra</small></span></button>
+    ${S.section === 'feed' ? `<div class="top-st">${storiesBar(true)}</div>` : ''}
+    ${topRight(secs || sections())}
+  </div></header>`;
 }
-const navHtml = secs => `<nav class="nav">${secs.map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}">${ic(s.icon || s.id)}${esc(s.label)}${s.badge ? `<span class="nbadge ${s.cls || ''}">${s.badge}</span>` : ''}</button>`).join('')}</nav>`;
-function sidebar(secs) {
+function topRight(secs) {
+  const t = isTeacher(), th = document.documentElement.dataset.theme;
+  const msg = secs.find(s => s.id === 'messages'), prof = secs.find(s => s.id === 'profile');
+  const dot = n => n ? `<i class="dotn static">${n > 9 ? '9+' : n}</i>` : '';
+  const on = (...ids) => ids.includes(S.section) ? ' on' : '';
+  return `<div class="top-r">
+    ${installBtnHtml()}
+    <button class="iconbtn tb only-d${on('messages')}" data-action="section" data-s="messages" title="Mensajes" aria-label="Mensajes${msg.n ? ` (${msg.n} sin leer)` : ''}">${ic('chat')}${dot(msg.n)}</button>
+    <button class="iconbtn tb" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="${th === 'light' ? 'Modo oscuro' : 'Modo claro'}" aria-label="Cambiar a modo ${th === 'light' ? 'oscuro' : 'claro'}">${ic(th === 'light' ? 'moon' : 'sun')}</button>
+    ${bellHtml()}
+    <div class="me-wrap">
+      <button class="avbtn${S.meOpen ? ' open' : ''}${on('profile', 'settings')}" data-action="me-menu" title="Tu cuenta" aria-label="Tu cuenta" aria-haspopup="menu" aria-expanded="${!!S.meOpen}">${avatarHtml(S.user.id, 32)}<span class="av-meta"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${prof.n ? '<i class="dotn mini"></i>' : ''}</button>
+      ${S.meOpen ? meMenu(prof) : ''}
+    </div>
+  </div>`;
+}
+function meMenu(prof) {
   const t = isTeacher();
-  return `<aside class="sidebar">
-    <div class="brand"><img src="logo.png" alt=""><div><b>${esc(APP_NAME)}</b><small>Clases de guitarra</small></div></div>
-    ${navHtml(secs)}
-    <div class="side-foot">
-      ${themeSwitch()}
-      <div class="me">${avatarHtml(S.user.id, 36)}<div class="who">${esc(S.profile.display_name)}<small>${t ? 'Profesor' : 'Alumno'}</small></div>
-        ${t && !S.preview ? `<button class="iconbtn sm pvicon" data-action="preview-on" title="Ver como alumno (solo para mirar)" aria-label="Ver como alumno">${ic('student')}${ic('eye')}</button>` : ''}
-        <button class="iconbtn sm" data-action="logout" title="Salir" aria-label="Salir">${ic('logout')}</button></div>
-    </div>
-  </aside>`;
+  const item = (attrs, icon, label, extra = '') => `<button type="button" role="menuitem" ${attrs}>${ic(icon)}<span>${label}</span>${extra}</button>`;
+  return `<div class="memenu" role="menu">
+    <div class="mm-head">${avatarHtml(S.user.id, 40)}<div class="mm-who"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></div></div>
+    ${item('data-action="section" data-s="profile"', 'profile', 'Tu perfil', prof.badge ? `<span class="nbadge">${prof.badge}</span>` : '')}
+    ${item('data-action="section" data-s="settings"', 'gear', 'Ajustes')}
+    ${t && !S.preview ? item('data-action="preview-on"', 'eye', 'Ver como alumno', '<small class="mm-note">Solo para mirar</small>') : ''}
+    <hr>
+    ${item('data-action="logout"', 'logout', S.preview ? 'Salir de la vista de alumno' : 'Cerrar sesión')}
+  </div>`;
 }
-function topbar(cur) {
-  const th = document.documentElement.dataset.theme;
-  return `<header class="top">
-    <div class="mbrand"><img src="logo.png" alt="">${esc(APP_SHORT)}</div>
-    ${S.section !== 'feed' && cur ? `<h1 class="sec">${esc(cur.label)}</h1>` : ''}
-    <div class="top-r">
-      ${installBtnHtml()}
-      <button class="iconbtn only-m" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="Cambiar tema" aria-label="Cambiar tema">${ic(th === 'light' ? 'moon' : 'sun')}</button>
-      ${bellHtml()}
-      <button class="iconbtn only-m avbtn" data-action="section" data-s="profile" title="Tu perfil" aria-label="Tu perfil">${avatarHtml(S.user.id, 30)}</button>
-    </div>
-  </header>`;
-}
-const bellHtml = () => { const n = unreadNotifs(); return `<button class="iconbtn bell" data-action="notifs" title="Notificaciones" aria-label="Notificaciones${n ? ` (${n} sin leer)` : ''}">${ic('bell')}${n ? `<i class="dotn static">${n > 9 ? '9+' : n}</i>` : ''}</button>`; };
+const meMenuClose = () => { if (!S.meOpen) return; S.meOpen = false; const tr = $('.top-r'); if (tr && S.profile) tr.outerHTML = topRight(sections()); };
+document.addEventListener('click', e => { if (S.meOpen && !e.target.closest('.me-wrap')) meMenuClose(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.meOpen) { meMenuClose(); const b = $('.avbtn'); if (b) b.focus(); } });
+const bellHtml = () => { const n = unreadNotifs(); return `<button class="iconbtn tb bell" data-action="notifs" title="Notificaciones" aria-label="Notificaciones${n ? ` (${n} sin leer)` : ''}">${ic('bell')}${n ? `<i class="dotn static">${n > 9 ? '9+' : n}</i>` : ''}</button>`; };
 function tabbar(secs) {
   return `<nav class="tabbar">${secs.filter(s => s.mob !== false).map(s => `<button class="${S.section === s.id ? 'on' : ''}" data-action="section" data-s="${s.id}" aria-label="${esc(s.label)}">${ic(s.icon || s.id)}<span class="l">${esc(s.short)}</span>${s.n ? `<i class="dotn">${s.n}</i>` : ''}</button>`).join('')}</nav>`;
 }
@@ -3968,28 +4154,54 @@ function setTheme(t) {
 
 /* =============================== INICIO =============================== */
 
-// Bloque "Para ti" encima del Inicio (alumno): una fila de chips (próxima clase, deberes, avisos sin leer, próxima escucha).
-// En el móvil se deslizan en horizontal y solo enseñan la línea principal; en el PC son más grandes y llevan el detalle debajo.
+// Bloque "Para ti" del Inicio (alumno): próxima clase, deberes, avisos sin leer, racha y próxima escucha.
+// PC ancho (más de 1100 px): columna derecha fija, una fila por cosa con el detalle debajo (se ve todo el rato al bajar).
+// Pantallas medianas y móvil: fila de chips encima de las publicaciones (en el móvil se deslizan y solo llevan la línea principal).
+const fyChip = (cls, attrs, icon, main, sub) => `<button class="fy-chip${cls ? ' ' + cls : ''}" ${attrs}><span class="fyc-ic">${ic(icon)}</span><span class="fyc-t"><b>${esc(main)}</b><small>${esc(sub)}</small></span></button>`;
+function lessonWhen(iso) { // "Hoy 16:30" / "Mañana 16:30" / "Lun 16:30" y, para el detalle, "en 3 h" o "lunes 30 de noviembre"
+  const r = relDay(iso), day = r === 'hoy' ? 'Hoy' : r === 'mañana' ? 'Mañana'
+    : new Date(iso).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '');
+  const min = Math.round((new Date(iso) - Date.now()) / 60000);
+  const rel = min <= 0 ? 'Ahora' : min < 60 ? `En ${min} min` : min < 24 * 60 ? `En ${Math.round(min / 60)} h` : dayLabel(iso).replace(/^./, c => c.toUpperCase());
+  return { main: `${day.charAt(0).toUpperCase() + day.slice(1)} ${hhmm(iso)}`, rel };
+}
 function forYou() {
   if (isTeacher()) return '';
   const rs = myReadSet();
   const unread = S.posts.filter(p => !rs.has(p.id)).sort(postSort);
   const next = S.assigns.filter(a => !a.listened).sort(dueSort)[0];
   const hw = hwPending().sort(hwSort), hwOver = hw.filter(hwOverdue).length;
-  const l = nextLesson(S.user.id), out = [];
-  const chip = (cls, attrs, icon, main, sub) => `<button class="fy-chip${cls ? ' ' + cls : ''}" ${attrs}><span class="fyc-ic">${ic(icon)}</span><span class="fyc-t"><b>${esc(main)}</b><small>${esc(sub)}</small></span></button>`;
-  if (l) {
-    const r = relDay(l.starts_at), day = r === 'hoy' ? 'Hoy' : r === 'mañana' ? 'Mañana'
-      : new Date(l.starts_at).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '');
-    out.push(chip('', 'data-action="section" data-s="homework"', 'calendar', `${day.charAt(0).toUpperCase() + day.slice(1)} ${hhmm(l.starts_at)}`, 'Tu próxima clase'));
-  }
+  const l = nextLesson(S.user.id), out = [], chip = fyChip;
+  if (l) { const w = lessonWhen(l.starts_at); out.push(chip('', 'data-action="section" data-s="homework"', 'calendar', w.main, `Tu próxima clase · ${w.rel}`)); }
   if (hw.length) out.push(chip(hwOver ? 'bad' : '', 'data-action="section" data-s="homework"', 'homework', `${hw.length} ${hw.length > 1 ? 'deberes' : 'deber'}`, (hwOver ? 'Vencidos · ' : '') + hw[0].title));
   if (unread.length) out.push(chip('new', `data-action="home-open-post" data-id="${unread[0].id}"`, 'board', `${unread.length} ${unread.length > 1 ? 'avisos nuevos' : 'aviso nuevo'}`, unread[0].title));
   const sk = streakChip(chip); if (sk) out.push(sk);
   if (next) { const d = dueInfo(next); out.push(chip(d.cls === 'bad' ? 'bad' : '', `data-action="home-open-assign" data-id="${next.id}"`, 'listening', next.item.title, d.cls === 'bad' ? d.text : 'Escucha pendiente')); }
-  return out.length ? `<section class="foryou"><div class="fy-chips">${out.join('')}</div></section>` : '';
+  return `<section class="foryou${out.length ? '' : ' is-empty'}"><h2 class="fy-head">Para ti</h2>
+    ${out.length ? `<div class="fy-chips">${out.join('')}</div>` : `<p class="fy-empty">${SEEN_ICON} Estás al día: nada pendiente.</p>`}</section>`;
 }
-
+// Columna derecha del Inicio para el profesor: lo que tiene hoy (clases, respuestas, altas, denuncias, vencidas).
+// Solo en el PC ancho: en el móvil todo eso ya está en Moderación y la Agenda.
+function homeRail() {
+  if (!isTeacher()) return '';
+  const now = new Date(), ok = modActive(), out = [], chip = fyChip;
+  const up = S.lessons.filter(l => new Date(l.ends_at || l.starts_at) > now).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  if (up.length) {
+    const l = up[0], w = lessonWhen(l.starts_at), today = up.filter(x => relDay(x.starts_at) === 'hoy').length;
+    out.push(chip('', 'data-action="section" data-s="agenda"', 'calendar', `${w.main} · ${studentName(l.student_id) || 'Clase'}`,
+      `Próxima clase · ${w.rel}${today > 1 ? ` · ${today} hoy` : ''}`));
+  }
+  const unread = S.assigns.filter(a => ok.has(a.student_id) && ansUnread(a)).length;
+  const pend = S.students.filter(isPending).length, reps = S.reports.filter(r => !r.resolved).length;
+  const over = S.assigns.filter(a => ok.has(a.student_id) && isOverdue(a)).length;
+  if (unread) out.push(chip('new', 'data-action="go-mod-unread"', 'listening', `${unread} respuesta${unread > 1 ? 's' : ''} sin leer`, MODULE_LISTENING));
+  if (pend) out.push(chip('warn', 'data-action="section" data-s="students"', 'students', `${pend} por aprobar`, 'Cuentas nuevas'));
+  if (reps) out.push(chip('warn', 'data-action="section" data-s="mod"', 'shield', `${reps} denuncia${reps > 1 ? 's' : ''}`, 'En Moderación'));
+  if (over) out.push(chip('bad', 'data-action="section" data-s="mod"', 'clock', `${over} escucha${over > 1 ? 's' : ''} vencida${over > 1 ? 's' : ''}`, 'Alumnos con retraso'));
+  return `<section class="rail-card"><h2 class="fy-head">Tu día</h2>
+    ${out.length ? `<div class="fy-chips">${out.join('')}</div>` : ''}
+    ${out.length < 2 ? `<p class="fy-empty">${SEEN_ICON} ${out.length ? 'Nada más pendiente.' : 'Estás al día.'}</p>` : ''}</section>`;
+}
 /* ============================ MODERACIÓN (profesor) ============================
    Panel de trabajo del profesor: denuncias (si hay), la cola de respuestas de Escucha analítica y lo que necesita
    atención (vencidas, por aprobar). S.mod = { tab: 'unread'|'all', stu: '' (alumno), lim: cuántas filas se ven }.
@@ -4093,7 +4305,9 @@ function ansReviewModal(aid) {
 /* ================================= FEED =============================== */
 function feedView() {
   const list = S.fposts.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return `${storiesBar()}${forYou()}<form id="feedForm" class="panel composer${vdHas('feed-new') ? ' has-vd' : ''}">
+  // .home: en el PC ancho, rejilla de dos columnas (publicaciones | columna derecha fija con .rail); en pantallas
+  // más estrechas .rail se queda en su sitio del flujo, entre las stories y la caja de publicar.
+  return `<div class="home">${storiesBar()}<aside class="rail">${isTeacher() ? homeRail() : forYou()}</aside><form id="feedForm" class="panel composer${vdHas('feed-new') ? ' has-vd' : ''}">
       ${avatarHtml(S.user.id, 38)}
       <div class="composer-main">
         <textarea name="body" maxlength="2000" rows="3" placeholder="¿Qué estás tocando? Comparte un riff, una duda o un enlace de Spotify o YouTube"></textarea>
@@ -4105,7 +4319,7 @@ function feedView() {
       </div></form>
     ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
-      : `<div class="empty">Todavía no hay publicaciones. ¡Estrena el feed!</div>`}`;
+      : `<div class="empty">Todavía no hay publicaciones. ¡Estrena el feed!</div>`}</div>`;
 }
 
 // Primer enlace de un texto (con o sin https://), normalizado; null si no hay o no es válido
@@ -4128,17 +4342,12 @@ function feedCard(p) {
   const mine = p.author_id === S.user.id, t = isTeacher();
   const reported = S.reports.some(r => r.target_type === 'feed_post' && r.target_id === p.id && r.reporter_id === S.user.id);
   return `<article class="fpost ${isTeacherId(p.author_id) ? 'by-teacher' : ''}" data-fpost="${p.id}">
-    <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div></div>
+    <div class="fhead">${whoLink(p.author_id, avatarHtml(p.author_id, 42))}<div>${whoLink(p.author_id, `<b>${esc(whoName(p.author_id))}</b>`)}${teacherTag(p.author_id)}<div class="sub">${timeAgo(p.created_at)}${editedTag(p)}</div></div>
+      <div class="ftools">${mine ? `<button class="ftool" data-action="feed-edit" data-id="${p.id}" title="Editar" aria-label="Editar">${ic('edit')}</button>` : ''}${(!mine && !t) ? (reported ? `<span class="ftool done" title="Ya lo has denunciado">${ic('flag')}</span>` : `<button class="ftool" data-action="report" data-type="feed_post" data-id="${p.id}" title="Denunciar" aria-label="Denunciar">${ic('flag')}</button>`) : ''}${(mine || t) ? `<button class="ftool del" data-action="feed-delete" data-id="${p.id}" title="Eliminar" aria-label="Eliminar">${ic('x')}</button>` : ''}</div></div>
     ${p.body ? `<div class="fbody">${richText(p.body)}</div>` : ''}
     ${phOf('feed_post', p)}${feedVideo(p)}
     ${p.link_url ? linkCard(p.link_url) : ''}
-    ${rxBar('feed_post', p.id)}
-    <div class="factions">
-      <button class="linkbtn" data-action="open-fpost" data-id="${p.id}" data-focus="1">Comentar</button>
-      ${mine ? `<button class="linkbtn mute" data-action="feed-edit" data-id="${p.id}">Editar</button>` : ''}
-      ${(mine || t) ? `<button class="linkbtn mute" data-action="feed-delete" data-id="${p.id}">Eliminar</button>` : ''}
-      ${(!mine && !t) ? (reported ? '<span class="sub">Denunciado</span>' : `<button class="linkbtn mute" data-action="report" data-type="feed_post" data-id="${p.id}">Denunciar</button>`) : ''}
-    </div>
+    <div class="fbar">${rxBar('feed_post', p.id)}<button class="fbar-cm" data-action="open-fpost" data-id="${p.id}" data-focus="1" title="Comentar" aria-label="Comentar">${ic('comment')}</button></div>
     <div class="cm-peek" data-cmpeek="${p.id}">${cmPeekInner(p.id)}</div></article>`;
 }
 
@@ -6039,6 +6248,11 @@ const actions = {
   filter(el) { S.filter = el.dataset.f; render(); },
   'open-assign'(el) { studentModal(el.dataset.id); },
   'save-now'() { if (cur) { cur.dirty = true; saveNow(); } },
+  'me-menu'() { // PC: abre o cierra el menú de la cuenta. Móvil: la foto lleva directa al Perfil (como en Instagram)
+    if (matchMedia('(max-width:760px)').matches) return actions.section({ dataset: { s: 'profile' } });
+    S.meOpen = !S.meOpen; const tr = $('.top-r'); if (tr) tr.outerHTML = topRight(sections());
+    const f = $('.memenu [role=menuitem]'); if (f) f.focus({ preventScroll: true });
+  },
   section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; render(); if (changed) window.scrollTo(0, 0); },
   theme(el) {
     setTheme(el.dataset.t);
@@ -6302,6 +6516,7 @@ const actions = {
   // Moderación: cola de respuestas
   'mod-tab'(el) { const m = modState(); m.tab = el.dataset.t; m.lim = MOD_PAGE;
     if (el.dataset.go) { modRevRefresh(); const b = $('#modRev'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else modRevRefresh(); },
+  'go-mod-unread'() { const m = modState(); m.tab = 'unread'; m.lim = MOD_PAGE; actions.section({ dataset: { s: 'mod' } }); }, // desde "Tu día" del Inicio
   'mod-more'() { modState().lim += MOD_PAGE; modRevRefresh(); },
   'mod-jump'(el) { const b = document.getElementById(el.dataset.to); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   'mod-over-all'() { S.modOverAll = true; softRender(); },

@@ -3,6 +3,14 @@
 // Al terminarla hoy (3 días, ×1,21) gana 30 puntos y asciende a Oro III: celebración y aviso al profesor.
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 const W = {}; new Function('window', fs.readFileSync(path.join(__dirname, 'seed.js'), 'utf8'))(W);
 const day = (n, h = 12) => { const d = new Date(); d.setDate(d.getDate() + n); d.setHours(h, 0, 0, 0); return d.toISOString(); };
 const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -35,7 +43,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
     await page.waitForTimeout(600);
     return page;
   }
-  const goto = async (p, s) => { await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(250); };
+  const goto = async (p, s) => { await navTo(p, s); await p.waitForTimeout(250); };
   const snapshot = p => p.evaluate(() => JSON.parse(JSON.stringify(window.__DB)));
   const shot = (p, n) => p.screenshot({ path: path.join(__dirname, 'shots', n) });
 

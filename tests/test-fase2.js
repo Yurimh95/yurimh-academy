@@ -1,6 +1,14 @@
 // Fase 2: perfiles completos, mensajes privados (con reglas de menores y bloqueo) y notificaciones.
 // Marta (s1) tiene 13 años y no tiene permiso familiar. Luis (s2) es adulto.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -17,9 +25,10 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(450);
     return page;
   }
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(200); };
+  const goto = async (p,s)=>{ await navTo(p, s); await p.waitForTimeout(200); };
   const db = (p,fn,arg) => p.evaluate(fn,arg);
-  const navText = async p => (await p.locator('.nav button').allTextContents()).join('|');
+  // Mensajes va en la barra superior: su contador es el número de la burbuja
+  const navText = async p => (await p.locator('.nav button, .top-r [data-s=messages]').evaluateAll(b => b.map(x => x.dataset.s === 'messages' ? 'Mensajes' + (x.querySelector('.dotn') ? x.querySelector('.dotn').textContent + ' sin leer' : '') : x.textContent))).join('|');
   const wait = (p,ms=250) => p.waitForTimeout(ms);
   const snapshot = p => p.evaluate(()=>JSON.parse(JSON.stringify(window.__DB))); // para seguir con el mismo estado en otra sesión
 
@@ -74,7 +83,7 @@ const { chromium } = require('playwright');
   ok(!!(await db(p,()=>window.__DB.notifications.find(n=>n.id==='n1').read_at)), 'Al abrir la conversación, su aviso de mensaje queda leído (así el siguiente vuelve a llegar al móvil)');
   await p.keyboard.press('Escape'); await wait(p);
   await p.evaluate(()=>openNotifFromUrl('?n=n1')); await wait(p,400);
-  ok((await p.textContent('.nav button.on')).includes('Mensajes') && (await p.textContent('.dm-thread-head')).includes('Yuri'), 'Tocar el aviso del móvil abre la conversación');
+  ok((await p.evaluate(()=>S.section))==='messages' && (await p.textContent('.dm-thread-head')).includes('Yuri'), 'Tocar el aviso del móvil abre la conversación');
   // Llega un mensaje en directo mientras tiene la conversación abierta
   await p.evaluate(()=>window.__rtExternal('dm_messages',{id:'drt',sender_id:'t1',recipient_id:'s1',body:'¿Lo tienes ya?',read_at:null})); await wait(p,400);
   ok((await p.textContent('#dmThread')).includes('¿Lo tienes ya?') && !!(await db(p,()=>window.__DB.dm_messages.find(m=>m.id==='drt').read_at)), 'Mensaje en directo: aparece y queda leído al estar viéndolo');
@@ -90,11 +99,11 @@ const { chromium } = require('playwright');
   // Botón "Atrás" (ratón/móvil): vuelve a la sección anterior y cierra ventanas
   await goto(p,'messages'); await goto(p,'board');
   await p.goBack(); await wait(p,300);
-  ok((await p.textContent('.nav button.on')).includes('Mensajes'), 'Atrás: vuelve de Avisos a Mensajes');
+  ok((await p.evaluate(()=>S.section))==='messages' && (await p.locator('.top-r [data-s=messages].on').count())===1, 'Atrás: vuelve de Avisos a Mensajes');
   await p.click('.bell'); await wait(p,300);
   ok((await p.locator('.modal').count())===1, 'Abre las notificaciones');
   await p.goBack(); await wait(p,300);
-  ok((await p.locator('.modal').count())===0 && (await p.textContent('.nav button.on')).includes('Mensajes'), 'Atrás: cierra la ventana sin cambiar de sección');
+  ok((await p.locator('.modal').count())===0 && (await p.evaluate(()=>S.section))==='messages', 'Atrás: cierra la ventana sin cambiar de sección');
   await p.click('.bell'); await wait(p,250); await p.click('.modal .x'); await wait(p,300);
   await p.goBack(); await wait(p,300);
   ok((await p.textContent('.nav button.on')).includes('Inicio'), 'Tras cerrar una ventana con la ✕, Atrás sigue funcionando bien (Inicio)');

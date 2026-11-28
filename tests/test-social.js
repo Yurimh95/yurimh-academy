@@ -1,4 +1,12 @@
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -15,7 +23,7 @@ const { chromium } = require('playwright');
     return page;
   }
   // Menú lateral en escritorio, barra inferior en móvil: se pulsa el que esté visible.
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
+  const goto = async (p,s)=>{ await navTo(p, s); await p.waitForTimeout(150); };
   const dbq = (p,fn,arg)=>p.evaluate(fn,arg);
   // Abre el selector de reacciones pasando el ratón por el 👍🏼 y elige un emoji
   const rxPick = async (p,scope,e)=>{ await p.hover(scope+' .rxb.main'); await p.waitForTimeout(600); await p.click(scope+' .rx-pick [data-e='+e+']'); };
@@ -38,7 +46,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.fpost').count())===4, 'Aparece en el feed (4)');
   // reacciones
   const card = '.fpost:has-text("Bienvenidos")';
-  ok((await p.textContent(card+' .rxb.main')).includes('👍🏼'), 'El botón de reaccionar es el 👍🏼');
+  ok(await p.locator(card+' .rxb.main svg use[href="#i-thumb"]').count()===1, 'El botón de reaccionar es el icono del pulgar');
   await p.click(card+' .rxb.main'); await p.waitForTimeout(200);
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='like')), 'Un clic en 👍🏼 da "me gusta"');
   ok(await p.locator(card+' .rxb.main.mine').count()===1 && (await p.textContent(card+' .rxb.main')).includes('1'), 'El 👍🏼 queda marcado y con contador');
@@ -99,7 +107,7 @@ const { chromium } = require('playwright');
   // denuncia
   await p.click('.fpost:has-text("Joe Pass") [data-action=report]'); await p.waitForTimeout(250);
   ok(await dbq(p,()=>window.__DB.moderation_reports.some(r=>r.reporter_id==='s1'&&r.target_type==='feed_post'&&r.target_id==='f1')), 'Denuncia guardada');
-  ok((await p.textContent('.fpost:has-text("Joe Pass") .factions')).includes('Denunciado'), 'El botón pasa a "Denunciado"');
+  ok(await p.locator('.fpost:has-text("Joe Pass") .ftools .ftool.done').count()===1 && await p.locator('.fpost:has-text("Joe Pass") .ftools [data-action=report]').count()===0, 'La bandera pasa a "ya denunciado"');
   await p.click('.fpost:has-text("Bienvenidos") [data-action=open-fpost]');
   ok((await p.textContent('.modal .cmt:has-text("Gracias profe")')).includes('Denunciado'), 'Denuncia previa recordada');
   await p.keyboard.press('Escape');
@@ -181,7 +189,7 @@ const { chromium } = require('playwright');
   await p.click('[data-action=avatar-save]'); await p.waitForTimeout(500);
   const av = await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1').avatar);
   ok(av&&av.startsWith('data:image/jpeg;base64,')&&av.length<40000, 'Foto recortada y reducida a JPEG ('+(av?av.length:0)+' caracteres)');
-  ok((await p.locator('.me img.av').count())===1 && (await p.locator('#app .panel img.av').count())===1, 'Foto visible en el menú y en el perfil');
+  ok((await p.locator('.avbtn img.av').count())===1 && (await p.locator('#app .panel img.av').count())===1, 'Foto visible en el menú y en el perfil');
   const src = await dbq(p,()=>window.__DB.profiles.find(x=>x.id==='s1'));
   ok(src.avatar_src && src.avatar_src.startsWith('data:image/jpeg;base64,') && src.avatar_crop && src.avatar_crop.zoom===2, 'Se guarda la copia de la original y el encuadre (zoom 2)');
   ok(!(await p.evaluate(async()=>JSON.stringify((await sb.rpc('get_directory')).data))).includes('avatar_src'), 'La copia grande NO sale en el directorio de los compañeros');
@@ -216,7 +224,7 @@ const { chromium } = require('playwright');
   ok((await p.locator('.fpost [data-action=feed-delete]').count())===3, 'Profe puede eliminar cualquier publicación');
   const lbl = (await p.textContent('.fpost:has-text("Joe Pass")')).replace(/\s+/g,' ');
   ok(lbl.includes('Lu (Luis)'), 'Profe ve el nombre real junto al apodo');
-  const tt = await p.locator('.fpost:has-text("Joe Pass") .rx-list .rxb:has-text("👍🏼")').getAttribute('title');
+  const tt = await p.locator('.fpost:has-text("Joe Pass") .rx-list .rxb.main').getAttribute('title');
   ok(tt.includes('Lu (Luis)'), 'Tooltip de reacciones con quién ha reaccionado: '+tt);
   await p.fill('#feedForm [name=body]','Aviso del profe en el feed'); await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(300);
   ok(await dbq(p,()=>window.__DB.feed_posts.some(x=>x.body==='Aviso del profe en el feed'&&x.author_id==='t1')), 'El profesor también puede publicar');

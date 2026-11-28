@@ -1,6 +1,14 @@
 // Vídeos: stories (24 h) y posts del Inicio con un vídeo que caduca a 1, 3 o 7 días (2026-11-25)
 // La compresión real (Mediabunny/WebCodecs) se sustituye por window.__VID_STUB.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 const path = require('path');
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -40,7 +48,7 @@ const path = require('path');
 
   // ======================= Marta (s1, alumna menor) =======================
   let p = await open('s1');
-  ok(await p.locator('#storiesBar .st-me [data-action=story-add]').count() >= 1, 'Arriba del Inicio está "Tu story" con el botón +');
+  ok(await p.locator('.stories:visible .st-me [data-action=story-add]').count() >= 1, 'Arriba del Inicio está "Tu story" con el botón +');
   ok(await p.locator('#feedForm [data-action=vd-add]').count() === 1, 'El cuadro de publicar tiene el botón Vídeo');
   ok(!(await p.locator('#feedForm .vd-days').isVisible()), 'Sin vídeo no sale la duración');
 
@@ -96,7 +104,7 @@ const path = require('path');
   ok(editVid.video.k === fp.video.k && editVid.video_expires_at === fp.video_expires_at && editVid.body === 'editado', 'Al editar no se puede cambiar el vídeo ni su caducidad');
 
   // --- Story ---
-  await pickVideo(p, '#storiesBar .st-me [data-action=story-add]', 'escala-largo.mp4');
+  await pickVideo(p, '.stories:visible .st-me [data-action=story-add]', 'escala-largo.mp4');
   await p.waitForFunction(() => document.querySelector('#lightbox.sed [data-sed=publish]:not([disabled])'), null, { timeout: 8000 });
   ok(await p.locator('#lightbox.sed .st-media video:not([hidden])').count() === 1, 'El editor de la story enseña el vídeo');
   ok(/24 horas/.test(await p.locator('#lightbox.sed .sed-hint').textContent()), 'Y explica que se borra a las 24 horas');
@@ -106,10 +114,10 @@ const path = require('path');
   D = await state(p);
   const st = D.stories.find(x => x.author_id === 's1');
   ok(!!st && Math.abs((new Date(st.expires_at) - Date.now()) / 3600000 - 24) < 0.05, 'La story se publica y caduca a las 24 h');
-  ok(await p.locator('#modalRoot .modal').count() === 0 && /own/.test(await p.locator('#storiesBar .st-me .st-ring').getAttribute('class')), 'Se cierra la ventana y "Tu story" sale con aro');
+  ok(await p.locator('#modalRoot .modal').count() === 0 && /own/.test(await p.locator('.stories:visible .st-me .st-ring').getAttribute('class')), 'Se cierra la ventana y "Tu story" sale con aro');
   const cheatSt = await db(p, async () => { const { data } = await sb.from('stories').insert({ id: crypto.randomUUID(), author_id: 's1', video: { k: crypto.randomUUID(), w: 720, h: 1280, d: 3 }, expires_at: '2099-01-01T00:00:00Z' }).select().single(); window.__DB.stories = window.__DB.stories.filter(x => x.id !== data.id); return (new Date(data.expires_at) - Date.now()) / 3600000; });
   ok(Math.abs(cheatSt - 24) < 0.05, 'La caducidad de la story la pone la base de datos (24 h siempre)');
-  await p.click('#storiesBar .st-me .st-ring'); await p.waitForTimeout(400);
+  await p.click('.stories:visible .st-me .st-ring'); await p.waitForTimeout(400);
   ok(await p.locator('#lightbox.story').count() === 1, 'Pulsar tu story abre el visor');
   ok(/0 vistas/.test(await p.locator('.sv-foot').textContent()) && await p.locator('.sv-reply').count() === 0, 'En la tuya salen las vistas y no el cuadro de responder');
   await shot(p, 'vd4-visor-propio.png');
@@ -130,12 +138,12 @@ const path = require('path');
 
   // ======================= Luis (s2, alumno adulto) =======================
   p = await open('s2', D, F);
-  ok(await p.locator('#storiesBar button.st-item[data-id=s1] .st-ring.new').count() === 1, 'Luis ve la story de Marta con el aro de "nueva"');
+  ok(await p.locator('.stories:visible button.st-item[data-id=s1] .st-ring.new').count() === 1, 'Luis ve la story de Marta con el aro de "nueva"');
   ok(await p.locator(`[data-fpost="${fp.id}"] .vd`).count() === 1, 'Y el post con vídeo');
   await p.click(`[data-fpost="${fp.id}"] [data-action=vd-play]`); await p.waitForTimeout(400);
   D = await state(p);
   ok(D.video_plays.length === 1 && D.video_plays[0].user_id === 's2' && D.video_plays[0].bytes === 300000, 'Reproducir apunta lo que pesa el vídeo para el fusible del mes');
-  await p.click('#storiesBar button.st-item[data-id=s1]'); await p.waitForTimeout(500);
+  await p.click('.stories:visible button.st-item[data-id=s1]'); await p.waitForTimeout(500);
   D = await state(p);
   ok(D.story_views.some(v => v.story_id === st.id && v.user_id === 's2'), 'Al verla se apunta que Luis la ha visto');
   ok(await p.locator('.sv-quick button').count() === 7, 'Salen los 6 emojis rápidos y el "+"');
@@ -155,7 +163,7 @@ const path = require('path');
   D = await state(p);
   ok(D.moderation_reports.some(r => r.target_type === 'story' && r.target_id === st.id && r.reporter_id === 's2'), 'Se puede denunciar una story');
   await p.click('.sv-head [data-sv=close]'); await p.waitForTimeout(150);
-  ok(await p.locator('#storiesBar button.st-item[data-id=s1] .st-ring.new').count() === 0, 'Al cerrar, la story ya sale como vista');
+  ok(await p.locator('.stories:visible button.st-item[data-id=s1] .st-ring.new').count() === 0, 'Al cerrar, la story ya sale como vista');
   const canRead = await db(p, ([sid, path]) => ({
     s2: window.__mediaVisible(path),
     pending: window.__asUser('s3', () => window.__mediaVisible(path))
@@ -194,10 +202,10 @@ const path = require('path');
   ok(/Qué tal suena/.test(await p.locator(`${c3} [data-cmpeek]`).textContent()), 'Y conserva sus comentarios');
   ok(await db(p, id => window.__DB.feed_posts.some(x => x.id === id && x.video === null && x.body === ''), fp3.id), 'La base de datos acepta el post sin texto y sin vídeo porque tuvo vídeo');
   // Ajustes: lo gastado este mes
-  await p.click('.nav button[data-s=settings]'); await p.waitForTimeout(300);
+  await navTo(p, 'settings'); await p.waitForTimeout(300);
   ok(/de 3 GB este mes/.test(await p.locator('[data-vquota]').textContent()), 'En Ajustes el profesor ve lo gastado en vídeo este mes');
   // Una story del profesor
-  await pickVideo(p, '#storiesBar .st-me [data-action=story-add]').catch(async () => { await p.click('.nav button[data-s=feed]'); await pickVideo(p, '#storiesBar .st-me [data-action=story-add]'); });
+  await pickVideo(p, '.stories:visible .st-me [data-action=story-add]').catch(async () => { await p.click('.nav button[data-s=feed]'); await pickVideo(p, '.stories:visible .st-me [data-action=story-add]'); });
   await p.waitForFunction(() => document.querySelector('#lightbox.sed [data-sed=publish]:not([disabled])'), null, { timeout: 8000 });
   await p.click('#lightbox.sed [data-sed=publish]'); await p.waitForTimeout(500);
   D = await state(p); F = await files(p);
@@ -207,7 +215,7 @@ const path = require('path');
 
   // ======================= Luis responde a la story del profesor =======================
   p = await open('s2', D, F);
-  await p.click('#storiesBar button.st-item[data-id=t1]'); await p.waitForTimeout(400);
+  await p.click('.stories:visible button.st-item[data-id=t1]'); await p.waitForTimeout(400);
   ok(await p.locator('#svReplyForm').count() === 1, 'Al profesor sí se le puede responder');
   await p.fill('#svReplyForm input', '¡Qué bien suena!');
   await p.press('#svReplyForm input', 'Enter'); await p.waitForTimeout(400);
@@ -217,7 +225,7 @@ const path = require('path');
   const fake = await db(p, async () => (await sb.from('dm_messages').insert({ id: crypto.randomUUID(), sender_id: 's2', recipient_id: 't1', body: 'x', story_id: 'no-existe' })).error);
   ok(!!fake, 'No se puede ligar un mensaje a una story que no existe o no es de quien lo recibe');
   await p.keyboard.press('Escape'); await p.waitForTimeout(100);
-  await p.click('.nav button[data-s=messages]'); await p.waitForTimeout(200);
+  await navTo(p, 'messages'); await p.waitForTimeout(200);
   await p.click('.dm-conv[data-id=t1]');
   await p.waitForTimeout(250);
   ok(await p.locator('.msg-story').count() >= 1 && /Has respondido a su story/.test(await p.locator('.msg-story').first().textContent()), 'En la conversación sale "Has respondido a su story"');
@@ -238,7 +246,7 @@ const path = require('path');
   D.stories.forEach(s => { if (s.author_id === 's1') s.expires_at = new Date(Date.now() + 3600000).toISOString(); });
   D.moderation_reports = [];
   p = await open('s1', D, F, { width: 390, height: 800 });
-  await p.click('#storiesBar .st-me .st-ring'); await p.waitForTimeout(400);
+  await p.click('.stories:visible .st-me .st-ring'); await p.waitForTimeout(400);
   ok(/1 vista/.test(await p.locator('.sv-views').textContent()) && /🔥/.test(await p.locator('.sv-views').textContent()), 'Marta ve "1 vista" y la reacción');
   await p.click('.sv-views'); await p.waitForTimeout(200);
   ok(/Lu/.test(await p.locator('.sv-viewers').textContent()) && /🔥/.test(await p.locator('.sv-viewers').textContent()), 'La lista dice quién la ha visto y con qué emoji');

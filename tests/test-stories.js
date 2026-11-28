@@ -37,7 +37,7 @@ const path = require('path');
   // ======================= Luis (s2) crea una story con foto =======================
   let p = await open('s2');
   const bytes = await PNG(p);
-  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('#storiesBar .st-me [data-action=story-add]')]);
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('.stories:visible .st-me [data-action=story-add]')]);
   ok(/image\/\*/.test(await p.evaluate(() => document.querySelector('#stFile').accept)) && /video\/\*/.test(await p.evaluate(() => document.querySelector('#stFile').accept)), 'Al subir una story se puede elegir foto o vídeo');
   await fc.setFiles({ name: 'guitarra.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(bytes) });
   await p.waitForSelector('#lightbox.sed'); await p.waitForTimeout(200);
@@ -118,7 +118,7 @@ const path = require('path');
   });
   ok(bad.every(Boolean), 'La base de datos rechaza: foto y vídeo a la vez, ninguno, textos enormes o datos extraños');
   // Ver la propia story
-  await p.click('#storiesBar .st-me .st-ring'); await p.waitForTimeout(600);
+  await p.click('.stories:visible .st-me .st-ring'); await p.waitForTimeout(600);
   ok(await p.locator('#lightbox.story .st-photo:not([hidden])').count() === 1 && await p.locator('#lightbox.story .st-t').count() === 2, 'En el visor salen la foto y los textos encima');
   await shot(p, 'st2-visor-foto.png');
   await p.keyboard.press('Escape');
@@ -127,7 +127,7 @@ const path = require('path');
 
   // ======================= Marta (s1) la ve: 5 s y pasa sola =======================
   p = await open('s1', D, F);
-  await p.click('#storiesBar button.st-item[data-id=s2]'); await p.waitForTimeout(500);
+  await p.click('.stories:visible button.st-item[data-id=s2]'); await p.waitForTimeout(500);
   ok(await p.locator('.st-t .mention').count() === 1 && await p.textContent('.st-t .mention') === 'Yuri', 'La mención se ve con el nombre y se puede pulsar');
   const w1 = await db(p, () => parseFloat(document.querySelector('.sv-bars i.cur b').style.width) || 0);
   await p.waitForTimeout(1500);
@@ -140,7 +140,7 @@ const path = require('path');
   D = await state(p);
   ok(D.story_views.some(v => v.story_id === st.id && v.user_id === 's1'), 'Cuenta como vista');
   // Pulsar la mención abre el perfil
-  await p.click('#storiesBar button.st-item[data-id=s2]'); await p.waitForTimeout(400);
+  await p.click('.stories:visible button.st-item[data-id=s2]'); await p.waitForTimeout(400);
   await p.click('.st-t .mention'); await p.waitForTimeout(500);
   ok(await p.locator('#lightbox').count() === 0 && await p.locator('#modalRoot .modal').count() === 1, 'Pulsar la mención cierra la story y abre el perfil');
   // Privacidad: archivos de la foto

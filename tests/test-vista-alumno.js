@@ -1,5 +1,13 @@
 // Vista de alumno: el profesor ve la app como un alumno ficticio, sin guardar nada en la base de datos.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -14,9 +22,10 @@ const { chromium } = require('playwright');
   await p.goto(url);
   await p.waitForTimeout(400);
 
-  ok(await p.isVisible('.sidebar [data-action="preview-on"]'), 'Profesor: botón "Ver como alumno" en el menú lateral, bajo su nombre');
+  await p.click('.avbtn'); await p.waitForTimeout(100);
+  ok(await p.isVisible('.memenu [data-action="preview-on"]'), 'Profesor: "Ver como alumno" en el menú de la cuenta (su foto, arriba)');
   const before = await p.evaluate(()=>JSON.stringify(window.__DB));
-  await p.click('.sidebar [data-action="preview-on"]');
+  await p.click('.memenu [data-action="preview-on"]');
   await p.waitForTimeout(300);
   ok(await p.isVisible('.pvbar'), 'Sale la barra "Vista de alumno" con el botón Salir');
   ok(await p.evaluate(()=>!isTeacher() && S.profile.display_name==='Alumno de prueba'), 'La app se pinta como el alumno ficticio');
@@ -26,20 +35,20 @@ const { chromium } = require('playwright');
 
   // Recorre las secciones del alumno
   for (const s of ['board','listening','homework','messages','profile','settings']) {
-    await p.click(`.sidebar .nav [data-s="${s}"]`); await p.waitForTimeout(200);
+    await navTo(p, s); await p.waitForTimeout(200);
     ok(await p.isVisible('.pvbar'), `Sección ${s}: se sigue viendo la barra de la vista de alumno`);
   }
-  await p.click('.sidebar .nav [data-s="listening"]'); await p.waitForTimeout(200);
+  await navTo(p, 'listening'); await p.waitForTimeout(200);
   ok(await p.$$eval('#slList .track, .tracklist .track', x=>x.length) > 0, 'Escucha analítica del alumno con escuchas de ejemplo');
   await p.screenshot({ path: shot('vista-alumno-escuchas.png') });
-  await p.click('.sidebar .nav [data-s="homework"]'); await p.waitForTimeout(200);
+  await navTo(p, 'homework'); await p.waitForTimeout(200);
   await p.screenshot({ path: shot('vista-alumno-deberes.png') });
 
   // Intentar guardar: nada llega a la base de datos
-  await p.click('.sidebar .nav [data-s="profile"]'); await p.waitForTimeout(200);
+  await navTo(p, 'profile'); await p.waitForTimeout(200);
   await p.fill('#nameForm [name=display_name]', 'Cambio que no debe guardarse');
   await p.click('#nameForm button[type=submit]'); await p.waitForTimeout(300);
-  await p.click('.sidebar .nav [data-s="feed"]'); await p.waitForTimeout(200);
+  await navTo(p, 'feed'); await p.waitForTimeout(200);
   const ta = await p.$('#feedForm textarea');
   if (ta) { await ta.fill('Publicación de prueba que no debe guardarse'); await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(300); }
   const rx = await p.$('.rxb.main'); if (rx) { await rx.click(); await p.waitForTimeout(300); }

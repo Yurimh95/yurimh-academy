@@ -1,6 +1,14 @@
 // Deberes (homework_tasks) y Pagos (payments_*): reglas de privacidad, flujo del profesor y del alumno.
 // Marta (s1): mensual 60 €, 2 deberes pendientes (uno vencido) y 1 practicado. Luis (s2): gratis, 1 deber.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -17,7 +25,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(450);
     return page;
   }
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(200); };
+  const goto = async (p,s)=>{ await navTo(p, s); await p.waitForTimeout(200); };
   const wait = (p,ms=250) => p.waitForTimeout(ms);
   const db = (p,fn,arg) => p.evaluate(fn,arg);
   const snapshot = p => p.evaluate(()=>JSON.parse(JSON.stringify(window.__DB)));

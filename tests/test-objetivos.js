@@ -2,6 +2,14 @@
 // Seed: etapas 1-3; g1-g4 generales, g5 personal de Marta (s1), g6 personal de Luis (s2).
 // Marta tiene g1 y g2 conseguidos (ya vistos). Luis tiene g6.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -18,7 +26,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(500);
     return page;
   }
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(200); };
+  const goto = async (p,s)=>{ await navTo(p, s); await p.waitForTimeout(200); };
   const wait = (p,ms=250) => p.waitForTimeout(ms);
   const snapshot = p => p.evaluate(()=>JSON.parse(JSON.stringify(window.__DB)));
   const shot = (p,n) => p.screenshot({path:require('path').join(__dirname,'shots',n)});

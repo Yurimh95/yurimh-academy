@@ -1,4 +1,12 @@
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors=[]; let fails=0;
@@ -15,14 +23,14 @@ const { chromium } = require('playwright');
     return page;
   }
   const nav = p => p.locator('.nav button').allTextContents();
-  const goto = async (p,s)=>{ await p.click(`.nav button[data-s=${s}]`); await p.waitForTimeout(150); };
+  const goto = async (p,s)=>{ await navTo(p, s); await p.waitForTimeout(150); };
 
   // ================= ALUMNA: Marta =================
   let p = await open('s1');
   ok((await p.locator('.auth').count())===0 && (await p.locator('#feedForm').count())===1, 'config.js con URL "sucia" (/rest/v1/) aceptada y limpiada');
   ok((await p.textContent('.nav button.on')).includes('Inicio') && (await p.locator('.fpost').count())>0, 'Al entrar se ve el Inicio con las publicaciones');
   const n1 = (await nav(p)).join('|');
-  ok(n1.includes('Inicio')&&n1.includes('Avisos2 nuevos')&&n1.includes('Escucha analítica')&&n1.includes('Perfil')&&!n1.includes('Alumnos')&&!n1.includes('Moderación')&&!n1.includes('Feed'), 'Menú alumna con "2 nuevos", sin "Alumnos" ni "Moderación": '+n1);
+  ok(n1.includes('Inicio')&&n1.includes('Avisos2 nuevos')&&n1.includes('Escucha analítica')&&!n1.includes('Perfil')&&!n1.includes('Alumnos')&&!n1.includes('Moderación')&&!n1.includes('Feed'), 'Menú alumna con "2 nuevos", sin "Alumnos" ni "Moderación" (Perfil va en el menú de la cuenta): '+n1);
   const home = await p.textContent('.foryou');
   ok(home.includes('Kind of Blue')&&/avisos? nuevos?/.test(home)&&!home.includes('Secreto de Luis'), 'Inicio: bloque "Para ti" con su aviso nuevo y su escucha, sin el aviso de Luis');
   await p.screenshot({path:require('path').join(__dirname,'shots','h_alumna.png')});
@@ -69,7 +77,7 @@ const { chromium } = require('playwright');
   await goto(p,'profile');
   await p.fill('#nameForm [name=display_name]','Marta R.');
   await p.click('#nameForm button'); await p.waitForTimeout(250);
-  ok((await p.textContent('.who')).includes('Marta R.'), 'Perfil: nombre cambiado y visible en cabecera');
+  ok((await p.textContent('.av-meta b')).includes('Marta R.'), 'Perfil: nombre cambiado y visible en cabecera');
   ok((await p.evaluate(()=>window.__DB.profiles.find(x=>x.id==='s1').display_name))==='Marta R.', 'Perfil: nombre guardado en BD');
   ok((await p.locator('#passForm').count())===0, 'Perfil: solo el perfil, sin contraseña ni ajustes');
   await p.click('.prof-bar [data-s=settings]'); await p.waitForTimeout(200);
@@ -96,7 +104,7 @@ const { chromium } = require('playwright');
   ok((await p.textContent('.nav button.on')).includes('Inicio') && (await p.locator('.foryou').count())===0, 'Profe: también entra al Inicio (sin bloque "Para ti")');
   ok((await nav(p)).join('|').includes('Moderación'), 'Profe: tiene la pestaña Moderación');
   await goto(p,'mod');
-  ok((await p.textContent('.top h1.sec')).includes('Moderación'), 'Moderación: título');
+  ok((await p.textContent('.phead h1.sec')).includes('Moderación'), 'Moderación: título');
   const stats = (await p.locator('.stat').allTextContents()).map(s=>s.replace(/\s+/g,' ').trim());
   ok(stats.length===4&&/Respuestas sin leer/.test(stats[0])&&stats[1].startsWith('1')&&stats[2].startsWith('1')&&/Denuncias/.test(stats[3]), 'Estadísticas: sin leer, 1 vencida, 1 por aprobar, denuncias -> '+stats.join(' | '));
   ok(!(await p.textContent('.shell')).includes('Avisos publicados'), 'Ya no sale el resumen de avisos');

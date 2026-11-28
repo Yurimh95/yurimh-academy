@@ -1,5 +1,13 @@
 // Menciones estilo Discord: @persona, #sección y #escucha (Inicio, Avisos y comentarios)
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors = []; let fails = 0;
@@ -15,7 +23,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(400);
     return page;
   }
-  const goto = async (p, s) => { await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
+  const goto = async (p, s) => { await navTo(p, s); await p.waitForTimeout(150); };
   const shot = (p, n) => p.screenshot({ path: require('path').join(__dirname, 'shots', n) });
 
   // ================= Marta (s1) escribe en el Inicio =================
@@ -56,7 +64,7 @@ const { chromium } = require('playwright');
   ok((await post.locator('.mention[data-s=settings]').textContent()) === 'Ajustes' && (await post.locator('.mention[data-action=mention-item]').textContent()) === 'Kind of Blue' && (await post.locator('.mention[data-id=s2]').textContent()) === 'Lu', 'Las menciones se ven con su nombre, sin @ ni #');
   await shot(p, 'm3-publicacion.png');
   await post.locator('.mention[data-s=settings]').click(); await p.waitForTimeout(200);
-  ok(await p.locator('.nav button.on[data-s=settings]').count() === 1, 'Pulsar #Ajustes lleva a Ajustes');
+  ok(await p.evaluate(() => S.section) === 'settings' && await p.locator('.avbtn.on').count() === 1, 'Pulsar #Ajustes lleva a Ajustes');
   await goto(p, 'feed');
   await p.locator('.fpost:has-text("Mirad esto") .mention[data-action=mention-item]').click(); await p.waitForTimeout(300);
   ok(await p.locator('.nav button.on[data-s=listening]').count() === 1 && await p.locator('.modal').count() === 1, 'Pulsar #Kind of Blue abre esa escucha');

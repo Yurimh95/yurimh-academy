@@ -2,6 +2,14 @@
 // Hasta 10 en posts, avisos y mensajes; 1 en comentarios. Texto opcional. Almacén privado "media".
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors = []; let fails = 0;
@@ -17,7 +25,7 @@ const fs = require('fs'), path = require('path');
     await page.waitForTimeout(400);
     return page;
   }
-  const goto = async (p, s) => { await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
+  const goto = async (p, s) => { await navTo(p, s); await p.waitForTimeout(150); };
   const shot = (p, n) => p.screenshot({ path: path.join(__dirname, 'shots', n) });
   const db = (p, f, a) => p.evaluate(f, a);
   const LOGO = fs.readFileSync(path.join(__dirname, 'logo.png')), ICON = fs.readFileSync(path.join(__dirname, 'icon-192.png'));

@@ -1,6 +1,14 @@
 // Compañeros y visibilidad: un alumno solo aparece para los demás si ha participado
 // (publicación, comentario o reacción), si sois compañeros, si hay solicitud o si os habéis escrito.
 const { chromium } = require('playwright');
+// Navegación: menú lateral, barra inferior (móvil), barra superior (Mensajes) o menú de la cuenta (Perfil, Ajustes)
+const navTo = async (p, s) => {
+  const sel = `.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible, .top-r button[data-s=${s}]:visible`;
+  if (await p.locator(sel).count()) return p.click(sel);
+  await p.click('.avbtn'); await p.waitForTimeout(80);
+  if (await p.evaluate(s => S.section === s, s)) return; // en el móvil la foto lleva directa al Perfil
+  await p.click(`.memenu [data-s=${s}]`);
+};
 (async () => {
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
   const errors = []; let fails = 0;
@@ -16,7 +24,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(400);
     return page;
   }
-  const goto = async (p, s) => { await p.click(`.nav button[data-s=${s}]:visible, .tabbar button[data-s=${s}]:visible`); await p.waitForTimeout(150); };
+  const goto = async (p, s) => { await navTo(p, s); await p.waitForTimeout(150); };
   const shot = (p, n) => p.screenshot({ path: require('path').join(__dirname, 'shots', n) });
   const dir = p => p.evaluate(() => Object.keys(S.dir).sort());
   const dbOf = p => p.evaluate(() => JSON.parse(JSON.stringify(window.__DB)));
@@ -41,7 +49,7 @@ const { chromium } = require('playwright');
   ok(!!insT, 'El profesor no se agrega como compañero');
   const insFake = await p.evaluate(async () => (await sb.from('classmates').insert({ requester_id: 's2', addressee_id: 's1' })).error);
   ok(!!insFake, 'No se puede crear una solicitud en nombre de otro');
-  ok(await p.locator('.rail').count() === 0, 'No hay columna derecha (ni escuchas ni compañeros a un lado)');
+  ok(await p.locator('.rail .av, .rail .wholink, .rail [data-action=open-profile]').count() === 0, 'La columna derecha del Inicio no enseña gente (ni compañeros ni listas de alumnos)');
 
   // Marta abre el perfil de Luis desde el Inicio y le envía solicitud
   await p.locator('.fpost:has-text("Joe Pass") .wholink').first().click(); await p.waitForTimeout(300);
@@ -61,7 +69,9 @@ const { chromium } = require('playwright');
 
   // ================= Luis (s2) acepta =================
   p = await open('s2', db);
-  ok((await p.textContent('.nav button[data-s=profile]')).includes('1 solicitud'), 'Luis ve "1 solicitud" en Perfil del menú');
+  await p.click('.avbtn'); await p.waitForTimeout(100);
+  ok((await p.textContent('.memenu [data-s=profile]')).includes('1 solicitud') && await p.locator('.avbtn .dotn.mini').count() === 1, 'Luis ve "1 solicitud" en Tu perfil (menú de la cuenta) y un punto en su foto');
+  await p.keyboard.press('Escape');
   const lnot = await p.evaluate(() => notifText(S.notifs.find(n => n.kind === 'classmate_request')).replace(/<[^>]+>/g, ''));
   ok(lnot === 'Marta te ha enviado una solicitud para ser compañeros', 'Texto de la notificación: ' + lnot);
   await goto(p, 'profile');
@@ -72,7 +82,7 @@ const { chromium } = require('playwright');
   ok(db.classmates[0].status === 'accepted' && !!db.classmates[0].accepted_at, 'La solicitud queda aceptada');
   ok(db.notifications.some(n => n.user_id === 's1' && n.kind === 'classmate_accept' && n.actor_id === 's2'), 'Marta recibe "ha aceptado tu solicitud"');
   ok(db.notifications.find(n => n.user_id === 's2' && n.kind === 'classmate_request').read_at, 'La notificación de solicitud de Luis queda leída');
-  ok(!(await p.textContent('.nav button[data-s=profile]')).includes('solicitud'), 'Desaparece el contador del menú');
+  ok(await p.locator('.avbtn .dotn.mini').count() === 0, 'Desaparece el punto de la foto');
   ok((await p.textContent('.panel.mates')).includes('Marta') && !(await p.textContent('.panel.mates')).includes('Solicitudes recibidas'), 'Perfil se repinta: Marta pasa a la lista de compañeros de Luis');
   await p.locator('.panel.mates').scrollIntoViewIfNeeded();
   await shot(p, 'c3-companeros.png');
