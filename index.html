@@ -3073,13 +3073,14 @@ function toast(msg, type = '') {
    o vuelve a la sección anterior, sin salir de la app. */
 // histSkip: "atrás" internos pendientes (al cerrar una ventana). Mientras haya alguno, lo nuevo espera.
 let histSkip = 0, histModalPending = false, histRestoring = false;
-const histState = () => ({ app: 1, s: S.section, dm: S.section === 'messages' ? (S.dmWith || null) : null });
+const histState = () => ({ app: 1, s: S.section, dm: S.section === 'messages' ? (S.dmWith || null) : null,
+  hw: S.section === 'homework' && S.hwOpen ? S.hwSel : null }); // hw: alumno abierto en Deberes (móvil)
 function histSync() { // la llama render(): si cambió la sección, añade una entrada
   if (histRestoring || !S.profile || histSkip) return; // con un "atrás" pendiente, se sincroniza al terminar
   const st = history.state || {}, want = histState();
   if (st.modal) return;
   if (!st.app) { history.replaceState(want, ''); return; }
-  if (st.s === want.s && (st.dm || null) === want.dm) return;
+  if (st.s === want.s && (st.dm || null) === want.dm && (st.hw || null) === want.hw) return;
   history.pushState(want, '');
 }
 // Al recargar (F5) el navegador conserva history.state: se vuelve a la sección (y al chat) donde estaba.
@@ -3091,8 +3092,8 @@ function histRestoreOnLoad() {
   histBooted = true;
   const st = history.state || {};
   if (!st.app) return;
-  if (st.s) { S.section = st.s; S.dmWith = st.s === 'messages' ? (st.dm || null) : null; }
-  if (st.modal || st.lb || st.pop) history.replaceState({ app: 1, s: st.s, dm: st.dm || null }, '');
+  if (st.s) { S.section = st.s; S.dmWith = st.s === 'messages' ? (st.dm || null) : null; S.hwOpen = !!st.hw; if (st.hw) S.hwSel = st.hw; }
+  if (st.modal || st.lb || st.pop) history.replaceState({ app: 1, s: st.s, dm: st.dm || null, hw: st.hw || null }, '');
 }
 window.addEventListener('popstate', async e => {
   if (histSkip) { // es el "atrás" que hicimos nosotros al cerrar una ventana
@@ -3110,6 +3111,7 @@ window.addEventListener('popstate', async e => {
   if (!S.profile || !st.app) return;
   histRestoring = true;
   S.section = st.s || 'feed'; S.dmWith = st.dm || null;
+  S.hwOpen = !!st.hw; if (st.hw) S.hwSel = st.hw;
   render(); window.scrollTo(0, 0);
   histRestoring = false;
 });
@@ -6790,7 +6792,7 @@ const actions = {
     S.meOpen = !S.meOpen; const tr = $('.top-r'); if (tr) tr.outerHTML = topRight(sections());
     const f = $('.memenu [role=menuitem]'); if (f) f.focus({ preventScroll: true });
   },
-  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; if (S.section === 'homework') S.hwTab = 'tasks'; render(); if (changed) window.scrollTo(0, 0); },
+  section(el) { const changed = S.section !== el.dataset.s; S.section = el.dataset.s; if (S.section === 'homework') { S.hwTab = 'tasks'; S.hwOpen = false; } render(); if (changed) window.scrollTo(0, 0); },
   theme(el) {
     setTheme(el.dataset.t);
     if ($('.shell')) return render();
@@ -8146,8 +8148,8 @@ Object.assign(actions, {
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
   'hw-goal-see'() { closeModal(); goGoals(); },
   'hw-tab'(el) { S.hwTab = el.dataset.t; render(); },
-  'hw-sel'(el) { S.hwSel = el.dataset.id; S.hwOpen = true; render(); if (matchMedia('(max-width:760px)').matches) scrollTo(0, 0); },
-  'hw-back'() { S.hwOpen = false; render(); },
+  'hw-sel'(el) { const m = matchMedia('(max-width:760px)').matches; S.hwSel = el.dataset.id; S.hwOpen = m; render(); if (m) scrollTo(0, 0); },
+  'hw-back'() { if ((history.state || {}).hw) history.back(); else { S.hwOpen = false; render(); } }, // como el Atrás del móvil
   'hw-all'() { const boxes = $$('#hwForm input[name=pick], #hwCopyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); hwGoalRefresh(); hwPickCount(); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;

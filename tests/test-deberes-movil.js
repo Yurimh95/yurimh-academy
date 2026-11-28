@@ -31,6 +31,21 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail
     await p.screenshot({ path: path.join(__dirname, 'shots', `deberes-movil-${quien}.png`) });
   };
   const t = await open('t1'); await check(t, 'profesor');
+  // Profesor en el móvil: al abrir un alumno, "Atrás" vuelve a la lista (no a la sección anterior)
+  await t.click('.tabbar button[data-s=feed]'); await t.waitForTimeout(250);
+  await t.click('.tabbar button[data-s=homework]'); await t.waitForTimeout(250);
+  await t.click('.hwstu:has-text("Luis")'); await t.waitForTimeout(250);
+  ok(await t.locator('.hwdetail:visible').count() === 1 && await t.locator('.hwside:visible').count() === 0, 'Profesor: al pulsar un alumno se abren sus deberes');
+  await t.goBack(); await t.waitForTimeout(300);
+  ok(await t.evaluate(() => S.section) === 'homework' && await t.locator('.hwside:visible').count() === 1 && await t.locator('.hwdetail:visible').count() === 0, 'Atrás vuelve a la lista de alumnos');
+  await t.goBack(); await t.waitForTimeout(300);
+  ok(await t.evaluate(() => S.section) === 'feed', 'Otro Atrás vuelve a la sección anterior');
+  await t.goForward(); await t.waitForTimeout(300);
+  await t.click('.hwstu:has-text("Marta")'); await t.waitForTimeout(250);
+  await t.click('.hwback'); await t.waitForTimeout(300);
+  ok(await t.locator('.hwside:visible').count() === 1, '"← Alumnos" también vuelve a la lista');
+  await t.goBack(); await t.waitForTimeout(300);
+  ok(await t.evaluate(() => S.section) === 'feed', '…y no deja una entrada de más en el historial');
   const s = await open('s1'); await check(s, 'alumna');
   ok(!errors.length, 'Sin errores de JavaScript' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();
