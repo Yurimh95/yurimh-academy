@@ -1,5 +1,5 @@
 // Formato como WhatsApp: *negrita*, _cursiva_, __subrayado__, ~tachado~, `código`, ```bloque```, "# " títulos y "> " citas.
-// Botones de formato en Avisos, al editar y en el Inicio, y atajos Ctrl+B/I/U.
+// Barrita flotante sobre lo seleccionado (ratón quieto encima; en el móvil, debajo al seleccionar) y atajos Ctrl+B/I/U.
 const { chromium } = require('playwright');
 (async()=>{
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -32,35 +32,55 @@ const { chromium } = require('playwright');
   ok(!r.xss.includes('<img') && r.xss.includes('&lt;img') && !r.xss.includes(''), 'El texto se sigue escapando (sin HTML inyectado ni fichas sueltas)');
   ok(r.dm === '<b>hola</b>', 'También en los mensajes privados');
 
-  // 2) Botones en un aviso nuevo
+  // 2) Barrita flotante en un aviso nuevo (ordenador: ratón quieto encima de lo seleccionado)
   await p.evaluate(()=>{ S.section='board'; render(); postFormModal(); });
   await p.waitForTimeout(200);
-  ok(await p.locator('#postForm .fmt-bar [data-fmt]').count() === 8, 'Avisos: barra con 8 botones');
+  ok(await p.locator('.fmt-bar').count() === 0, 'Ya no hay barra fija');
   const ta = p.locator('#postForm textarea[name=body]');
+  const sel = async (a,b)=>{ await ta.evaluate((t,[a,b])=>{ t.focus(); t.setSelectionRange(a,b); },[a,b]); await p.waitForTimeout(60); };
+  const hover = async ()=>{ // pasa el ratón por el centro de lo seleccionado
+    const r = await ta.evaluate(t=>{ const x=fmtRects(t)[0]; return x && {x:(x.left+x.right)/2, y:(x.top+x.bottom)/2}; });
+    await p.mouse.move(r.x-20, r.y+30); await p.mouse.move(r.x, r.y); await p.waitForTimeout(400);
+  };
   await ta.fill('Hola mundo');
-  await ta.evaluate(t=>t.setSelectionRange(5,10));
-  await p.click('#postForm [data-fmt=b]');
+  await sel(5,10);
+  ok(!(await p.locator('#fmtPop').count()), 'Solo seleccionar no saca la barrita');
+  await p.mouse.move(5,5); await p.waitForTimeout(350);
+  ok(!(await p.locator('#fmtPop').count()), 'Con el ratón lejos tampoco');
+  await hover();
+  ok(await p.locator('#fmtPop [data-fmt]').count() === 8, 'Ratón quieto encima de lo seleccionado: sale la barrita con 8 botones');
+  const pos = await p.evaluate(()=>{ const b=document.querySelector('#fmtPop').getBoundingClientRect(), r=fmtRects(document.querySelector('#postForm textarea'))[0]; return { above: b.bottom <= r.top + 1 }; });
+  ok(pos.above, 'Sale justo encima de la selección');
+  await p.click('#fmtPop [data-fmt=b]');
   ok(await ta.inputValue() === 'Hola *mundo*', 'B pone *…* en lo seleccionado');
   ok(await ta.evaluate(t=>t.value.slice(t.selectionStart,t.selectionEnd)) === 'mundo', 'Y deja la palabra seleccionada');
-  await p.click('#postForm [data-fmt=b]');
-  ok(await ta.inputValue() === 'Hola mundo', 'Pulsar B otra vez lo quita');
-  await ta.evaluate(t=>t.setSelectionRange(0,4));
+  await p.waitForTimeout(150);
+  ok(await p.locator('#fmtPop').count() === 1, 'La barrita sigue abierta para poner más formatos');
+  await p.click('#fmtPop [data-fmt=i]');
+  ok(await ta.inputValue() === 'Hola *_mundo_*', 'Negrita y cursiva a la vez');
+  await p.waitForTimeout(150);
+  await p.click('#fmtPop [data-fmt=i]'); await p.waitForTimeout(150); await p.click('#fmtPop [data-fmt=b]');
+  ok(await ta.inputValue() === 'Hola mundo', 'Pulsar otra vez lo quita');
+  await p.waitForTimeout(150);
+  await p.keyboard.press('Escape');
+  ok(!(await p.locator('#fmtPop').count()) && await p.locator('#postForm').count() > 0, 'Esc cierra la barrita, no la ventana');
+  await sel(0,4);
   await p.keyboard.press('Control+i');
   ok(await ta.inputValue() === '_Hola_ mundo', 'Ctrl+I pone cursiva');
   await ta.fill('Uno\nDos');
-  await ta.evaluate(t=>t.setSelectionRange(0,7));
-  await p.click('#postForm [data-fmt=h]');
+  await sel(0,7); await hover();
+  await p.click('#fmtPop [data-fmt=h]');
   ok(await ta.inputValue() === '# Uno\n# Dos', 'H pone "# " a cada línea');
-  await p.click('#postForm [data-fmt=q]');
+  await p.waitForTimeout(150);
+  await p.click('#fmtPop [data-fmt=q]');
   ok(await ta.inputValue() === '> Uno\n> Dos', 'Cita sustituye al título');
   await ta.fill('e|--0--|\nB|--1--|');
-  await ta.evaluate(t=>t.setSelectionRange(0,t.value.length));
-  await p.click('#postForm [data-fmt=code]');
+  await sel(0,17); await hover();
+  await p.click('#fmtPop [data-fmt=code]');
   ok(await ta.inputValue() === '```\ne|--0--|\nB|--1--|\n```', 'Monoespaciado de varias líneas usa ```');
-  await ta.fill('');
-  await p.click('#postForm [data-fmt=u]');
-  await p.keyboard.type('raya');
-  ok(await ta.inputValue() === '__raya__', 'Sin selección: las marcas y el cursor en medio');
+  await p.waitForTimeout(150);
+  await ta.focus(); await p.keyboard.press('End'); await p.keyboard.type('x');
+  ok(!(await p.locator('#fmtPop').count()), 'Al escribir se cierra');
 
   // Publicarlo y verlo formateado
   await p.fill('#postForm input[name=title]', 'Aviso con formato');
@@ -69,20 +89,40 @@ const { chromium } = require('playwright');
   await p.waitForTimeout(400);
   const card = p.locator('.card.post', { hasText: 'Aviso con formato' }).first();
   ok(await card.locator('.rt-h1').count() === 1 && await card.locator('b', { hasText: 'la guitarra afinada' }).count() === 1 && await card.locator('.rt-quote').count() === 1, 'El aviso publicado se ve con título, negrita y cita');
-  await card.scrollIntoViewIfNeeded();
-  await card.screenshot({ path: require('path').join(__dirname,'shots','formato-aviso.png') });
 
-  // 3) Inicio: la barra sale al escribir, junto a Publicar
+  // 3) Inicio: también en el cuadro de publicar
   await p.evaluate(()=>{ S.section='feed'; render(); });
   await p.waitForTimeout(200);
-  ok(!(await p.locator('#feedForm .fmt-bar').isVisible()), 'Inicio: sin escribir no se ve la barra');
   await p.click('#feedForm textarea');
-  await p.waitForTimeout(250);
-  ok(await p.locator('#feedForm .fmt-bar').isVisible(), 'Inicio: al escribir aparece la barra');
   await p.keyboard.type('Hoy toco ');
   await p.keyboard.press('Control+b'); await p.keyboard.type('Stairway');
   ok(await p.inputValue('#feedForm textarea') === 'Hoy toco *Stairway*', 'Ctrl+B en el Inicio');
-  await p.locator('#feedForm').screenshot({ path: require('path').join(__dirname,'shots','formato-inicio.png') });
+  const fta = p.locator('#feedForm textarea');
+  await fta.evaluate(t=>t.setSelectionRange(10,18)); await p.waitForTimeout(60);
+  { const r = await fta.evaluate(t=>{ const x=fmtRects(t)[0]; return {x:(x.left+x.right)/2, y:(x.top+x.bottom)/2}; });
+    await p.mouse.move(r.x+10, r.y+40); await p.mouse.move(r.x, r.y); await p.waitForTimeout(400); }
+  ok(await p.locator('#fmtPop').count() === 1, 'Inicio: la barrita sale sobre lo seleccionado');
+  await p.screenshot({ path: require('path').join(__dirname,'shots','formato-inicio.png'), clip: await p.evaluate(()=>{ const r=document.querySelector('#feedForm').getBoundingClientRect(); return {x:r.x, y:Math.max(0,r.y-50), width:r.width, height:r.height+50}; }) });
+
+  // 4) Móvil: al terminar de seleccionar, debajo
+  const mctx = await browser.newContext({ viewport:{ width:390, height:760 }, hasTouch:true, isMobile:true });
+  const m = await mctx.newPage();
+  m.on('pageerror',e=>errors.push('móvil: '+e.message));
+  await m.addInitScript(`window.__ME="s1"`);
+  await m.goto(require('url').pathToFileURL(require('path').join(__dirname,'test.html')).href);
+  await m.waitForTimeout(400);
+  await m.evaluate(()=>{ const t=document.querySelector('#feedForm textarea'); t.focus(); t.value='Practica la escala mayor'; t.setSelectionRange(9,19); });
+  await m.waitForTimeout(700);
+  ok(await m.locator('#fmtPop').count() === 1, 'Móvil: al seleccionar sale la barrita');
+  ok(await m.evaluate(()=>{ const b=document.querySelector('#fmtPop').getBoundingClientRect(), r=fmtRects(document.querySelector('#feedForm textarea')).pop(); return b.top >= r.bottom + 10; }), 'Móvil: va debajo de la selección (encima queda el menú del móvil)');
+  await m.screenshot({ path: require('path').join(__dirname,'shots','formato-movil.png') });
+  await m.tap('#fmtPop [data-fmt=b]');
+  ok(await m.inputValue('#feedForm textarea') === 'Practica *la escala* mayor', 'Móvil: el botón pone la negrita');
+  await m.evaluate(()=>{ const t=document.querySelector('#feedForm textarea'); t.setSelectionRange(3,3); });
+  await m.waitForTimeout(250);
+  ok(!(await m.locator('#fmtPop').count()), 'Móvil: sin selección se va');
+  await mctx.close();
+
 
   ok(errors.length===0, 'Sin errores en la página'+(errors.length?': '+errors.join(' | '):''));
   await browser.close();

@@ -729,13 +729,13 @@ ol.rt-list li::marker{font-weight:600}
 .rt-pre{display:block;margin:4px 0;padding:8px 10px;border-radius:8px;white-space:pre;overflow-x:auto;max-width:100%;line-height:1.4}
 .msg-row.mine .rt-code,.msg-row.mine .rt-pre{background:rgba(0,0,0,.18);border-color:transparent;color:inherit}
 .msg-row.mine .rt-quote{border-left-color:currentColor;color:inherit;opacity:.85}
-.fmt-bar{display:flex;gap:2px;flex-wrap:wrap;margin:4px 0 6px}
-.fmt-bar button{min-width:30px;height:28px;padding:0 6px;border:1px solid transparent;border-radius:7px;background:none;color:var(--muted);font:inherit;font-size:14px;line-height:1;cursor:pointer}
-.fmt-bar button:hover,.fmt-bar button:focus-visible{background:var(--hover);color:var(--strong);border-color:var(--line)}
-.fmt-bar .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
-label.f>.fmt-bar{font-weight:400}
-.composer .actions{align-items:center}
-.composer .actions .fmt-bar{margin:0 auto 0 0;flex-wrap:nowrap;overflow-x:auto;min-width:0;flex:1;scrollbar-width:none}
+.fmt-pop{position:fixed;z-index:400;display:flex;gap:2px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);animation:fmtIn .12s ease-out}
+@keyframes fmtIn{from{opacity:0;transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){.fmt-pop{animation:none}}
+.fmt-pop button{min-width:32px;height:32px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--text);font:inherit;font-size:14px;line-height:1;cursor:pointer}
+.fmt-pop button:hover,.fmt-pop button:focus-visible{background:var(--hover);color:var(--strong)}
+.fmt-pop .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+@media (hover:none){.fmt-pop button{min-width:38px;height:38px;font-size:15px}}
 .linkcard{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--text);transition:border-color .15s,background .15s}
 .linkcard:hover{border-color:var(--line-strong);background:var(--hover)}
 .linkcard .lart{width:44px;height:44px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--neon))}
@@ -2010,9 +2010,11 @@ document.addEventListener('click', e => {
 addEventListener('scroll', mentionPlace, true);
 addEventListener('resize', mentionPlace);
 
-/* ---- Botones de formato (B, I, U, S, código, título, cita, lista) y atajos Ctrl+B / I / U / Mayús+X / E ----
-   fmtBar() va encima del texto en Avisos y al editar, y junto a "Publicar" en el Inicio. Los atajos valen en
-   todos los cuadros que se pintan con richText()/rtFormat(). Ponen las marcas de WhatsApp; si ya están, las quitan. */
+/* ---- Formato: barrita flotante sobre el texto seleccionado (2026-11-28, Yuri: nada de barra fija) ----
+   En el ordenador sale al dejar el ratón quieto encima de lo seleccionado (el clic derecho sigue siendo el menú
+   del navegador); en el móvil, al terminar de seleccionar, justo debajo (encima va el menú de Copiar/Pegar).
+   Botones B, I, U, S, código, título, cita y lista; atajos Ctrl+B / I / U / Mayús+X / E. Ponen las marcas de
+   WhatsApp y, si ya están, las quitan. Vale en todos los cuadros que se pintan con richText()/rtFormat(). */
 const FMT_INPUTS = '#feedForm textarea, #feedEditForm textarea, #postForm textarea, .cm-new textarea, #dmForm textarea';
 const FMT_BTNS = [
   ['b', '<b>B</b>', 'Negrita (Ctrl+B) · *texto*'], ['i', '<i>I</i>', 'Cursiva (Ctrl+I) · _texto_'],
@@ -2022,11 +2024,83 @@ const FMT_BTNS = [
   ['ul', '<span aria-hidden="true">•≡</span>', 'Lista · líneas que empiezan por "- "'],
 ];
 const FMT_MARK = { b: '*', i: '_', u: '__', s: '~' }, FMT_LINE = { h: '# ', q: '> ', ul: '- ' };
-const fmtBar = () => `<div class="fmt-bar" role="toolbar" aria-label="Formato del texto">${FMT_BTNS.map(([k, h, t]) => `<button type="button" data-fmt="${k}" title="${esc(t)}" aria-label="${esc(t.split(' · ')[0])}">${h}</button>`).join('')}</div>`;
-function fmtField(btn) { // el cuadro de texto de esa barra: el del mismo formulario
-  const f = btn.closest('form, .modal');
-  return f && f.querySelector('textarea[name=body]');
+const fmtTouch = () => matchMedia('(hover:none)').matches;
+let FP = null, fpTimer = 0, fpQuiet = 0; // barrita abierta: { ta }; fpQuiet: hasta cuándo ignorar los cambios que provoca un botón
+// Dónde está en pantalla lo seleccionado de un textarea: se copia el texto en un div invisible con el mismo estilo
+function fmtRects(ta) {
+  const s = ta.selectionStart, e = ta.selectionEnd, cs = getComputedStyle(ta), m = document.createElement('div');
+  ['boxSizing', 'width', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle',
+    'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight', 'textTransform', 'wordSpacing', 'textIndent', 'tabSize', 'whiteSpace', 'overflowWrap', 'wordBreak']
+    .forEach(p => { m.style[p] = cs[p]; });
+  Object.assign(m.style, { position: 'fixed', left: '0', top: '0', visibility: 'hidden', overflow: 'hidden', height: 'auto', pointerEvents: 'none' });
+  const sp = document.createElement('span'); sp.textContent = ta.value.slice(s, e) || '​';
+  m.append(ta.value.slice(0, s), sp, ta.value.slice(e) + ' ');
+  document.body.appendChild(m);
+  const mr = m.getBoundingClientRect(), tr = ta.getBoundingClientRect();
+  const out = [...sp.getClientRects()].filter(r => r.width > 0).map(r => {
+    const left = r.left - mr.left + tr.left - ta.scrollLeft, top = r.top - mr.top + tr.top - ta.scrollTop;
+    return { left, top, right: left + r.width, bottom: top + r.height };
+  }).filter(r => r.bottom > tr.top && r.top < tr.bottom); // solo lo que se ve dentro del cuadro
+  m.remove(); return out;
 }
+function fmtOpen(ta) {
+  const rs = fmtRects(ta); if (!rs.length) return fmtClose();
+  let box = $('#fmtPop');
+  if (!box) {
+    box = document.createElement('div'); box.id = 'fmtPop'; box.className = 'fmt-pop'; box.setAttribute('role', 'toolbar'); box.setAttribute('aria-label', 'Formato del texto');
+    box.innerHTML = FMT_BTNS.map(([k, h, t]) => `<button type="button" data-fmt="${k}" title="${esc(t)}" aria-label="${esc(t.split(' · ')[0])}">${h}</button>`).join('');
+    document.body.appendChild(box);
+  }
+  FP = { ta };
+  const tr = ta.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, touch = fmtTouch();
+  const first = rs[0], last = rs[rs.length - 1];
+  const cx = rs.length > 1 ? (Math.max(tr.left, Math.min(...rs.map(r => r.left))) + Math.min(tr.right, Math.max(...rs.map(r => r.right)))) / 2 : (first.left + first.right) / 2;
+  const vh = window.visualViewport ? visualViewport.height : innerHeight;
+  // Ordenador: encima (debajo si no cabe). Móvil: debajo, dejando sitio a los tiradores de la selección.
+  let top = touch ? last.bottom + 28 : first.top - h - 8;
+  if (!touch && top < 8) top = last.bottom + 8;
+  if (touch && top + h > vh - 8) top = first.top - h - 56;
+  box.style.left = Math.max(8, Math.min(cx - w / 2, innerWidth - w - 8)) + 'px';
+  box.style.top = Math.max(8, Math.min(top, vh - h - 8)) + 'px';
+}
+function fmtClose() { clearTimeout(fpTimer); FP = null; const b = $('#fmtPop'); if (b) b.remove(); }
+const fmtHasSel = ta => !!(ta && ta.selectionEnd > ta.selectionStart && ta.value.slice(ta.selectionStart, ta.selectionEnd).trim());
+// Ordenador: el ratón quieto 250 ms encima de lo seleccionado
+document.addEventListener('mousemove', e => {
+  if (fmtTouch()) return;
+  clearTimeout(fpTimer);
+  const ta = e.target.matches && e.target.matches(FMT_INPUTS) ? e.target : null;
+  if (!ta || e.buttons || !fmtHasSel(ta) || (FP && FP.ta === ta)) return;
+  const x = e.clientX, y = e.clientY;
+  fpTimer = setTimeout(() => {
+    if (fmtHasSel(ta) && fmtRects(ta).some(r => x >= r.left - 3 && x <= r.right + 3 && y >= r.top - 2 && y <= r.bottom + 2)) fmtOpen(ta);
+  }, 250);
+});
+// Selección que cambia: en el ordenador se cierra (se vuelve a pasar el ratón); en el móvil sale al dejar de cambiar
+document.addEventListener('selectionchange', () => {
+  if (performance.now() < fpQuiet) return;
+  const ta = document.activeElement, ok = ta && ta.matches && ta.matches(FMT_INPUTS) && fmtHasSel(ta);
+  if (!fmtTouch()) { if (FP) fmtClose(); return; }
+  if (FP) fmtClose();
+  if (ok) fpTimer = setTimeout(() => { if (document.activeElement === ta && fmtHasSel(ta)) fmtOpen(ta); }, 450);
+});
+document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('#fmtPop')) e.preventDefault(); }); // no quitar la selección
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('#fmtPop [data-fmt]');
+  if (!b || !FP) return;
+  const ta = FP.ta; fpQuiet = performance.now() + 200;
+  fmtApply(ta, b.dataset.fmt);
+  setTimeout(() => { if (fmtHasSel(ta)) fmtOpen(ta); else fmtClose(); }, 60); // sigue abierta para poner más de un formato
+});
+document.addEventListener('input', e => { if (FP && performance.now() >= fpQuiet && e.target === FP.ta) fmtClose(); });
+document.addEventListener('keydown', e => {
+  if (!FP) return;
+  if (e.key === 'Escape') { fmtClose(); e.stopPropagation(); }
+  else if (e.target === FP.ta && !e.ctrlKey && !e.metaKey && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) fmtClose(); // escribir o mover el cursor la cierra
+}, true);
+document.addEventListener('focusout', e => { if (FP && e.target === FP.ta) setTimeout(() => { if (FP && document.activeElement !== FP.ta) fmtClose(); }, 0); });
+addEventListener('scroll', e => { if (FP && (e.target === document || e.target === FP.ta || (e.target.contains && e.target.contains(FP.ta)))) fmtClose(); }, true);
+addEventListener('resize', () => { if (FP) fmtClose(); });
 function fmtPut(ta, s, e, text, selS, selE) {
   if (ta.maxLength > 0 && ta.value.length - (e - s) + text.length > ta.maxLength) return toast('No caben más caracteres', 'warn');
   ta.focus(); ta.setRangeText(text, s, e); ta.setSelectionRange(s + selS, s + selE);
@@ -2053,11 +2127,6 @@ function fmtApply(ta, k) {
   const t = v.slice(s, e).split('\n').map(l => l.trim() ? m + l + m : l).join('\n');
   fmtPut(ta, s, e, t, t.includes('\n') ? 0 : n, t.includes('\n') ? t.length : t.length - n);
 }
-document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('[data-fmt]')) e.preventDefault(); }); // no quitar la selección
-document.addEventListener('click', e => {
-  const b = e.target.closest && e.target.closest('[data-fmt]');
-  if (b) fmtApply(fmtField(b), b.dataset.fmt);
-});
 document.addEventListener('keydown', e => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey || !e.target.matches || !e.target.matches(FMT_INPUTS)) return;
   const key = e.key.toLowerCase();
@@ -4603,7 +4672,7 @@ function feedView() {
         <div class="vd-days"><label>El vídeo se borra a los <select name="vdays" data-no-emoji>${VD_DAYS.map(d => `<option value="${d}">${d} día${d === 1 ? '' : 's'}</option>`).join('')}</select></label>
           <small>Por ahora tenemos poco espacio en el plan gratuito, así que los vídeos solo se ven unos días y luego se borran solos.</small></div>
         <button type="button" class="md-btn" data-action="md-add" data-key="feed-new" title="Añadir fotos o un vídeo" aria-label="Añadir fotos o un vídeo">${ic('media')}</button>
-        <div class="actions" style="margin-top:2px">${fmtBar()}<button class="btn" type="submit">Publicar</button></div>
+        <div class="actions" style="margin-top:2px"><button class="btn" type="submit">Publicar</button></div>
       </div></form>
     ${newPill()}
     ${list.length ? `<div class="feed">${list.map(feedCard).join('')}</div>`
@@ -4664,7 +4733,7 @@ function feedEditModal(id) {
   openModal(`
     <div class="modal-head"><h2>Editar publicación</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="feedEditForm" data-id="${p.id}">
-      <label class="f">Texto${fmtBar()}<textarea name="body" maxlength="2000" rows="6">${esc(plainText(p.body))}</textarea></label>
+      <label class="f">Texto<textarea name="body" maxlength="2000" rows="6">${esc(plainText(p.body))}</textarea></label>
       <div class="f">Fotos <span class="sub">(hasta ${PH_MAX.feed})</span>${phStrip('feed-edit')}<div class="ph-row">${phPicker('feed-edit', PH_MAX.feed, 'Añadir fotos')}</div></div>
       <p class="sub" style="margin:0 0 12px">Se verá la etiqueta «editado» junto a la fecha.</p>
       <div class="actions"><button class="btn" type="submit">Guardar cambios</button><button class="btn ghost" type="button" data-action="close">Cancelar</button></div>
@@ -4766,7 +4835,7 @@ function postFormModal(id) {
     <div class="modal-head"><h2>${p ? 'Editar aviso' : 'Nuevo aviso'}</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
     <form id="postForm" data-id="${p ? p.id : ''}">
       <label class="f">Título<input type="text" name="title" required maxlength="150" value="${esc(p ? p.title : '')}"></label>
-      <label class="f">Mensaje${fmtBar()}<textarea name="body" maxlength="5000" rows="7" placeholder="Usa @ para mencionar a alguien y # para enlazar una sección o una escucha">${esc(p ? plainText(p.body) : '')}</textarea></label>
+      <label class="f">Mensaje<textarea name="body" maxlength="5000" rows="7" placeholder="Usa @ para mencionar a alguien y # para enlazar una sección o una escucha">${esc(p ? plainText(p.body) : '')}</textarea></label>
       <div class="f">Fotos <span class="sub">(opcional, hasta ${PH_MAX.board})</span>${phStrip('board')}<div class="ph-row">${phPicker('board', PH_MAX.board, 'Añadir fotos')}</div></div>
       <div class="f">Destinatarios
         <div class="radios">
