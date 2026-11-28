@@ -6293,7 +6293,7 @@ function notifIcon(kind) { return { board_post: 'board', assignment: 'listening'
 // Va suelto en <body> (#notifBox) para que repintar la barra de arriba no lo cierre ni pierda el desplazamiento.
 // Se cierra con la campanita, tocando fuera, Esc o Atrás (entrada `pop: 1` en el historial).
 // Como Facebook (Yuri, 2026-11-28): filtro Todas / No leídas arriba y, en Todas, tres grupos:
-// Nuevas (sin leer, de cuando sean), Hoy (ya leídas, de hoy) y Anteriores (leídas, de otros días).
+// Nuevas (sin leer, de cuando sean), Hoy (ya leídas, de las últimas 24 h) y Anteriores (leídas, más antiguas).
 let notifFilter = 'all'; // 'all' | 'unread'; se queda como estaba al volver a abrir (solo en memoria)
 function notifRowHtml(n) {
   return `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
@@ -6301,9 +6301,9 @@ function notifRowHtml(n) {
     <div class="t"><div>${notifText(n)}</div><span class="sub">${timeAgo(n.created_at)}</span></div>${n.read_at ? '' : '<i class="udot"></i>'}</div>`;
 }
 function notifGroups(list) {
-  const today = new Date().toDateString();
+  const since = Date.now() - 864e5; // "Hoy" = últimas 24 h, aunque sean de ayer (Yuri)
   const g = { new: [], today: [], old: [] };
-  list.forEach(n => g[!n.read_at ? 'new' : new Date(n.created_at).toDateString() === today ? 'today' : 'old'].push(n));
+  list.forEach(n => g[!n.read_at ? 'new' : new Date(n.created_at).getTime() >= since ? 'today' : 'old'].push(n));
   return [['new', 'Nuevas'], ['today', 'Hoy'], ['old', 'Anteriores']].filter(([k]) => g[k].length).map(([k, label]) => ({ k, label, items: g[k] }));
 }
 function notifsInner() {
