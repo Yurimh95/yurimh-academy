@@ -124,10 +124,30 @@ const navTo = async (p, s) => {
   ok((await p.textContent('#app')).includes('Notificaciones en el móvil'), 'Ajustes: apartado de notificaciones en el móvil');
   ok((await p.textContent('#app')).includes('Solo lo ve tu profesor') && (await p.textContent('#app')).includes('Personas bloqueadas'), 'Ajustes: privacidad explicada y lista de bloqueados');
   await p.click('.bell'); await wait(p,250);
-  ok((await p.locator('#notifBox .push-box').count())===0, 'La campanita no muestra ajustes de push si no se pueden activar (eso va en Ajustes)');
+  ok((await p.locator('#notifBox .nb-push').count())===0, 'La campanita no invita a activar push si no se pueden activar (eso va en Ajustes)');
   await p.keyboard.press('Escape'); await wait(p,200);
+  // Grupos como Facebook: Nuevas (sin leer), Hoy (leídas de hoy) y Anteriores
+  await p.evaluate(()=>{ const d=new Date(Date.now()-3*864e5).toISOString(), now=new Date().toISOString();
+    S.notifs.push({id:'ng1',user_id:'s1',kind:'homework',extra:'Escala nueva',created_at:now,read_at:null},
+      {id:'ng2',user_id:'s1',kind:'homework',extra:'Escala vista hoy',created_at:now,read_at:now},
+      {id:'ng3',user_id:'s1',kind:'homework',extra:'Escala antigua',created_at:d,read_at:d}); });
   await p.evaluate(()=>{ S.push='off'; }); await p.click('.bell'); await wait(p,250);
-  ok((await p.locator('#notifBox .push-box [data-action=push-on]').count())===1, 'Si se pueden activar y están apagadas, la campanita invita a activarlas');
+  const grp = async k => (await p.locator(`#notifBox [data-ngroup=${k}]`).count()) ? await p.textContent(`#notifBox [data-ngroup=${k}]`) : '';
+  ok((await grp('new')).includes('Nuevas') && (await grp('new')).includes('Escala nueva') && !(await grp('new')).includes('Escala vista hoy'), 'Grupo "Nuevas": las que no has leído');
+  ok((await grp('today')).includes('Hoy') && (await grp('today')).includes('Escala vista hoy'), 'Grupo "Hoy": leídas de hoy');
+  ok((await grp('old')).includes('Anteriores') && (await grp('old')).includes('Escala antigua'), 'Grupo "Anteriores": leídas de otros días');
+  ok((await p.locator('#notifBox .nb-tab.on').textContent()).includes('Todas'), 'Filtro: empieza en "Todas"');
+  await p.click('#notifBox [data-action=notif-filter][data-f=unread]'); await wait(p,200);
+  { const t = await p.textContent('#notifBox .nb-scroll'); ok((await p.locator('#notifBox').count())===1 && t.includes('Escala nueva') && !t.includes('Escala vista hoy') && !t.includes('Escala antigua') && (await p.locator('#notifBox .nb-group').count())===0, 'Filtro "No leídas": solo las sin leer, y el desplegable sigue abierto'); }
+  await p.click('#notifBox [data-action=notif-filter][data-f=all]'); await wait(p,200);
+  // Activar push: franja arriba, antes de la lista (no al final, donde nadie llega)
+  ok((await p.locator('#notifBox .nb-push [data-action=push-on]').count())===1, 'Si se pueden activar y están apagadas, la campanita invita a activarlas');
+  { const bp = await p.locator('#notifBox .nb-push').boundingBox(), bl = await p.locator('#notifBox .nb-scroll').boundingBox(); ok(bp.y < bl.y, 'La invitación sale arriba, antes de las notificaciones'); }
+  await p.click('#notifBox [data-action=push-later]'); await wait(p,200);
+  ok((await p.locator('#notifBox').count())===1 && (await p.locator('#notifBox .nb-push').count())===0, '"Ahora no" la esconde sin cerrar el desplegable');
+  await p.keyboard.press('Escape'); await wait(p,200); await p.click('.bell'); await wait(p,250);
+  ok((await p.locator('#notifBox .nb-push').count())===0, 'Y sigue escondida al volver a abrir');
+  await p.evaluate(()=>{ localStorage.removeItem('ya-push-later'); S.notifs=S.notifs.filter(n=>!/^ng/.test(n.id)); });
   await p.keyboard.press('Escape'); await wait(p);
   let state = await snapshot(p);
 

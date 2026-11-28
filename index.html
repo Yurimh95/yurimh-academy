@@ -1049,7 +1049,18 @@ a[data-watch]{cursor:pointer;-webkit-touch-callout:none}
 .nb-scroll{overflow-y:auto;overscroll-behavior:contain;padding:0 14px 12px;min-height:0}
 .nbox .nlist{margin:0 -6px}
 .nbox .empty{margin:6px 0 4px}
-.nbox .push-box{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.nb-tabs{display:flex;gap:6px;padding:0 16px 8px;flex:none}
+.nb-tab{font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:6px 13px;border-radius:999px;border:0;background:none;color:var(--text);transition:background .15s,color .15s}
+.nb-tab:hover{background:var(--hover)}
+.nb-tab.on{background:rgba(var(--accent-rgb),.15);color:var(--accent-hi)}
+.nb-gt{margin:8px 2px 4px;font-size:15px;font-weight:700;color:var(--strong)}
+.nb-group:first-child .nb-gt{margin-top:2px}
+.nb-push{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 14px 8px;padding:10px 12px;border-radius:12px;background:rgba(var(--accent-rgb),.1);flex:none}
+.nb-push>svg{width:20px;height:20px;color:var(--accent-hi);flex:none}
+.nbp-t{flex:1;min-width:160px;display:flex;flex-direction:column;line-height:1.3}
+.nbp-t b{font-size:14px;color:var(--strong)}
+.nbp-t small{font-size:12.5px;color:var(--muted)}
+.nbp-b{display:flex;align-items:center;gap:10px;margin-left:auto}
 .push-box>b{color:var(--strong)}
 .udot{width:9px;height:9px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);flex:none}
 
@@ -6281,15 +6292,32 @@ function notifIcon(kind) { return { board_post: 'board', assignment: 'listening'
 // Desplegable bajo la campanita, como en Facebook (Yuri, 2026-11-28; antes era una ventana en el centro).
 // Va suelto en <body> (#notifBox) para que repintar la barra de arriba no lo cierre ni pierda el desplazamiento.
 // Se cierra con la campanita, tocando fuera, Esc o Atrás (entrada `pop: 1` en el historial).
+// Como Facebook (Yuri, 2026-11-28): filtro Todas / No leídas arriba y, en Todas, tres grupos:
+// Nuevas (sin leer, de cuando sean), Hoy (ya leídas, de hoy) y Anteriores (leídas, de otros días).
+let notifFilter = 'all'; // 'all' | 'unread'; se queda como estaba al volver a abrir (solo en memoria)
+function notifRowHtml(n) {
+  return `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
+    ${n.actor_id && S.dir[n.actor_id] ? avatarHtml(n.actor_id, 38) : `<span class="ic">${ic(notifIcon(n.kind))}</span>`}
+    <div class="t"><div>${notifText(n)}</div><span class="sub">${timeAgo(n.created_at)}</span></div>${n.read_at ? '' : '<i class="udot"></i>'}</div>`;
+}
+function notifGroups(list) {
+  const today = new Date().toDateString();
+  const g = { new: [], today: [], old: [] };
+  list.forEach(n => g[!n.read_at ? 'new' : new Date(n.created_at).toDateString() === today ? 'today' : 'old'].push(n));
+  return [['new', 'Nuevas'], ['today', 'Hoy'], ['old', 'Anteriores']].filter(([k]) => g[k].length).map(([k, label]) => ({ k, label, items: g[k] }));
+}
 function notifsInner() {
-  const list = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
-  return `<div class="nb-head"><h2>Notificaciones</h2>${unreadNotifs() ? '<button class="linkbtn" data-action="notif-all-read">Marcar todas como leídas</button>' : ''}</div>
-    <div class="nb-scroll">
-    ${list.length ? `<div class="nlist">${list.map(n => `<div class="nrow ${n.read_at ? '' : 'unread'}" data-action="notif-open" data-id="${n.id}">
-        ${n.actor_id && S.dir[n.actor_id] ? avatarHtml(n.actor_id, 38) : `<span class="ic">${ic(notifIcon(n.kind))}</span>`}
-        <div class="t"><div>${notifText(n)}</div><span class="sub">${timeAgo(n.created_at)}</span></div>${n.read_at ? '' : '<i class="udot"></i>'}</div>`).join('')}</div>`
-      : '<div class="empty small">No tienes notificaciones.</div>'}
-    ${pushPromptHtml()}</div>`;
+  const all = bellNotifs().sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
+  const unread = all.filter(n => !n.read_at);
+  const tab = (k, label) => `<button type="button" class="nb-tab${notifFilter === k ? ' on' : ''}" data-action="notif-filter" data-f="${k}" aria-pressed="${notifFilter === k}">${label}</button>`;
+  let body;
+  if (notifFilter === 'unread') body = unread.length ? `<div class="nlist">${unread.map(notifRowHtml).join('')}</div>` : '<div class="empty small">No tienes notificaciones sin leer.</div>';
+  else body = all.length ? notifGroups(all).map(g => `<div class="nb-group" data-ngroup="${g.k}"><h3 class="nb-gt">${g.label}</h3><div class="nlist">${g.items.map(notifRowHtml).join('')}</div></div>`).join('')
+    : '<div class="empty small">No tienes notificaciones.</div>';
+  return `<div class="nb-head"><h2>Notificaciones</h2>${unread.length ? '<button class="linkbtn" data-action="notif-all-read">Marcar todas como leídas</button>' : ''}</div>
+    <div class="nb-tabs" role="group" aria-label="Filtrar">${tab('all', 'Todas')}${tab('unread', 'No leídas')}</div>
+    ${pushPromptHtml()}
+    <div class="nb-scroll">${body}</div>`;
 }
 function notifsPlace() {
   const box = $('#notifBox'), bell = $('.bell'); if (!box || !bell) return;
@@ -6325,8 +6353,15 @@ function notifsRefresh() {
 document.addEventListener('click', e => { if (notifOpen && !e.composedPath().some(x => x.id === 'notifBox' || (x.classList && x.classList.contains('bell')))) notifsClose(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && notifOpen) { notifsClose(); const b = $('.bell'); if (b) b.focus(); } });
 window.addEventListener('resize', () => { if (notifOpen) notifsPlace(); });
-// En la campanita solo se invita a activarlas; el resto de opciones está en Ajustes
-function pushPromptHtml() { return typeof pushSettingHtml === 'function' && S.push === 'off' ? pushSettingHtml() : ''; }
+// En la campanita solo se invita a activarlas (franja fija arriba, no al final de la lista, que nadie llega);
+// el resto de opciones está en Ajustes. "Ahora no" la esconde 7 días en este dispositivo (preferencia, como el tema).
+const PUSH_LATER_KEY = 'ya-push-later', PUSH_LATER_DAYS = 7;
+function pushLaterActive() { try { return Date.now() < +(localStorage.getItem(PUSH_LATER_KEY) || 0); } catch (e) { return false; } }
+function pushPromptHtml() {
+  if (S.push !== 'off' || pushLaterActive()) return '';
+  return `<div class="nb-push">${ic('bell')}<div class="nbp-t"><b>Activa las notificaciones</b><small>Te llegarán al móvil o al ordenador aunque tengas la app cerrada.</small></div>
+    <div class="nbp-b"><button class="btn primary sm" data-action="push-on">Activar</button><button class="linkbtn" data-action="push-later">Ahora no</button></div></div>`;
+}
 async function markNotifsRead(ids) {
   if (!ids.length) return;
   const now = new Date().toISOString();
@@ -6460,6 +6495,8 @@ const actions = {
   },
   // ---- Notificaciones ----
   notifs() { if (notifOpen) notifsClose(); else notifsOpen(); },
+  'notif-filter'(el) { notifFilter = el.dataset.f === 'unread' ? 'unread' : 'all'; notifsRefresh(); const sc = $('#notifBox .nb-scroll'); if (sc) sc.scrollTop = 0; },
+  'push-later'() { try { localStorage.setItem(PUSH_LATER_KEY, String(Date.now() + PUSH_LATER_DAYS * 864e5)); } catch (e) { } notifsRefresh(); },
   'notif-open'(el) { const n = S.notifs.find(x => x.id === el.dataset.id); if (n) openNotif(n); },
   async 'notif-all-read'() { await markNotifsRead(bellNotifs().filter(n => !n.read_at).map(n => n.id)); refreshChrome(); },
   // ---- Ficha del alumno (profesor): fecha de nacimiento y permiso familiar ----
