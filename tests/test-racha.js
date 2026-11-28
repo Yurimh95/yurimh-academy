@@ -140,7 +140,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   const flameHtml = await p.evaluate(() => medalHtml(2, 3));
   ok(!/aura|fl-svg|feTurbulence/.test(flameHtml), 'El aura va solo en el contorno (CSS): ni fuego ni manchas detrás');
   const spk = await p.evaluate(() => [medalHtml(4, 2, '14 días'), medalHtml(4, 0, '3 días')]);
-  ok(/rk-sparks/.test(spk[0]) && /rk-tag">14 días/.test(spk[0]) && !/rk-sparks|rk-tag/.test(spk[1]), 'Racha: chispas e inscripción solo con 7 días o más');
+  ok(/rk-sparks/.test(spk[0]) && /rk-tag">14 días/.test(spk[0]) && !/rk-sparks/.test(spk[1]) && /rk-tag dim">3 días/.test(spk[1]), 'Racha: inscripción gris desde el primer día; color y chispas a los 7');
   const afterStudent = await snapshot(p);
 
   // ================= OTRA ALUMNA: lo público y lo privado =================

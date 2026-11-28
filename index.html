@@ -337,6 +337,8 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .rk-tag::before,.rk-tag::after{content:"";height:1px;width:22px;flex:none;background:linear-gradient(90deg,transparent,rgba(var(--c),.9))}
 .rk-tag::after{transform:scaleX(-1)}
 html[data-theme="light"] .rk-tag{text-shadow:none;filter:brightness(.75)}
+.rk-tag.dim{color:var(--muted);text-shadow:none;filter:none}
+.rk-tag.dim::before,.rk-tag.dim::after{background:linear-gradient(90deg,transparent,var(--line))}
 @media (prefers-reduced-motion:reduce){.rk-sparks{display:none}}
 
 .rank-card .sk-how{grid-column:1/-1}
@@ -1503,9 +1505,10 @@ html[data-theme="light"] :is(.panel,.card,.dcard,.fpost){box-shadow:0 1px 2px rg
 /* Cuadro de publicar como el de Facebook: dentro del campo, a la derecha, multimedia (fotos o vídeo) y emojis.
    "Publicar" solo aparece cuando hay algo que publicar o estás escribiendo. */
 .composer-main{position:relative}
-.composer-main textarea{padding-right:84px}
-.composer .emo-btn{bottom:auto;top:7px}
-.md-btn{position:absolute;right:40px;top:7px;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--faint);display:grid;place-items:center;cursor:pointer;transition:color .15s,background .15s;z-index:1}
+.composer-main textarea,.composer-main .emo-wrap>textarea{padding-right:80px}
+.composer .emo-btn{bottom:auto;top:7px;z-index:2}
+.composer-main .emo-wrap::after{content:"";position:absolute;right:1px;top:1px;bottom:1px;width:84px;border-radius:0 10px 10px 0;background:linear-gradient(90deg,rgba(var(--bg-rgb,0,0,0),0),var(--field) 16px);pointer-events:none;z-index:1} /* tapa el texto que se cuela bajo los iconos */
+.md-btn{position:absolute;right:40px;top:7px;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--faint);display:grid;place-items:center;cursor:pointer;transition:color .15s,background .15s;z-index:2}
 .md-btn:hover{color:var(--accent-hi);background:rgba(var(--accent-rgb),.12)}
 .md-btn svg{width:20px;height:20px}
 /* Se recoge con un pequeño retraso: si se recogiera al momento, la página se movería bajo el ratón y el clic caería en otro sitio */
@@ -7931,7 +7934,9 @@ function sparksHtml(f) {
   return `<span class="rk-sparks" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i style="left:${(20 + sparkRnd(k) * 60).toFixed(1)}%;--s:${(2 + sparkRnd(k + 50) * 2.5).toFixed(1)}px;--x:${(sparkRnd(k + 99) * 30 - 15).toFixed(0)}px;--t:${(1.8 + sparkRnd(k + 7) * 1.6).toFixed(2)}s;animation-delay:${(sparkRnd(k + 31) * 3).toFixed(2)}s"></i>`).join('')}</span>`;
 }
 // label: los días de la racha (dueño y profesor) o el escalón alcanzado ("14+ días", perfil público)
-const medalHtml = (tier, flame = 0, label = '') => emblemSvg(tier) + sparksHtml(flame) + (flame && label ? `<span class="rk-tag">${esc(label)}</span>` : '');
+// Yuri: la inscripción sale desde el primer día (gris); a los 7 días toma color y salen las chispas
+const medalHtml = (tier, flame = 0, label = '') => emblemSvg(tier) + sparksHtml(flame) + (label ? `<span class="rk-tag${flame ? '' : ' dim'}">${esc(label)}</span>` : '');
+const streakLabel = n => n ? daysTxt(n) : '';
 const medalCls = f => f ? ` fl${f}" style="--c:${FLAME_RGB[f]}` : '';
 const flameTxt = f => f ? `Tu medalla echa chispas ${FLAME_NAME[f]}` : '';
 const nextFlame = cur => FLAME_DAYS.find(d => d > cur) || null;
@@ -8073,7 +8078,7 @@ function rankCard() {
   if (isTeacher() || !S.assigns.length) return '';
   const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), f = flameOf(st.cur), nf = nextFlame(st.cur);
   return `<section class="rank-card" data-rank-card>
-    <button class="rk-medal${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, daysTxt(st.cur))}</button>
+    <button class="rk-medal${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, streakLabel(st.cur))}</button>
     <div class="rk-main">
       <span class="sub">Tu rango</span>
       <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
@@ -8103,7 +8108,7 @@ function rankPanel() {
   const st = streakOf(S.user.id), rk = rankOf(pointsOf(S.user.id)), f = flameOf(st.cur);
   return `<section class="panel rank-panel" id="rankPanel">
     <div class="dhead" style="margin:0 0 6px"><h2 class="h2" style="margin:0">Tu rango</h2><span class="chip">${ic('eye')} Lo ven tus compañeros</span></div>
-    <div class="rk-show"><button class="rk-medal lg${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, daysTxt(st.cur))}</button>
+    <div class="rk-show"><button class="rk-medal lg${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, streakLabel(st.cur))}</button>
       <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
       ${f ? `<span class="rk-fl">${flameTxt(f)}</span>` : ''}
       <span class="sub">${nfmt(rk.points)} puntos · récord de racha: ${daysTxt(st.best)}</span>
@@ -8138,7 +8143,7 @@ function streakFichaHtml(sid) {
   const st = streakOf(sid), rk = rankOf(pointsOf(sid));
   const s = st.todayDone ? 'hoy ya ha sumado' : st.atRisk ? 'hoy aún no ha terminado ninguna' : 'sin escuchas pendientes';
   return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">Rango y racha</h2></div>
-    <div class="agebox rk-ficha"><div class="rk-medal${medalCls(flameOf(st.cur))}">${medalHtml(rk.tier, flameOf(st.cur), daysTxt(st.cur))}</div>
+    <div class="agebox rk-ficha"><div class="rk-medal${medalCls(flameOf(st.cur))}">${medalHtml(rk.tier, flameOf(st.cur), streakLabel(st.cur))}</div>
       <div><p style="margin:0"><b>${esc(rk.name)}</b> <span class="sub">· ${nfmt(rk.points)} puntos${rk.next !== null ? ` · le faltan ${nfmt(rk.next - rk.points)} para ${esc(stepName(rk.step + 1))}` : ''}</span></p>
       <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">${flameOf(st.cur) ? `· chispas ${FLAME_NAME[flameOf(st.cur)]} ` : ''}· récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
 }
