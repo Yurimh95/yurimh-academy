@@ -300,6 +300,41 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .rk-streak:not(.on) b{color:var(--muted)}
 .rk-mult{font-size:22px;font-weight:800;color:var(--warn);line-height:1.1}
 .rk-streak:not(.on) .rk-mult{color:var(--muted)}
+.rk-medal{position:relative}
+.rk-medal .emb{position:relative;z-index:1}
+/* Brillo de rango (2026-11-28, Yuri): cada medalla brilla en su contorno con el color de su metal; más intenso cuanto
+   más alto el rango, y desde Platino late despacio (más rápido cuanto más alto). En cqw: escala con la medalla. */
+.rk-medal{container-type:inline-size}
+.rk-medal .emb.t0{filter:drop-shadow(0 0 0.9cqw rgba(217,138,82,0.59)) drop-shadow(0 0 2.75cqw rgba(217,138,82,0.3))}
+.rk-medal .emb.t1{filter:drop-shadow(0 0 0.98cqw rgba(197,215,235,0.63)) drop-shadow(0 0 3.1cqw rgba(197,215,235,0.34))}
+.rk-medal .emb.t2{filter:drop-shadow(0 0 1.1cqw rgba(255,200,70,0.68)) drop-shadow(0 0 3.6cqw rgba(255,200,70,0.39))}
+.rk-medal .emb.t3{filter:drop-shadow(0 0 1.22cqw rgba(99,220,199,0.74)) drop-shadow(0 0 4.1cqw rgba(99,220,199,0.44))}
+.rk-medal .emb.t3:not(.pop){animation:rkg3 4.2s ease-in-out infinite alternate}
+@keyframes rkg3{from{filter:drop-shadow(0 0 0.86cqw rgba(99,220,199,0.52)) drop-shadow(0 0 2.87cqw rgba(99,220,199,0.31))}to{filter:drop-shadow(0 0 1.22cqw rgba(99,220,199,0.74)) drop-shadow(0 0 4.1cqw rgba(99,220,199,0.44))}}
+.rk-medal .emb.t4{filter:drop-shadow(0 0 1.37cqw rgba(111,170,255,0.8)) drop-shadow(0 0 4.7cqw rgba(111,170,255,0.5))}
+.rk-medal .emb.t4:not(.pop){animation:rkg4 3.6s ease-in-out infinite alternate}
+@keyframes rkg4{from{filter:drop-shadow(0 0 0.96cqw rgba(111,170,255,0.56)) drop-shadow(0 0 3.29cqw rgba(111,170,255,0.35))}to{filter:drop-shadow(0 0 1.37cqw rgba(111,170,255,0.8)) drop-shadow(0 0 4.7cqw rgba(111,170,255,0.5))}}
+.rk-medal .emb.t5{filter:drop-shadow(0 0 1.51cqw rgba(185,138,245,0.87)) drop-shadow(0 0 5.3cqw rgba(185,138,245,0.56)) drop-shadow(0 0 6.84cqw rgba(185,138,245,0.23))}
+.rk-medal .emb.t5:not(.pop){animation:rkg5 3.2s ease-in-out infinite alternate}
+@keyframes rkg5{from{filter:drop-shadow(0 0 1.06cqw rgba(185,138,245,0.61)) drop-shadow(0 0 3.71cqw rgba(185,138,245,0.39)) drop-shadow(0 0 4.79cqw rgba(185,138,245,0.16))}to{filter:drop-shadow(0 0 1.51cqw rgba(185,138,245,0.87)) drop-shadow(0 0 5.3cqw rgba(185,138,245,0.56)) drop-shadow(0 0 6.84cqw rgba(185,138,245,0.23))}}
+.rk-medal .emb.t6{filter:drop-shadow(0 0 1.68cqw rgba(63,240,255,0.95)) drop-shadow(0 0 6cqw rgba(63,240,255,0.63)) drop-shadow(0 0 8.1cqw rgba(63,240,255,0.27))}
+.rk-medal .emb.t6:not(.pop){animation:rkg6 2.8s ease-in-out infinite alternate}
+@keyframes rkg6{from{filter:drop-shadow(0 0 1.18cqw rgba(63,240,255,0.66)) drop-shadow(0 0 4.2cqw rgba(63,240,255,0.44)) drop-shadow(0 0 5.67cqw rgba(63,240,255,0.19))}to{filter:drop-shadow(0 0 1.68cqw rgba(63,240,255,0.95)) drop-shadow(0 0 6cqw rgba(63,240,255,0.63)) drop-shadow(0 0 8.1cqw rgba(63,240,255,0.27))}}
+.rk-medal .emb.t7{filter:drop-shadow(0 0 1.8cqw rgba(255,211,77,1)) drop-shadow(0 0 6.5cqw rgba(255,211,77,0.68)) drop-shadow(0 0 9cqw rgba(255,211,77,0.3))}
+.rk-medal .emb.t7:not(.pop){animation:rkg7 2.4s ease-in-out infinite alternate}
+@keyframes rkg7{from{filter:drop-shadow(0 0 1.26cqw rgba(255,211,77,0.7)) drop-shadow(0 0 4.55cqw rgba(255,211,77,0.48)) drop-shadow(0 0 6.3cqw rgba(255,211,77,0.21))}to{filter:drop-shadow(0 0 1.8cqw rgba(255,211,77,1)) drop-shadow(0 0 6.5cqw rgba(255,211,77,0.68)) drop-shadow(0 0 9cqw rgba(255,211,77,0.3))}}
+@media (prefers-reduced-motion:reduce){.rk-medal .emb{animation:none!important}}
+.rk-fl{font-weight:700;color:var(--warn)}
+/* Chispas de racha + inscripción heráldica (v8). --c = color del nivel en RGB (lo pone medalCls) */
+.rk-sparks{position:absolute;left:0;right:0;top:0;height:93cqw;z-index:2;pointer-events:none;overflow:visible}
+.rk-sparks i{position:absolute;top:60%;width:var(--s);height:var(--s);border-radius:50%;background:rgb(var(--c));box-shadow:0 0 6px 1px rgba(var(--c),.9);opacity:0;animation:rkrise var(--t) ease-out infinite}
+@keyframes rkrise{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}100%{opacity:0;transform:translate(var(--x),-75cqw)}}
+.rk-tag{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;color:rgb(var(--c));font-weight:700;font-size:11px;line-height:1;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 0 8px rgba(var(--c),.7);white-space:nowrap}
+.rk-tag::before,.rk-tag::after{content:"";height:1px;width:22px;flex:none;background:linear-gradient(90deg,transparent,rgba(var(--c),.9))}
+.rk-tag::after{transform:scaleX(-1)}
+html[data-theme="light"] .rk-tag{text-shadow:none;filter:brightness(.75)}
+@media (prefers-reduced-motion:reduce){.rk-sparks{display:none}}
+
 .rank-card .sk-how{grid-column:1/-1}
 .rk-show{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
 .pf-rank{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 4px}
@@ -312,7 +347,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .rk-rung{position:relative;display:flex;flex-direction:column;align-items:center;padding:8px 6px;border-radius:14px;background:var(--panel2);border:1px solid transparent}
 .rk-rung.cur{border-color:var(--neon);box-shadow:0 0 0 1px rgba(var(--neon-rgb),.35),0 0 18px rgba(var(--neon-rgb),.18)}
 .rk-rung .rk-medal{width:100%;max-width:190px;cursor:default}
-.rk-rung.locked .emb{filter:saturate(.45) brightness(.8);opacity:.7}
+.rk-rung.locked .rk-medal .emb{filter:saturate(.45) brightness(.8);opacity:.7;animation:none}
 .rk-lock{position:absolute;top:8px;right:8px;color:var(--muted)}
 .rk-rung ul{list-style:none;margin:4px 0 0;padding:0;width:100%;font-size:12.5px}
 .rk-rung li{display:flex;justify-content:space-between;gap:6px;padding:2px 4px;color:var(--faint)}
@@ -1451,6 +1486,16 @@ html[data-theme="light"] :is(.panel,.card,.dcard,.fpost){box-shadow:0 1px 2px rg
 .top-st .st-ring.new{box-shadow:none}
 @media (min-width:761px){ .home>.stories{display:none} .sidebar{padding-top:8px} } /* el menú empieza a la altura de los paneles */
 @media (max-width:760px){ .top-st{display:none} }
+
+/* PRUEBA (Yuri, 2026-11-28): paneles sin borde. Se distinguen solo por su color de fondo.
+   Los bordes de estado (aviso nuevo, sin leer, denuncias, vencidas) se mantienen. */
+html[data-theme] :is(.panel,.card,.dcard,.fpost,.row,.payrow,.stat,.mrow,.modal,.foryou,.rail-card){border-color:transparent}
+html[data-theme] .card.post.isnew{border-color:rgba(var(--accent-rgb),.45)}
+html[data-theme] .mrow.unread{border-color:rgba(var(--accent-rgb),.35)}
+html[data-theme] .stat.warn{border-color:rgba(var(--warn-rgb),.45)}
+html[data-theme] .stat.bad{border-color:rgba(var(--bad-rgb),.45)}
+html[data-theme] .stat.acc{border-color:rgba(var(--accent-rgb),.5)}
+html[data-theme] .dcard.mod{border-color:rgba(var(--warn-rgb),.45)}
 </style>
 </head>
 <body>
@@ -4019,6 +4064,8 @@ async function loadData(quiet = false) {
     catch (e) { console.warn('Reacciones a respuestas:', e.message || e); S.ansRx = []; }
     try { await loadLibrary(); } catch (e) { console.warn('Carpetas y géneros:', e.message || e); S.folders = []; S.genres = []; S.itemGenres = []; }
     try { await loadGoals(); } catch (e) { console.warn('Objetivos:', e.message || e); S.goalStages = []; S.goalItems = []; S.goalDone = []; }
+    try { const { data, error } = await sb.rpc('listening_catalog_points'); if (error) throw error; S.catalogPts = data || 0; }
+    catch (e) { console.warn('Total del catálogo:', e.message || e); S.catalogPts = 0; }
     S.blocked = [];
     if (S.profile.role === 'teacher') { // correos y dominios que no pueden registrarse
       try { const { data, error } = await sb.from('blocked_emails').select('*').order('created_at', { ascending: false }); if (error) throw error; S.blocked = data || []; }
@@ -4517,7 +4564,7 @@ function profileView() {
   <div class="two prof-grid">
     ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
     ${!isTeacher() ? goalsPanel() : ''}
-    ${!isTeacher() ? rankPanel() : ''}
+    ${!isTeacher() ? rankPanel() : teacherRankPanel()}
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
       <p class="sub" style="margin:0 0 12px">${isTeacher() ? 'Es el nombre que ven tus alumnos.' : 'Tu profesor siempre ve tu nombre. Los demás alumnos verán tu apodo si pones uno; si no, tu nombre.'}</p>
@@ -5865,7 +5912,7 @@ async function profileModal(id) {
       ${chips.length ? `<div class="chips" style="justify-content:center">${chips.map(c => `<span class="chip acc">${esc(c)}</span>`).join('')}</div>` : ''}
       ${p.bio ? `<p class="pf-bio">${linkify(p.bio)}</p>` : ''}
     </div>
-    ${p.role === 'student' ? `<div class="pf-rank" data-rankbox="${id}"></div>` : ''}
+    ${p.role === 'student' ? `<div class="pf-rank" data-rankbox="${id}"></div>` : teacherRankHtml()}
     ${field('Grupos y estilos favoritos', p.favorites)}
     ${field('Su equipo', p.gear)}
     ${!p.bio && !p.favorites && !p.gear && !chips.length ? `<p class="sub center">${mine ? 'Aún no has rellenado tu perfil.' : 'Todavía no ha rellenado su perfil.'}</p>` : ''}
@@ -7758,26 +7805,48 @@ function confetti() {
    Es lo mismo que calcula listening_streak() en la base de datos. La racha actual es privada (alumno y profesor).
    Rango (2026-11-28): cada escucha terminada da puntos una sola vez (listening_assignments.points, los pone la base
    de datos): (20 + 1 por minuto) × mult × (½ si se termina tarde). mult (v2, Yuri) = ×2 si el alumno llevaba 14 días
-   o más de racha EL DÍA QUE SE LE MANDÓ (listening_assignments.mult, al insertarla); si no, ×1. Así guardarse escuchas
-   no sirve. Tarde = después de su fecha límite o, sin fecha, más de 30 días después de mandarla. La suma da el
-   rango: 7 rangos × 3 divisiones + Mito. RANK_STEPS debe coincidir con listening_rank_step() del SQL.
+   o más de racha el día que se le mandó. v4 (Yuri): FUERA el multiplicador (mult siempre 1); la racha da prestigio (v8: chispas e inscripción
+   de la medalla; flameOf: 7/14/30 días = ámbar/azul/dorada), públicas con get_listening_badge. Tarde = después de su fecha límite o, sin fecha, más de 30 días después de mandarla. La suma da el
+   rango: 7 rangos × 3 divisiones + Mito. v3 (Yuri): los umbrales son % de toda la música del catálogo
+   (listening_catalog_points(), Σ 20 + minutos a ×1; en S.catalogPts) y Mito = 90 %. Al añadir música suben y se
+   puede bajar de rango. RANK_PCT debe coincidir con listening_rank_step() del SQL. El profesor luce siempre Mito.
    Las medallas y el récord de racha son públicos (get_listening_rank). Al subir, celebración (profiles.rank_seen). */
-const RANK_STEPS = [0, 150, 350, 600, 900, 1250, 1700, 2200, 2800, 3500, 4300, 5200, 6200, 7400, 8800, 10500, 12500, 15000, 18000, 22000, 27000, 35000];
+const RANK_PCT = [0, 1, 2, 4, 6, 8, 11, 14, 17, 21, 25, 29, 34, 39, 44, 50, 56, 62, 69, 77, 85, 90];
+// Umbrales en puntos con el catálogo de hoy. Sin catálogo (0), todo es Bronce III.
+const catalogPts = () => S.catalogPts || (S.items || []).reduce((t, i) => t + 20 + Math.floor((i.duration_sec || 0) / 60), 0);
+const rankSteps = () => { const c = catalogPts(); return RANK_PCT.map((v, i) => i && !c ? Infinity : Math.round(v / 100 * c)); };
 const RANK_TIERS = ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro', 'Leyenda', 'Mito'];
 const RANK_DIV = ['III', 'II', 'I'];
 const STREAK_MAX = 14;
 const stepName = s => s >= 21 ? 'Mito' : `${RANK_TIERS[Math.floor(s / 3)]} ${RANK_DIV[s % 3]}`;
 function rankOf(points) {
   points = points || 0; let step = 0;
-  RANK_STEPS.forEach((v, i) => { if (points >= v) step = i; });
-  const next = step < RANK_STEPS.length - 1 ? RANK_STEPS[step + 1] : null, from = RANK_STEPS[step];
+  const ST = rankSteps();
+  ST.forEach((v, i) => { if (points >= v) step = i; });
+  const next = step < ST.length - 1 && ST[step + 1] !== Infinity ? ST[step + 1] : null, from = ST[step];
   return { step, tier: Math.min(Math.floor(step / 3), 7), name: stepName(step), points, next, from, pct: next ? (points - from) / (next - from) : 1 };
 }
 const pointsOf = sid => S.assigns.filter(a => a.student_id === sid).reduce((t, a) => t + (a.points || 0), 0);
 const nfmt = n => Number(n || 0).toLocaleString('es-ES');
-const multTxt = m => '×' + m;
-// Multiplicador de las escuchas que le manden a partir de ahora: ×2 con 14 días o más de racha
-const streakMult = st => st.cur >= STREAK_MAX ? 2 : 1;
+// Racha = prestigio (v8, Yuri 2026-11-28): la medalla brilla siempre con el color de su rango (CSS .emb.tN) y la racha
+// añade CHISPAS que suben (7 días naranjas, 14 azules, 30 doradas; más cuanto más larga) y una inscripción heráldica
+// debajo ("14 DÍAS"). Se descartaron dos fuegos y un aura. Los nombres de código siguen diciendo "flame" (get_listening_badge → flame 0-3).
+const FLAME_DAYS = [7, 14, 30];
+const FLAME_NAME = ['', 'naranjas', 'azules', 'doradas'];
+const FLAME_RGB = ['', '255,150,50', '90,200,255', '255,215,110'];
+const flameOf = days => days >= 30 ? 3 : days >= 14 ? 2 : days >= 7 ? 1 : 0;
+// Posiciones fijas (pseudoaleatorias) para que la medalla no cambie en cada repintado
+const sparkRnd = k => { const x = Math.sin(k * 12.9898) * 43758.5453; return x - Math.floor(x); };
+function sparksHtml(f) {
+  if (!f) return '';
+  const n = [0, 7, 11, 16][f];
+  return `<span class="rk-sparks" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i style="left:${(20 + sparkRnd(k) * 60).toFixed(1)}%;--s:${(2 + sparkRnd(k + 50) * 2.5).toFixed(1)}px;--x:${(sparkRnd(k + 99) * 30 - 15).toFixed(0)}px;--t:${(1.8 + sparkRnd(k + 7) * 1.6).toFixed(2)}s;animation-delay:${(sparkRnd(k + 31) * 3).toFixed(2)}s"></i>`).join('')}</span>`;
+}
+// label: los días de la racha (dueño y profesor) o el escalón alcanzado ("14+ días", perfil público)
+const medalHtml = (tier, flame = 0, label = '') => emblemSvg(tier) + sparksHtml(flame) + (flame && label ? `<span class="rk-tag">${esc(label)}</span>` : '');
+const medalCls = f => f ? ` fl${f}" style="--c:${FLAME_RGB[f]}` : '';
+const flameTxt = f => f ? `Tu medalla echa chispas ${FLAME_NAME[f]}` : '';
+const nextFlame = cur => FLAME_DAYS.find(d => d > cur) || null;
 const LATE_DAYS = 30;
 // Terminada tarde (mitad de puntos): después de su fecha límite o, sin fecha, más de 30 días después de mandarla
 function lateOf(a) {
@@ -7895,7 +7964,7 @@ function emblemSvg(tier, cls = '') {
   const clouds = i === 7 ? '<g fill="#fff" opacity=".92"><circle cx="38" cy="116" r="8"/><circle cx="50" cy="112" r="11"/><circle cx="64" cy="117" r="8"/><circle cx="84" cy="115" r="10"/><circle cx="98" cy="110" r="12"/><circle cx="112" cy="117" r="8"/></g>' : '';
   const ry = 120, fl = t.fl || ['#fff', '#fff', '#fff'];
   const ribbon = `<path d="M20 ${ry - 4} L36 ${ry - 2} L34 ${ry + 10} L18 ${ry + 12} L25 ${ry + 3}Z" fill="${c.dk}" stroke="${S}"/><path d="M124 ${ry + 2} L106 ${ry + 1} L108 ${ry + 13} L126 ${ry + 18} L118 ${ry + 9}Z" fill="${c.dk}" stroke="${S}"/><path d="M32 ${ry - 5} C48 ${ry + 3} 58 ${ry - 4} 70 ${ry} C84 ${ry + 5} 96 ${ry - 2} 110 ${ry + 2} L110 ${ry + 14} C96 ${ry + 10} 84 ${ry + 17} 70 ${ry + 12} C58 ${ry + 8} 48 ${ry + 15} 32 ${ry + 7}Z" fill="${H}" stroke="${S}"/><text x="71" y="${ry + 10}" text-anchor="middle" font-size="8" font-weight="700" letter-spacing="1.4" fill="${S}">${RANK_TIERS[i].toUpperCase()}</text>`;
-  return `<svg class="emb ${cls}" viewBox="0 0 180 168" role="img" aria-label="Medalla ${RANK_TIERS[i]}"><defs>
+  return `<svg class="emb t${i} ${cls}" viewBox="0 0 180 168" role="img" aria-label="Medalla ${RANK_TIERS[i]}"><defs>
     <linearGradient id="${u}g" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${P[0]}"/><stop offset=".22" stop-color="${P[1]}"/><stop offset=".48" stop-color="${P[2]}"/><stop offset=".7" stop-color="${P[3]}"/><stop offset=".86" stop-color="${P[4]}"/><stop offset="1" stop-color="${P[5]}"/></linearGradient>
     <linearGradient id="${u}h" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="${P[0]}"/><stop offset=".3" stop-color="${P[1]}"/><stop offset=".62" stop-color="${P[2]}"/><stop offset=".85" stop-color="${P[4]}"/><stop offset="1" stop-color="${P[3]}"/></linearGradient>
     <linearGradient id="${u}k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${P[2]}"/><stop offset=".6" stop-color="${P[3]}"/><stop offset="1" stop-color="${P[5]}"/></linearGradient>
@@ -7914,9 +7983,9 @@ const rankDivPips = step => step >= 21 ? '' : `<span class="rk-pips" aria-hidden
 // Alumno: arriba de Escucha analítica. Medalla, puntos, progreso y racha con su multiplicador.
 function rankCard() {
   if (isTeacher() || !S.assigns.length) return '';
-  const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), m = streakMult(st);
+  const st = streakOf(S.user.id), s = streakState(st), rk = rankOf(pointsOf(S.user.id)), f = flameOf(st.cur), nf = nextFlame(st.cur);
   return `<section class="rank-card" data-rank-card>
-    <button class="rk-medal" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(rk.tier)}</button>
+    <button class="rk-medal${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, daysTxt(st.cur))}</button>
     <div class="rk-main">
       <span class="sub">Tu rango</span>
       <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
@@ -7926,41 +7995,52 @@ function rankCard() {
     </div>
     <div class="rk-streak ${st.cur ? 'on' : ''}">
       <b>🔥 ${st.cur ? `${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}` : 'Sin racha'}</b>
-      <span class="rk-mult" title="Lo que valen las escuchas que te manden a partir de ahora">${multTxt(m)}</span>
-      <span class="sub">${m > 1 ? 'Las escuchas nuevas valen el doble' : `Te faltan ${daysTxt(STREAK_MAX - st.cur)} para ×2`}</span>
+      <span class="rk-fl">${f ? flameTxt(f) : 'Medalla sin chispas'}</span>
+      <span class="sub">${nf ? `${f ? 'Chispas ' + FLAME_NAME[f + 1] : 'Chispas'} a los ${daysTxt(nf)} · te faltan ${daysTxt(nf - st.cur)}` : '¡Chispas doradas, el máximo!'}</span>
       <span class="sk-state ${s.cls}">${esc(s.text)}</span>
       <span class="sub">Récord: ${daysTxt(st.best)}</span>
     </div>
     <details class="sk-how"><summary>¿Cómo funciona?</summary>
       <p>Cada escucha que terminas (marcada como escuchada y con las 6 respuestas) te da <b>20 puntos más 1 por cada minuto</b> que dura. Da igual cuándo la escuches.</p>
-      <p>La <b>racha</b> cuenta los días seguidos que terminas alguna escucha. Si un día acaba con escuchas pendientes y no has terminado ninguna, vuelve a cero; si no tienes nada pendiente, no se toca. <b>Con ${STREAK_MAX} días seguidos o más, las escuchas que te mande tu profesor valen el doble (×2)</b>, las termines cuando las termines.</p>
+      <p>La <b>racha</b> cuenta los días seguidos que terminas alguna escucha. Si un día acaba con escuchas pendientes y no has terminado ninguna, vuelve a cero; si no tienes nada pendiente, no se toca. La racha no da puntos: <b>da prestigio</b>. Con ${FLAME_DAYS[0]} días seguidos tu medalla echa chispas naranjas, con ${FLAME_DAYS[1]} azules y con ${FLAME_DAYS[2]} doradas, y tus compañeros lo ven en tu perfil. Si la rompes, las chispas se apagan (tu rango no cambia).</p>
       <p>Si terminas una escucha <b>tarde</b> (después de su fecha límite o, si no tiene, más de ${LATE_DAYS} días después de recibirla), da la mitad de puntos. Nunca pierdes los puntos que ya tienes.</p>
-      <p>Tu medalla y tu récord de racha salen en tu perfil. Tus puntos exactos y la racha de hoy solo los ves tú y tu profesor.</p>
+      <p>Cada rango pide una parte de toda la música que hay en Escucha analítica; Mito es haber escuchado el ${RANK_PCT[21]} %. Cuando tu profesor añade música nueva, los rangos piden un poco más, así que si te paras puedes bajar. Tus puntos nunca se pierden.</p>
+      <p>Tu medalla (con sus chispas) y tu récord de racha salen en tu perfil. Los días exactos de tu racha de hoy solo los ves tú y tu profesor.</p>
       <button class="btn sm" data-action="rank-ladder">Ver todos los rangos</button></details>
   </section>`;
 }
 // Alumno: en su Perfil
 function rankPanel() {
   if (!S.assigns.length) return '';
-  const st = streakOf(S.user.id), rk = rankOf(pointsOf(S.user.id));
+  const st = streakOf(S.user.id), rk = rankOf(pointsOf(S.user.id)), f = flameOf(st.cur);
   return `<section class="panel rank-panel" id="rankPanel">
     <div class="dhead" style="margin:0 0 6px"><h2 class="h2" style="margin:0">Tu rango</h2><span class="chip">${ic('eye')} Lo ven tus compañeros</span></div>
-    <div class="rk-show"><button class="rk-medal lg" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(rk.tier)}</button>
+    <div class="rk-show"><button class="rk-medal lg${medalCls(f)}" data-action="rank-ladder" aria-label="Ver todos los rangos">${medalHtml(rk.tier, f, daysTxt(st.cur))}</button>
       <b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
+      ${f ? `<span class="rk-fl">${flameTxt(f)}</span>` : ''}
       <span class="sub">${nfmt(rk.points)} puntos · récord de racha: ${daysTxt(st.best)}</span>
       <button class="btn sm" data-action="rank-ladder" style="margin-top:8px">Ver todos los rangos</button></div>
+  </section>`;
+}
+// El profesor luce siempre Mito, el rango máximo (Yuri: él entrega las escuchas y las ha escuchado todas)
+const teacherRankHtml = () => `<div class="pf-rank ready"><div class="rk-medal">${emblemSvg(7)}</div><div><b class="rk-name">Mito</b><span class="sub">Rango máximo · Profesor</span></div></div>`;
+function teacherRankPanel() {
+  return `<section class="panel rank-panel" id="rankPanel">
+    <div class="dhead" style="margin:0 0 6px"><h2 class="h2" style="margin:0">Tu rango</h2><span class="chip">${ic('eye')} Lo ven tus alumnos</span></div>
+    <div class="rk-show"><button class="rk-medal lg" data-action="rank-ladder" aria-label="Ver todos los rangos">${emblemSvg(7)}</button>
+      <b class="rk-name">Mito</b><span class="sub">El rango máximo, siempre, por ser el profesor</span></div>
   </section>`;
 }
 // Perfil de otra persona: medalla y récord (públicos). Se rellena al abrir.
 async function rankFillProfile(id) {
   const box = document.querySelector(`[data-rankbox="${id}"]`); if (!box) return;
   try {
-    const { data, error } = await sb.rpc('get_listening_rank', { p_user: id });
+    const { data, error } = await sb.rpc('get_listening_badge', { p_user: id });
     if (error) throw error;
     const r = data && data[0]; if (!r) { box.remove(); return; }
-    const rk = rankOf(r.points);
-    box.innerHTML = `<div class="rk-medal">${emblemSvg(rk.tier)}</div><div><b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
-      <span class="sub">Récord de racha: ${daysTxt(r.best_days || 0)}</span></div>`;
+    const rk = rankOf(r.points), f = r.flame || 0;
+    box.innerHTML = `<div class="rk-medal${medalCls(f)}">${medalHtml(rk.tier, f, f ? FLAME_DAYS[f - 1] + '+ días' : '')}</div><div><b class="rk-name">${esc(rk.name)} ${rankDivPips(rk.step)}</b>
+      ${f ? `<span class="rk-fl">Racha de ${FLAME_DAYS[f - 1]} días o más</span>` : ''}<span class="sub">Récord de racha: ${daysTxt(r.best_days || 0)}</span></div>`;
     box.classList.add('ready');
   } catch (e) { box.remove(); }
 }
@@ -7970,36 +8050,38 @@ function streakFichaHtml(sid) {
   const st = streakOf(sid), rk = rankOf(pointsOf(sid));
   const s = st.todayDone ? 'hoy ya ha sumado' : st.atRisk ? 'hoy aún no ha terminado ninguna' : 'sin escuchas pendientes';
   return `<div class="dhead" style="margin:18px 0 8px"><h2 class="h2" style="margin:0">Rango y racha</h2></div>
-    <div class="agebox rk-ficha"><div class="rk-medal">${emblemSvg(rk.tier)}</div>
+    <div class="agebox rk-ficha"><div class="rk-medal${medalCls(flameOf(st.cur))}">${medalHtml(rk.tier, flameOf(st.cur), daysTxt(st.cur))}</div>
       <div><p style="margin:0"><b>${esc(rk.name)}</b> <span class="sub">· ${nfmt(rk.points)} puntos${rk.next !== null ? ` · le faltan ${nfmt(rk.next - rk.points)} para ${esc(stepName(rk.step + 1))}` : ''}</span></p>
-      <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">· escuchas nuevas ${multTxt(streakMult(st))} · récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
+      <p style="margin:4px 0 0">🔥 <b>${daysTxt(st.cur)} seguido${st.cur === 1 ? '' : 's'}</b> <span class="sub">${flameOf(st.cur) ? `· chispas ${FLAME_NAME[flameOf(st.cur)]} ` : ''}· récord ${daysTxt(st.best)} · ${s}</span></p></div></div>`;
 }
 // Alumno: chip en "Para ti" del Inicio
 function streakChip(chip) {
   const st = streakOf(S.user.id);
   if (!st.cur) return '';
-  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)}${streakMult(st) > 1 ? ' · ×2' : ''}`,
+  return chip(st.atRisk ? 'warn' : '', 'data-action="section" data-s="listening"', 'listening', `🔥 ${daysTxt(st.cur)}`,
     st.todayDone ? '¡Hoy ya has sumado!' : st.atRisk ? 'Termina una escucha hoy' : 'Racha a salvo');
 }
 // Todos los rangos, a la vista desde el principio (Yuri: que se vea hasta dónde se puede llegar)
 function rankLadderModal() {
   const mine = !isTeacher() ? rankOf(pointsOf(S.user.id)) : null;
   openModal(`<div class="modal-head"><h2 class="h2" style="margin:0">Rangos de Escucha analítica</h2><button class="x" data-action="close" aria-label="Cerrar">×</button></div>
-    <p class="sub" style="margin:0 0 14px">Cada escucha terminada da 20 puntos más 1 por minuto. Con ${STREAK_MAX} días seguidos de racha, las escuchas nuevas valen el doble; terminada tarde, la mitad. Los puntos nunca se pierden.</p>
+    <p class="sub" style="margin:0 0 14px">Cada escucha terminada da 20 puntos más 1 por minuto; terminada tarde, la mitad. La racha no da puntos: hace que tu medalla arda. Hoy hay ${nfmt(catalogPts())} puntos de música en total en Escucha analítica: Mito es haber conseguido el ${RANK_PCT[21]} %. Cuando el profesor añade música, cada rango pide unos puntos más.</p>
     <div class="rk-ladder">${RANK_TIERS.map((n, t) => {
       const first = t * 3, steps = t === 7 ? [21] : [first, first + 1, first + 2];
       const got = mine && mine.step >= first, cur = mine && mine.tier === t;
       return `<div class="rk-rung ${cur ? 'cur' : ''} ${mine && !got ? 'locked' : ''}">
         <div class="rk-medal">${emblemSvg(t)}</div>
         ${mine && !got ? `<span class="rk-lock">${ic('lock')}</span>` : ''}
-        <ul>${steps.map(s => `<li class="${mine && mine.step >= s ? 'on' : ''}"><span>${esc(stepName(s))}</span><span>${nfmt(RANK_STEPS[s])}</span></li>`).join('')}</ul></div>`;
+        <ul>${steps.map(s => `<li class="${mine && mine.step >= s ? 'on' : ''}"><span>${esc(stepName(s))}</span><span>${nfmt(rankSteps()[s])}</span></li>`).join('')}</ul></div>`;
     }).join('')}</div>`);
 }
 // Celebración al subir de división o de rango (una vez por escalón; profiles.rank_seen)
 let rankCelebrating = false;
 function rankCelebrate() {
-  if (isTeacher() || rankCelebrating || goalCelebrating || !S.user || !S.profile) return;
-  const rk = rankOf(pointsOf(S.user.id)), seen = S.profile.rank_seen;
+  if (isTeacher() || S.preview || rankCelebrating || goalCelebrating || !S.user || !S.profile) return;
+  const rk = rankOf(pointsOf(S.user.id)); let seen = S.profile.rank_seen;
+  // Si ha bajado (se ha añadido música), se apunta sin celebrar: al volver a subir lo celebra otra vez
+  if (seen !== null && seen !== undefined && rk.step < seen) { S.profile.rank_seen = seen = rk.step; sb.from('profiles').update({ rank_seen: rk.step }).eq('id', S.user.id).then(() => {}, () => {}); }
   if (!rk.points || (seen !== null && seen !== undefined && rk.step <= seen)) return;
   if ($('#modalRoot').firstChild) { S.rankPending = true; return; }
   S.rankPending = false; rankCelebrating = true;
@@ -8020,7 +8102,7 @@ function rankCelebrate() {
 // Tras guardar una escucha: si acaba de quedar terminada, +1 día de racha, puntos y, si sube, celebración
 function streakAfterComplete(before, a) {
   const st = streakOf(S.user.id);
-  toast(`+${nfmt(a.points || 0)} puntos${a.mult > 1 ? ' (×2)' : ''}${lateOf(a) ? ' (la mitad, por terminarla tarde)' : ''}${!before.todayDone && st.todayDone ? ` · 🔥 racha: ${daysTxt(st.cur)}` : ''}`, lateOf(a) ? '' : 'ok');
+  toast(`+${nfmt(a.points || 0)} puntos${lateOf(a) ? ' (la mitad, por terminarla tarde)' : ''}${!before.todayDone && st.todayDone ? ` · 🔥 racha: ${daysTxt(st.cur)}` : ''}`, lateOf(a) ? '' : 'ok');
   const card = $('[data-rank-card]'); if (card) card.outerHTML = rankCard();
   rankCelebrate();
 }
@@ -8418,7 +8500,7 @@ async function openNotifFromUrl(url) {
      lo privado del alumno (sus escuchas, respuestas, deberes, mensajes, clase…) es inventado. */
 const PREVIEW_ID = '00000000-0000-4000-8000-0000000a1a1a';
 const PREVIEW_ERR = { code: 'preview', message: 'Vista de alumno: es solo para mirar, no se guarda nada.' };
-const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large', 'video_quota', 'get_listening_rank']);
+const PREVIEW_READ_RPC = new Set(['get_profile', 'get_avatar_large', 'video_quota', 'get_listening_rank', 'get_listening_badge', 'listening_catalog_points']);
 function previewStub() { // imita una consulta de supabase-js (encadenable y con await) que siempre falla con PREVIEW_ERR
   const res = { data: null, error: PREVIEW_ERR, count: null, status: 403 };
   const p = new Proxy(function () { }, { get: (_, k) => k === 'then' ? (ok, no) => Promise.resolve(res).then(ok, no) : () => p, apply: () => p });

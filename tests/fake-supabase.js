@@ -47,15 +47,17 @@
     return cur;
   }
   // Rango (2026-11-28): imita listening_points_calc(), listening_rank_step() y listening_rank_notify()
-  const RSTEPS=[0,150,350,600,900,1250,1700,2200,2800,3500,4300,5200,6200,7400,8800,10500,12500,15000,18000,22000,27000,35000];
-  const rStep = p => { let s=0; RSTEPS.forEach((v,i)=>{ if((p||0)>=v) s=i; }); return s; };
+  // v3: umbrales en % de toda la música del catálogo (listening_catalog_points)
+  const RPCT=[0,1,2,4,6,8,11,14,17,21,25,29,34,39,44,50,56,62,69,77,85,90];
+  const catPts = () => DB.listening_items.reduce((t,i)=>t+20+Math.floor((i.duration_sec||0)/60),0);
+  const rStep = p => { const c=catPts(); let s=0; RPCT.forEach((v,i)=>{ if((i===0||c>0) && (p||0)>=Math.round(v/100*c)) s=i; }); return s; };
   const rName = s => s>=21?'Mito':['Bronce','Plata','Oro','Platino','Diamante','Maestro','Leyenda'][Math.floor(s/3)]+' '+['III','II','I'][s%3];
   // v2: listening_points_for(): (20 + minutos) × mult (×2 si al mandarla llevaba 14+ días de racha) × ½ si tarde
   function pointsCalc(r){
     const it=DB.listening_items.find(i=>i.id===r.item_id)||{};
     const lim = r.due_date ? new Date(r.due_date+'T23:59:59') : new Date(new Date(r.assigned_at).getTime()+30*86400000);
     const late = new Date(r.completed_at) > lim;
-    return Math.round((20+Math.floor((it.duration_sec||0)/60))*Math.max(r.mult||1,1)*(late?.5:1));
+    return Math.round((20+Math.floor((it.duration_sec||0)/60))*(late?.5:1)); // v4: sin multiplicador
   }
   function rankNotify(r){
     if(!(r.points>0)) return;
@@ -430,7 +432,7 @@
           if(table==='goals_done'){ row.done_at=row.done_at||new Date().toISOString(); row.seen_at=null; if(DB.goals_done.some(e=>e.goal_id===row.goal_id&&e.student_id===row.student_id)) return finish([],'duplicate key value violates unique constraint'); }
           if(table==='homework_tasks'){ row.created_by=row.created_by||me; row.done_at=row.done_at||null; row.due_date=row.due_date||null; row.details=row.details||null; row.goal_id=row.goal_id||null;
             if(row.goal_id && !DB.goals_items.some(g=>g.id===row.goal_id&&(!g.student_id||g.student_id===row.student_id))) return finish([],'Ese objetivo no es de este alumno'); }
-          if(table==='listening_assignments'){ row.completed_at=null; row.points=null; row.mult=streakCur(row.student_id)>=14?2:1; }
+          if(table==='listening_assignments'){ row.completed_at=null; row.points=null; row.mult=1; }
           if(table==='payments_records'){ row.paid_on=row.paid_on||new Date().toISOString().slice(0,10); if(row.classes===undefined) row.classes=null; }
           if(table==='blocked_emails'){ row.pattern = row.kind==='email' ? emailNorm(row.pattern) : String(row.pattern||'').trim().toLowerCase().replace(/^@+/,''); // blocked_emails_norm_trg
             if(DB.blocked_emails.some(e=>e.kind===row.kind&&e.pattern===row.pattern)) return finish([],'duplicate key value violates unique constraint "blocked_emails_kind_pattern_key"'); }
@@ -465,6 +467,15 @@
     // email_wait_seconds la puede llamar cualquiera (también sin sesión): solo devuelve un número
     if(name==='email_wait_seconds') return window.__EMAIL_WAIT===undefined?{data:0,error:null}:(window.__EMAIL_WAIT===null?{data:null,error:{message:'function public.email_wait_seconds() does not exist'}}:{data:window.__EMAIL_WAIT,error:null});
     if(!me) return {data:null,error:{message:'No autenticado'}};
+    if(name==='listening_catalog_points') return {data: isApproved()?catPts():null, error:null};
+    if(name==='get_listening_badge'){ // v4: puntos, récord y nivel de llama (0-3), nunca los días de hoy
+      if(!isApproved()) return {data:[],error:null};
+      if(args.p_user!==me && !isTeacher() && !canSeeProfile(args.p_user)) return {data:[],error:null};
+      const as=DB.listening_assignments.filter(a=>a.student_id===args.p_user);
+      const rows=as.filter(a=>a.assigned_at).map(a=>({from:dk(a.assigned_at),done:a.completed_at?dk(a.completed_at):null}));
+      let best=0; if(rows.length){ const today=dk(new Date()); let d=rows.reduce((m,r)=>r.from<m?r.from:m,today),cur=0; for(;d<=today;d=dAdd(d,1)){ if(rows.some(r=>r.done===d)){cur++;best=Math.max(best,cur);} else if(d<today&&rows.some(r=>r.from<d&&(!r.done||r.done>=d))) cur=0; } }
+      const cur=streakCur(args.p_user);
+      return {data:[{points:as.reduce((t,a)=>t+(a.points||0),0),best_days:best,flame:cur>=30?3:cur>=14?2:cur>=7?1:0}],error:null}; }
     if(name==='get_listening_rank'){ // público: puntos y récord de racha, a quien puede ver ese perfil
       if(!isApproved()) return {data:[],error:null};
       if(args.p_user!==me && !isTeacher() && !canSeeProfile(args.p_user)) return {data:[],error:null};

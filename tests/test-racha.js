@@ -18,11 +18,14 @@ const FULL = { highlights: 'a', likes: 'b', dislikes: 'c', learned: 'd', would_u
 const seed = JSON.parse(JSON.stringify(W.__DB_SEED));
 seed.listening_items.push({ id: 'i3', title: 'Texas Flood', url: 'https://youtu.be/tf', kind: 'song', brief: null, created_at: '2026-01-03', duration_sec: 300 });
 seed.profiles.find(x => x.id === 's1').rank_seen = 5; // ya vio Plata I
+// Catálogo de 15.500 puntos en total: Plata I desde 1240 (8 %), Oro III desde 1705 (11 %), Mito desde 13.950 (90 %)
+const catOthers = seed.listening_items.reduce((s, i) => s + 20 + Math.floor((i.duration_sec || 0) / 60), 0);
+seed.listening_items.push({ id: 'ibig', title: 'Playlist de relleno', url: 'https://open.spotify.com/playlist/big', kind: 'playlist', brief: null, created_at: '2026-01-04', duration_sec: (15500 - 20 - catOthers) * 60 });
 seed.listening_assignments = seed.listening_assignments.filter(a => a.student_id !== 's1').concat([
   { id: 'r1', item_id: 'i1', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-2), answers: FULL, updated_at: day(-2), completed_at: day(-2), points: 900 },
   { id: 'r2', item_id: 'i2', student_id: 's1', note: null, due_date: null, assigned_at: day(-3, 10), listened: true, listened_at: day(-1), answers: FULL, updated_at: day(-1), completed_at: day(-1), points: 790 },
   { id: 'r3', item_id: 'i3', student_id: 's1', note: null, due_date: ymd(0), assigned_at: day(-3, 10), listened: false, listened_at: null, answers: {}, updated_at: day(-3), completed_at: null },
-  // Vencida anteayer y mandada cuando llevaba racha de 14 días (×2): al terminarla da (20 + 5) × 2 × ½ = 25
+  // Vencida anteayer: al terminarla da (20 + 5) × ½ = 13 (sin multiplicador desde la v4, aunque la fila tenga mult 2)
   { id: 'r4', item_id: 'i3', student_id: 's1', note: null, due_date: ymd(-2), assigned_at: day(-5, 10), listened: false, listened_at: null, answers: {}, updated_at: day(-5), completed_at: null, mult: 2 }
 ]);
 seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
@@ -58,15 +61,16 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   ok(await card.count() === 1, 'Escucha analítica: tarjeta de rango arriba');
   const ct = await card.innerText();
   ok(/Plata I\b/.test(ct) && /1690 puntos/.test(ct), 'La tarjeta dice "Plata I · 1690 puntos" (en español, 4 cifras van sin punto)');
-  ok(/Te faltan 10 para Oro III/.test(ct), 'Progreso: "Te faltan 10 para Oro III"');
-  ok(/2 días seguidos/.test(ct) && /×1\b/.test(ct) && /Te faltan 12 días para ×2/.test(ct), 'Racha: 2 días, ×1 y "te faltan 12 días para ×2"');
+  ok(/Te faltan 15 para Oro III/.test(ct), 'Progreso: "Te faltan 15 para Oro III" (11 % de 15.500)');
+  ok(/2 días seguidos/.test(ct) && /Medalla sin chispas/.test(ct) && /Chispas a los 7 días · te faltan 5 días/.test(ct), 'Racha: 2 días, sin chispas y "chispas a los 7 días"');
+  ok(await card.locator('.rk-medal[class*=" fl"]').count() === 0, 'Sin racha de 7 días, la medalla no tiene aura');
   ok(/no perder la racha/.test(ct), 'Avisa de que hoy hay que terminar una');
   ok(await card.locator('svg.emb').count() === 1, 'La tarjeta lleva la medalla');
   await shot(p, 'rango-tarjeta.png');
   await card.locator('.rk-medal').click(); await p.waitForTimeout(300);
   ok(await p.locator('.modal .rk-rung').count() === 8, 'Todos los rangos a la vista (8)');
   ok(await p.locator('.modal .rk-rung.locked').count() === 6 && await p.locator('.modal .rk-rung.cur').count() === 1, 'Conseguidos Bronce y Plata; el resto bloqueados');
-  ok(/Mito/.test(await p.locator('.modal').innerText()) && /35\.000/.test(await p.locator('.modal').innerText()), 'Se ve hasta dónde se llega (Mito, 35.000)');
+  ok(/Mito/.test(await p.locator('.modal').innerText()) && /13\.950/.test(await p.locator('.modal').innerText()), 'Se ve hasta dónde se llega en puntos (Mito, 13.950)');
   await shot(p, 'rango-lista.png');
   await p.click('.modal [data-action="close"]'); await p.waitForTimeout(200);
 
@@ -101,7 +105,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   const forge = await p.evaluate(async () => (await sb.from('listening_assignments').update({ completed_at: '2020-01-01T00:00:00Z', points: 99999, mult: 9 }).eq('id', 'r1').select()).data[0]);
   ok(forge.completed_at !== '2020-01-01T00:00:00Z' && forge.points === 900 && (forge.mult || 1) === 1, 'El alumno no puede inventarse completed_at, puntos ni multiplicador');
 
-  // La vencida: mitad de puntos (y conserva el ×2 con el que se mandó)
+  // La vencida: mitad de puntos
   await goto(p, 'listening');
   await p.click('.tabs [data-f="all"]'); await p.waitForTimeout(250);
   await p.click('[data-action="open-assign"][data-id="r4"]'); await p.waitForTimeout(300);
@@ -109,7 +113,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   await p.check('#chkListened');
   await p.waitForTimeout(1600);
   db = await snapshot(p);
-  ok(db.listening_assignments.find(a => a.id === 'r4').points === 25, `Vencida y con ×2: (20 + 5) × 2 × ½ = 25 (${db.listening_assignments.find(a => a.id === 'r4').points})`);
+  ok(db.listening_assignments.find(a => a.id === 'r4').points === 13, `Vencida: (20 + 5) × ½ = 13, sin multiplicador (${db.listening_assignments.find(a => a.id === 'r4').points})`);
   ok(await p.evaluate(() => lateOf(S.assigns.find(a => a.id === 'r4')) && !lateOf(S.assigns.find(a => a.id === 'r3'))), 'lateOf: la vencida es tarde, la de hoy no');
   ok(/mitad/.test(await p.locator('.toast').last().innerText()), 'Aviso: "la mitad, por terminarla tarde"');
   await p.click('.modal [data-action="close"]'); await p.waitForTimeout(400);
@@ -131,19 +135,26 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   }, { d: [0, 1, 2, 3, 4, 5, 6].map(n => day(-n)) });
   ok(rules[0].cur === 1 && rules[0].best === 2, `Un día con algo pendiente y sin terminar nada rompe la racha (${JSON.stringify(rules[0])})`);
   ok(rules[1].cur === 3 && !rules[1].atRisk, `Días sin nada pendiente no la rompen (${JSON.stringify(rules[1])})`);
-  const mults = await p.evaluate(() => [multTxt(streakMult({ cur: 0 })), multTxt(streakMult({ cur: 13 })), multTxt(streakMult({ cur: 14 })), rankOf(35000).name, rankOf(34999).name, rankOf(0).name]);
-  ok(JSON.stringify(mults) === JSON.stringify(['×1', '×1', '×2', 'Mito', 'Leyenda I', 'Bronce III']), `Multiplicador (×2 de golpe a los 14 días) y rangos (${mults})`);
+  const mults = await p.evaluate(() => [flameOf(6), flameOf(7), flameOf(14), flameOf(30), rankOf(13950).name, rankOf(13949).name, rankOf(0).name, catalogPts()]);
+  ok(JSON.stringify(mults) === JSON.stringify([0, 1, 2, 3, 'Mito', 'Leyenda I', 'Bronce III', 15500]), `Llamas a los 7/14/30 días y rangos (${mults})`);
+  const flameHtml = await p.evaluate(() => medalHtml(2, 3));
+  ok(!/aura|fl-svg|feTurbulence/.test(flameHtml), 'El aura va solo en el contorno (CSS): ni fuego ni manchas detrás');
+  const spk = await p.evaluate(() => [medalHtml(4, 2, '14 días'), medalHtml(4, 0, '3 días')]);
+  ok(/rk-sparks/.test(spk[0]) && /rk-tag">14 días/.test(spk[0]) && !/rk-sparks|rk-tag/.test(spk[1]), 'Racha: chispas e inscripción solo con 7 días o más');
   const afterStudent = await snapshot(p);
 
   // ================= OTRA ALUMNA: lo público y lo privado =================
   let q = await open('s2', afterStudent);
-  const pub = await q.evaluate(async () => (await sb.rpc('get_listening_rank', { p_user: 's1' })).data);
-  ok(pub.length === 1 && pub[0].points === 1740 && pub[0].best_days === 3, `Luis ve la medalla y el récord de Marta (${JSON.stringify(pub)})`);
+  const pub = await q.evaluate(async () => (await sb.rpc('get_listening_badge', { p_user: 's1' })).data);
+  ok(pub.length === 1 && pub[0].points === 1728 && pub[0].best_days === 3 && pub[0].flame === 0 && pub[0].current_days === undefined, `Luis ve la medalla y el récord de Marta (${JSON.stringify(pub)})`);
   const peek = await q.evaluate(async () => (await sb.from('listening_assignments').select('*').eq('student_id', 's1')).data.length);
   ok(peek === 0, 'Luis no ve las escuchas (ni la racha de hoy) de Marta');
   await q.evaluate(() => profileModal('s1')); await q.waitForTimeout(500);
   ok(await q.locator('.modal .pf-rank svg.emb').count() === 1 && /Oro III/.test(await q.locator('.modal .pf-rank').innerText()), 'Perfil de Marta: su medalla Oro III');
   await shot(q, 'rango-perfil-ajeno.png');
+  await q.click('.modal [data-action="close"]'); await q.waitForTimeout(200);
+  await q.evaluate(() => profileModal('t1')); await q.waitForTimeout(500);
+  ok(await q.locator('.modal .pf-rank svg.emb').count() === 1 && /Mito/.test(await q.locator('.modal .pf-rank').innerText()), 'Perfil del profesor: siempre Mito');
   await q.context().close();
 
   // ================= PROFESOR =================
@@ -153,13 +164,17 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   const ficha = await t.locator('.modal').innerText();
   ok(/Rango y racha/.test(ficha) && /Oro III/.test(ficha) && /3 días seguidos/.test(ficha), 'Ficha: rango Oro III y racha de 3 días');
   await t.click('.modal [data-action="close"]'); await t.waitForTimeout(200);
+  await goto(t, 'profile');
+  ok(/Mito/.test(await t.locator('#rankPanel').innerText()) && await t.locator('#rankPanel svg.emb').count() === 1, 'El profesor ve su Mito en su Perfil');
   // Al mandar una escucha: ×1 a Marta (3 días de racha); ×2 a Luis si lleva 14 días seguidos
   const m1 = await t.evaluate(async () => (await sb.from('listening_assignments').insert({ item_id: 'i9x', student_id: 's1' }).select()).data[0].mult);
-  ok(m1 === 1, 'Escucha nueva para Marta (3 días): ×1');
+  ok(m1 === 1, 'Escucha nueva para Marta: sin multiplicador');
   await t.evaluate(() => { const d = n => { const x = new Date(); x.setDate(x.getDate() - n); x.setHours(12, 0, 0, 0); return x.toISOString(); };
     for (let n = 14; n >= 1; n--) window.__DB.listening_assignments.push({ id: 'lz' + n, item_id: 'i1', student_id: 's2', assigned_at: d(n + 1), listened: true, answers: {}, completed_at: d(n), points: 20 }); });
   const m2 = await t.evaluate(async () => (await sb.from('listening_assignments').insert({ item_id: 'i3', student_id: 's2' }).select()).data[0].mult);
-  ok(m2 === 2, 'Escucha nueva para Luis (14 días seguidos): ×2');
+  ok(m2 === 1, 'Escucha nueva para Luis (14 días seguidos): tampoco hay multiplicador');
+  const fl = await t.evaluate(async () => (await sb.rpc('get_listening_badge', { p_user: 's2' })).data[0].flame);
+  ok(fl === 2, `Luis con 14 días: aura azul (nivel ${fl})`);
 
   // Agenda: fechas límite de deberes y escuchas en su día
   await goto(t, 'agenda');

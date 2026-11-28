@@ -3760,3 +3760,69 @@ $$;
 update public.listening_assignments
    set points = public.listening_points_for(item_id, mult, due_date, assigned_at, completed_at)
  where completed_at is not null;
+
+-- =====================================================================
+-- Rango v3 (2026-11-28, Yuri): los umbrales dependen de cuánta música hay ("que el mercado se regule").
+--   · listening_catalog_points(): puntos de TODAS las escuchas del catálogo, a ×1 (Σ 20 + minutos).
+--     Solo da el total (nada de qué escuchas hay), a cualquier usuario aprobado.
+--   · Escalera en % de ese total: Bronce 0-1-2, Plata 4-6-8, Oro 11-14-17, Platino 21-25-29,
+--     Diamante 34-39-44, Maestro 50-56-62, Leyenda 69-77-85, Mito 90. La copia en JS es RANK_PCT.
+--   · Al añadir música suben los umbrales y un alumno puede bajar de rango (decisión de Yuri).
+--   · El profesor luce siempre Mito (solo en la app; no tiene puntos).
+-- =====================================================================
+create or replace function public.listening_catalog_points()
+returns integer language sql stable security definer set search_path = public as $$
+  select case when auth.uid() is null or public.is_approved()
+              then coalesce(sum(20 + coalesce(duration_sec, 0) / 60), 0)::int else null end
+  from public.listening_items;
+$$;
+revoke execute on function public.listening_catalog_points() from public, anon;
+grant execute on function public.listening_catalog_points() to authenticated;
+
+create or replace function public.listening_rank_step(p integer)
+returns integer language sql stable set search_path = public as $$
+  select coalesce(max(t.i)::int - 1, 0)
+  from unnest(array[0, 1, 2, 4, 6, 8, 11, 14, 17, 21, 25, 29, 34, 39, 44, 50, 56, 62, 69, 77, 85, 90]) with ordinality t(v, i)
+  where (t.v = 0 or public.listening_catalog_points() > 0)
+    and round(t.v / 100.0 * public.listening_catalog_points()) <= coalesce(p, 0);
+$$;
+
+-- =====================================================================
+-- Rango v4 (2026-11-28, Yuri): fuera el multiplicador. Los puntos son solo volumen
+-- ((20 + minutos) × ½ si tarde) y Mito = haber escuchado el 90 % de la música.
+-- La racha ya no da puntos: da PRESTIGIO a la vista. Con 7 días seguidos o más la medalla arde
+-- (naranja), con 14 azul y con 30 dorada; si se rompe, se apaga. Lo ven los compañeros, junto con el récord.
+--   · listening_assignments.mult queda siempre en 1 (la columna se conserva).
+--   · get_listening_badge(uid): puntos, récord y nivel de llama (0-3). Nunca da los días exactos de hoy.
+-- =====================================================================
+create or replace function public.listening_assignments_mult()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  new.mult := 1;
+  return new;
+end;
+$$;
+
+update public.listening_assignments
+   set mult = 1,
+       points = case when completed_at is null then null
+                     else public.listening_points_for(item_id, 1, due_date, assigned_at, completed_at) end
+ where mult <> 1;
+
+create or replace function public.get_listening_badge(p_user uuid)
+returns table (points integer, best_days integer, flame integer)
+language plpgsql stable security definer set search_path = public as $$
+declare s record;
+begin
+  if auth.uid() is null or not public.is_approved() then return; end if;
+  if p_user is distinct from auth.uid() and not public.is_teacher() and not public.can_see_profile(p_user) then return; end if;
+  select * into s from public.listening_streak(p_user);
+  return query select
+    coalesce((select sum(a.points)::int from public.listening_assignments a where a.student_id = p_user), 0),
+    coalesce(s.best_days, 0),
+    case when coalesce(s.current_days, 0) >= 30 then 3 when coalesce(s.current_days, 0) >= 14 then 2
+         when coalesce(s.current_days, 0) >= 7 then 1 else 0 end;
+end;
+$$;
+revoke execute on function public.get_listening_badge(uuid) from public, anon;
+grant execute on function public.get_listening_badge(uuid) to authenticated;
