@@ -3160,11 +3160,14 @@ function vdCount(kind, rowId, path) { // una vez por vídeo y sesión; lo recié
   vdPlayed.add(rowId);
   sb.rpc('video_play', { p_kind: kind, p_row: rowId }).then(() => { }, () => { });
 }
-// Si un vídeo que suena sale del todo de la pantalla (o se quita de la página al repintar), se pausa. No se reanuda solo.
+// Si un vídeo que suena sale del todo de la pantalla (o se quita de la página al repintar), se pausa,
+// y al volver a verse se reanuda solo. Si lo pausó la persona, no (`_vdAuto` solo lo pone esta pausa).
 const vdIO = 'IntersectionObserver' in window
   ? new IntersectionObserver(es => es.forEach(e => {
-    if (!e.target.isConnected) { vdIO.unobserve(e.target); e.target.pause(); return; }
-    if (!e.isIntersecting && !e.target.paused) e.target.pause();
+    const v = e.target;
+    if (!v.isConnected) { vdIO.unobserve(v); v._vdAuto = false; v.pause(); return; }
+    if (!e.isIntersecting && !v.paused) { v._vdAuto = true; v.pause(); }
+    else if (e.isIntersecting && v._vdAuto) { v._vdAuto = false; if (!v.ended) v.play().catch(() => { }); }
   })) : null;
 // Portada con ▶; al pulsar se cambia por el reproductor
 function vdBox(kind, owner, rowId, v, chip = '') {
