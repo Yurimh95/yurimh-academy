@@ -31,11 +31,13 @@ const navTo = async (p, s) => {
   const snapshot = p => p.evaluate(()=>JSON.parse(JSON.stringify(window.__DB)));
   const shot = (p,n) => p.screenshot({path:require('path').join(__dirname,'shots',n)});
 
-  // ================= ALUMNA: su bloque privado en Perfil =================
+  // ================= ALUMNA: su bloque privado en Deberes =================
   let p = await open('s1');
   ok(await p.locator('.modal').count()===0, 'Sin logros nuevos no sale ninguna celebración');
   await goto(p,'profile');
-  ok(await p.locator('#goalsPanel').count()===1, 'Perfil: bloque "Mis objetivos"');
+  ok(await p.locator('#goalsPanel').count()===0, 'Perfil: ya no lleva los objetivos');
+  await goto(p,'homework');
+  ok(await p.locator('#goalsPanel').count()===1, 'Deberes: bloque "Mis objetivos" al final');
   const txt = await p.textContent('#goalsPanel');
   ok(txt.includes('Solo tú y tu profesor'), 'Marcado como privado');
   ok(txt.includes('2/5'), 'Progreso 2/5 (4 generales + 1 personal)');
@@ -53,7 +55,7 @@ const navTo = async (p, s) => {
 
   // móvil
   p = await open('s1', {width:390,height:844});
-  await goto(p,'profile'); await p.locator('#goalsPanel').scrollIntoViewIfNeeded();
+  await goto(p,'homework'); await p.locator('#goalsPanel').scrollIntoViewIfNeeded();
   const over = await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
   ok(!over, 'Móvil: sin desbordamiento horizontal');
   await shot(p,'objetivos-movil.png');

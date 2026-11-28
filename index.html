@@ -196,7 +196,7 @@ html[data-theme="light"] .perks li::before{color:var(--accent)}
 .hwtools{display:flex;gap:4px;flex:none}
 .hwdone{margin-top:14px}
 /* Objetivos */
-.goals{grid-column:1/-1}
+.goals{grid-column:1/-1;margin-top:22px}
 .gprog{display:flex;align-items:center;gap:10px}
 .gbar{flex:1;height:12px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
 .gbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--neon));box-shadow:0 0 12px rgba(var(--neon-rgb),.45);transition:width .6s ease}
@@ -633,7 +633,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .card.post.flash{box-shadow:0 0 0 2px rgba(var(--accent-rgb),.7),var(--glow);transition:box-shadow .3s}
 .av{border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--panel2)}
 .av.ini{font-weight:700;color:#fff;background:linear-gradient(135deg,hsl(var(--h) 70% 58%),hsl(calc(var(--h) + 40) 75% 48%))}
-.av.teach{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--accent),0 0 12px rgba(var(--accent-rgb),.45)}
+.av.st-on,.av.st-seen{cursor:pointer;box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent),0 0 10px rgba(var(--accent-rgb),.5)}
+.av.st-seen{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--faint)}
 .composer{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
 .composer-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
 .composer-main textarea{min-height:64px}
@@ -735,8 +736,12 @@ ol.rt-list li::marker{font-weight:600}
 .rxb.main:not(.mine) .rxe{filter:grayscale(.35);opacity:.85}
 .rx-pick{position:fixed;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:5px 6px;width:max-content;box-shadow:var(--shadow);animation:rxIn .14s ease-out}
 .rx-pick[hidden]{display:none}
-.rx-who{font:inherit;font-size:13px;color:var(--muted);background:transparent;border:0;padding:3px 4px;cursor:pointer;max-width:min(240px,45vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:center}
-.rx-who:hover{color:var(--text);text-decoration:underline}
+.rx-who{font:inherit;background:transparent;border:0;padding:3px 4px 3px 8px;cursor:pointer;display:inline-flex;align-items:center;align-self:center;line-height:1}
+.rx-em{font-size:14px;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--panel);box-shadow:0 0 0 2px var(--panel);margin-left:-5px;position:relative}
+.rx-em:first-child{margin-left:0;z-index:3}.rx-em:nth-child(2){z-index:2}.rx-em:nth-child(3){z-index:1}
+.rx-who:hover .rx-em{background:var(--hover)}
+.rxtip{position:fixed;z-index:80;pointer-events:none;background:var(--panel2);color:var(--text);border:1px solid var(--line-strong);border-radius:10px;padding:7px 11px;font-size:13px;line-height:1.35;box-shadow:var(--shadow);max-width:240px}
+.rxtip b{display:block;color:var(--strong);margin-bottom:2px}
 .rxwho{min-width:220px;max-width:min(320px,calc(100vw - 16px));max-height:min(60vh,380px);overflow-y:auto}
 .rxw-head{font-size:12px;color:var(--muted);padding:6px 12px 4px;font-weight:600}
 .rxw-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;cursor:pointer}
@@ -2105,14 +2110,34 @@ function whoName(id) {
   }
   return pub;
 }
-function avatarHtml(id, size = 32) {
+// Aro de story (2026-11-28, Yuri, como Facebook): la foto solo lleva contorno si esa persona tiene una
+// story publicada; en color si queda alguna por ver y apagado si ya las has visto todas. Pulsarla abre la story
+// (listener de abajo). ring = false donde no toca (barra de stories, menú de la cuenta, foto de Perfil).
+function avRingCls(id) {
+  if (!S.user || !Array.isArray(S.stories)) return '';
+  const l = S.stories.filter(s => s.author_id === id && storyLive(s));
+  if (!l.length) return '';
+  return id === S.user.id || l.some(s => !storySeen(s)) ? ' st-on' : ' st-seen';
+}
+function avatarHtml(id, size = 32, ring = true) {
   const d = S.dir[id] || {};
   const st = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px`;
-  const teach = d.role === 'teacher' ? ' teach' : ''; // el profesor lleva un aro de luz azul
-  if (safeAvatar(d.avatar)) return `<img class="av${teach}" style="${st}" src="${esc(d.avatar)}" alt="">`;
+  const cls = (d.role === 'teacher' ? ' teach' : '') + (ring ? avRingCls(id) : '');
+  const da = ring ? ` data-av="${esc(id)}"` : '';
+  if (safeAvatar(d.avatar)) return `<img class="av${cls}"${da} style="${st}" src="${esc(d.avatar)}" alt="">`;
   const hue = [...String(id)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7); // color estable por persona
-  return `<span class="av ini${teach}" style="${st};--h:${hue}">${esc((d.public_name || '?').trim().charAt(0).toUpperCase())}</span>`;
+  return `<span class="av ini${cls}"${da} style="${st};--h:${hue}">${esc((d.public_name || '?').trim().charAt(0).toUpperCase())}</span>`;
 }
+function avRingsRefresh() { // tras ver, publicar, borrar o caducar una story
+  $$('.av[data-av]').forEach(el => { el.classList.toggle('st-on', false); el.classList.toggle('st-seen', false); const c = avRingCls(el.dataset.av).trim(); if (c) el.classList.add(c); });
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('.av.st-on[data-av], .av.st-seen[data-av]');
+  if (!a || a.closest('#lightbox, .stories')) return;
+  e.preventDefault(); e.stopPropagation();
+  if (rxWhoFor) rxWhoClose();
+  storyOpen(a.dataset.av);
+}, true);
 const isTeacherId = id => (S.dir[id] || {}).role === 'teacher';
 const teacherTag = id => isTeacherId(id) ? '<span class="tbadge">Profesor</span>' : '';
 
@@ -2123,16 +2148,14 @@ function rxBar(type, id) {
     const who = rows.filter(x => x.emoji === r.k);
     return { ...r, n: who.length, mine: who.some(x => x.user_id === S.user.id), names: who.map(x => whoName(x.user_id)).join(', ') };
   });
-  // El botón principal es el 👍🏼 (con su contador). Al pasar el ratón o
+  // El botón principal es el pulgar, con el total de reacciones (de todos los emojis). Al pasar el ratón o
   // mantener pulsado en el móvil se abre el selector con los 6 (rxHoverInit).
-  const [like, ...rest] = data;
-  const tip = like.n ? like.names : 'Me gusta · mantén para más reacciones';
-  // Resumen pulsable "Ana y 3 más": en el móvil no hay ratón para ver los nombres (rxWhoOpen)
-  const people = [...new Set(rows.map(x => x.user_id))].sort((a, b) => (b === S.user.id) - (a === S.user.id));
-  const short = u => u === S.user.id ? 'Tú' : ((S.dir[u] || {}).public_name || 'Alumno');
-  const sum = !people.length ? '' : people.length === 1 ? short(people[0]) : people.length === 2 ? `${short(people[0])} y ${short(people[1])}` : `${short(people[0])} y ${people.length - 1} más`;
+  // Al final de la fila, los emojis usados en pequeño y apelotonados (2026-11-28, Yuri, como Facebook):
+  // al pasar el ratón por uno, burbuja con su nombre y quién (rxTipShow); al pulsar, la lista completa (rxWhoOpen).
+  const like = data[0];
+  const used = data.filter(x => x.n).sort((a, b) => b.n - a.n);
   return `<div class="rx" data-rx="${type}:${id}">
-    <div class="rx-list"><button class="rxb main ${like.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="like" title="${esc(tip)}" aria-label="Me gusta" aria-haspopup="true"><span class="rxe">${ic('thumb')}</span>${like.n ? `<span>${like.n}</span>` : ''}</button>${rest.filter(x => x.n).map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" title="${esc(x.names)}">${x.e}<span>${x.n}</span></button>`).join('')}${sum ? `<button type="button" class="rx-who" data-rxwho="${type}:${id}" aria-haspopup="true" title="Ver quién ha reaccionado">${esc(sum)}</button>` : ''}</div>
+    <div class="rx-list"><button class="rxb main ${like.mine ? 'mine' : ''}" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="like" title="Me gusta · mantén para más reacciones" aria-label="Me gusta" aria-haspopup="true"><span class="rxe">${ic('thumb')}</span>${rows.length ? `<span>${rows.length}</span>` : ''}</button>${used.length ? `<button type="button" class="rx-who" data-rxwho="${type}:${id}" aria-haspopup="true" aria-label="Ver quién ha reaccionado">${used.map(x => `<span class="rx-em" data-e="${x.k}">${x.e}</span>`).join('')}</button>` : ''}</div>
     <div class="rx-pick" role="menu" hidden>${data.map(x => `<button class="rxb ${x.mine ? 'mine' : ''}" role="menuitem" data-action="rx-toggle" data-t="${type}" data-i="${id}" data-e="${x.k}" aria-label="${x.k}">${x.e}</button>`).join('')}</div>
   </div>`;
 }
@@ -2229,7 +2252,35 @@ function rxHoverInit() {
   addEventListener('keydown', e => { if (e.key === 'Escape' && rxOpenEl) rxHide(); });
 }
 rxHoverInit();
-/* ---- Quién ha reaccionado: lista que se abre al pulsar el resumen "Ana y 3 más" ---- */
+/* ---- Burbuja al pasar el ratón por un emoji del resumen: "Me gusta" y quién ---- */
+const RX_LABEL = { like: 'Me gusta', love: 'Me encanta', laugh: 'Me divierte', wow: 'Me asombra', sad: 'Me entristece', angry: 'Me enfada' };
+function rxTipHide() { const t = $('#rxTip'); if (t) t.remove(); }
+function rxTipShow(em) {
+  rxTipHide();
+  const [type, id] = em.closest('[data-rxwho]').dataset.rxwho.split(':'), k = em.dataset.e;
+  const ids = S.reactions.filter(r => r.target_type === type && r.target_id === id && r.emoji === k).map(r => r.user_id)
+    .sort((a, b) => (b === S.user.id) - (a === S.user.id));
+  if (!ids.length) return;
+  const MAX = 12, names = ids.slice(0, MAX).map(u => u === S.user.id ? 'Tú' : esc(whoName(u)));
+  if (ids.length > MAX) names.push(`y ${ids.length - MAX} más…`);
+  const t = document.createElement('div'); t.id = 'rxTip'; t.className = 'rxtip'; t.setAttribute('role', 'tooltip');
+  t.innerHTML = `<b>${RX_LABEL[k] || ''}</b>${names.map(n => `<div>${n}</div>`).join('')}`;
+  document.body.appendChild(t);
+  const r = em.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+  t.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8)) + 'px';
+  t.style.top = (r.top - h - 8 >= 8 ? r.top - h - 8 : r.bottom + 8) + 'px';
+}
+document.addEventListener('pointerover', e => {
+  if (e.pointerType && e.pointerType !== 'mouse') return;
+  const em = e.target.closest && e.target.closest('[data-rxwho] .rx-em');
+  if (em) rxTipShow(em);
+});
+document.addEventListener('pointerout', e => {
+  const em = e.target.closest && e.target.closest('[data-rxwho] .rx-em');
+  if (em && !(e.relatedTarget && em.contains(e.relatedTarget))) rxTipHide();
+});
+addEventListener('scroll', rxTipHide, true);
+/* ---- Quién ha reaccionado: lista que se abre al pulsar los emojis del final de la fila ---- */
 let rxWhoFor = null;
 function rxWhoClose(fromHistory = false) {
   if (!rxWhoFor) return;
@@ -2263,7 +2314,7 @@ function rxWhoOpen(key, anchor) {
 document.addEventListener('click', e => {
   if (!e.target.closest) return;
   const b = e.target.closest('[data-rxwho]');
-  if (b) { e.preventDefault(); return rxWhoFor === b.dataset.rxwho ? rxWhoClose() : rxWhoOpen(b.dataset.rxwho, b); }
+  if (b) { e.preventDefault(); rxTipHide(); return rxWhoFor === b.dataset.rxwho ? rxWhoClose() : rxWhoOpen(b.dataset.rxwho, b); }
   if (rxWhoFor && !e.target.closest('#rxWhoBox .rxw-head, #rxWhoBox .sub')) rxWhoClose(); // fuera o en una persona (su perfil lo abre data-action después; openModal espera al "atrás")
 }, true);
 // Desplazar la página la cierra (con margen: un desplazamiento suave que aún no ha acabado no cuenta)
@@ -2275,6 +2326,7 @@ addEventListener('scroll', e => {
 }, true);
 addEventListener('keydown', e => { if (e.key === 'Escape' && rxWhoFor) rxWhoClose(); });
 function updateRx(type, id) {
+  rxTipHide();
   $$(`[data-rx="${type}:${id}"]`).forEach(n => { n.outerHTML = rxBar(type, id); });
   if (rxWhoFor === `${type}:${id}`) { const b = $('#rxWhoBox'); if (b) b.innerHTML = rxWhoInner(type, id); }
   if (type === 'feed_comment') { const c = S.fcomments.find(x => x.id === id); if (c) updateCmPeek(c.post_id); }
@@ -3327,14 +3379,14 @@ function storiesBar(top = false) {
   const sz = top ? 40 : 58;
   const me = S.user.id, gs = storyGroups(), mine = gs.find(g => g.author === me);
   const others = gs.filter(g => g.author !== me).map(g => `<button type="button" class="st-item" data-action="story-open" data-id="${g.author}" aria-label="Ver la story de ${esc(whoName(g.author))}" title="${esc(whoName(g.author))}">
-      <span class="st-ring${g.seen ? '' : ' new'}">${avatarHtml(g.author, sz)}</span><span class="st-name">${esc(whoName(g.author))}</span></button>`).join('');
+      <span class="st-ring${g.seen ? '' : ' new'}">${avatarHtml(g.author, sz, false)}</span><span class="st-name">${esc(whoName(g.author))}</span></button>`).join('');
   return `<section class="stories${top ? ' top' : ''}" data-stories="${top ? 1 : 0}" aria-label="Stories"><div class="st-row">
     <div class="st-item st-me">
-      <button type="button" class="st-ring${mine ? ' own' : ' add'}" data-action="${mine ? 'story-open' : 'story-add'}" data-id="${me}" aria-label="${mine ? 'Ver tu story' : 'Subir una story'}" title="${mine ? 'Tu story' : 'Subir una story'}">${avatarHtml(me, sz)}</button>
+      <button type="button" class="st-ring${mine ? ' own' : ' add'}" data-action="${mine ? 'story-open' : 'story-add'}" data-id="${me}" aria-label="${mine ? 'Ver tu story' : 'Subir una story'}" title="${mine ? 'Tu story' : 'Subir una story'}">${avatarHtml(me, sz, false)}</button>
       <button type="button" class="st-plus" data-action="story-add" aria-label="Subir una story" title="Subir una story">+</button>
       <span class="st-name">Tu story</span></div>${others}</div></section>`;
 }
-function updateStoriesBar() { $$('[data-stories]').forEach(el => { el.outerHTML = storiesBar(el.dataset.stories === '1'); }); }
+function updateStoriesBar() { $$('[data-stories]').forEach(el => { el.outerHTML = storiesBar(el.dataset.stories === '1'); }); avRingsRefresh(); }
 
 // ---- Lo que lleva una story: vídeo o foto, y encima textos y dibujo (overlay) ----
 const ST_PHOTO_SEC = 5, ST_W = 1080, ST_H = 1920, ST_VBH = 1778; // el dibujo va en 1000 × 1778 (9:16)
@@ -4242,7 +4294,7 @@ function topRight(secs) {
     <button class="iconbtn tb" data-action="theme" data-t="${th === 'light' ? 'dark' : 'light'}" title="${th === 'light' ? 'Modo oscuro' : 'Modo claro'}" aria-label="Cambiar a modo ${th === 'light' ? 'oscuro' : 'claro'}">${ic(th === 'light' ? 'moon' : 'sun')}</button>
     ${bellHtml()}
     <div class="me-wrap">
-      <button class="avbtn${S.meOpen ? ' open' : ''}${on('profile', 'settings')}" data-action="me-menu" title="Tu cuenta" aria-label="Tu cuenta" aria-haspopup="menu" aria-expanded="${!!S.meOpen}">${avatarHtml(S.user.id, 32)}<span class="av-meta"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${prof.n ? '<i class="dotn mini"></i>' : ''}</button>
+      <button class="avbtn${S.meOpen ? ' open' : ''}${on('profile', 'settings')}" data-action="me-menu" title="Tu cuenta" aria-label="Tu cuenta" aria-haspopup="menu" aria-expanded="${!!S.meOpen}">${avatarHtml(S.user.id, 32, false)}<span class="av-meta"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${prof.n ? '<i class="dotn mini"></i>' : ''}</button>
       ${S.meOpen ? meMenu(prof) : ''}
     </div>
   </div>`;
@@ -4251,7 +4303,7 @@ function meMenu(prof) {
   const t = isTeacher();
   const item = (attrs, icon, label, extra = '') => `<button type="button" role="menuitem" ${attrs}>${ic(icon)}<span>${label}</span>${extra}</button>`;
   return `<div class="memenu" role="menu">
-    <div class="mm-head">${avatarHtml(S.user.id, 40)}<div class="mm-who"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></div></div>
+    <div class="mm-head">${avatarHtml(S.user.id, 40, false)}<div class="mm-who"><b>${esc(S.profile.display_name)}</b><small>${t ? 'Profesor' : 'Alumno'}</small></div></div>
     ${item('data-action="section" data-s="profile"', 'profile', 'Tu perfil', prof.badge ? `<span class="nbadge">${prof.badge}</span>` : '')}
     ${item('data-action="section" data-s="settings"', 'gear', 'Ajustes')}
     ${t && !S.preview ? item('data-action="preview-on"', 'eye', 'Ver como alumno', '<small class="mm-note">Solo para mirar</small>') : ''}
@@ -4627,7 +4679,6 @@ function profileView() {
     <button class="btn sm" data-action="section" data-s="settings">${ic('gear')} Ajustes</button></span></div>
   <div class="two prof-grid">
     ${!isTeacher() && mateRequestsIn().length ? matesPanel() : ''}
-    ${!isTeacher() ? goalsPanel() : ''}
     ${!isTeacher() ? rankPanel() : teacherRankPanel()}
     <form id="nameForm" class="panel">
       <h2 class="h2" style="margin-top:0">Tu nombre</h2>
@@ -4638,7 +4689,7 @@ function profileView() {
     </form>
     <div class="panel">
       <h2 class="h2" style="margin-top:0">Foto de perfil</h2>
-      <div class="avrow">${avatarHtml(S.user.id, 84)}
+      <div class="avrow">${avatarHtml(S.user.id, 84, false)}
         <div class="stack">
           <label class="btn primary" for="avatarFile">${safeAvatar(p.avatar) ? 'Cambiar foto' : 'Elegir foto'}</label>
           <input type="file" id="avatarFile" accept="image/*" hidden>
@@ -6388,7 +6439,7 @@ async function openNotif(n) {
     case 'comment': case 'reaction': case 'mention_feed': S.section = 'feed'; render(); if (S.fposts.some(p => p.id === n.target_id)) feedPostModal(n.target_id); break;
     case 'signup': case 'account_deleted': S.section = 'students'; render(); break;
     case 'streak': case 'rank': render(); if (S.students.some(s => s.id === n.actor_id)) studentDetailModal(n.actor_id); break;
-    case 'goal': S.section = 'profile'; render(); { const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
+    case 'goal': goGoals(); break;
     case 'report': S.section = 'mod'; render(); break;
     case 'homework': case 'lesson': S.section = 'homework'; render(); break;
     case 'classmate_request': case 'classmate_accept': render(); await profileModal(n.actor_id); break;
@@ -7262,8 +7313,11 @@ function homeworkStudent() {
   return `${nl ? `<section class="foryou" style="margin-bottom:14px">${nl}</section>` : ''}<p class="sub" style="margin:0 0 14px">Lo que tienes que practicar para tus próximas clases. Márcalo cuando lo hayas trabajado: tu profesor lo verá.</p>
     ${pend.length ? `<div class="hwlist">${pend.map(h => hwRow(h, false)).join('')}</div>`
       : '<div class="empty">No tienes deberes pendientes. 🤘</div>'}
-    ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 40).map(h => hwRow(h, false)).join('')}</div></details>` : ''}`;
+    ${done.length ? `<details class="hwdone"><summary>Practicadas (${done.length})</summary><div class="hwlist">${done.slice(0, 40).map(h => hwRow(h, false)).join('')}</div></details>` : ''}
+    ${goalsPanel()}`;
 }
+// Lleva a "Mis objetivos" (al final de Deberes)
+function goGoals() { S.section = 'homework'; render(); const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function homeworkTeacher() {
   const ok = S.students.filter(s => s.approved);
   const by = id => S.homework.filter(h => h.student_id === id).sort(hwSort);
@@ -7710,7 +7764,7 @@ Object.assign(actions, {
   'hw-copy'(el) { const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return; hwReturn = hwFromCard(el); hwCopyModal(h.student_id, h.id); },
   'hw-copy-all'(el) { hwReturn = hwFromCard(el); hwCopyModal(el.dataset.id); },
   'hw-cancel'() { const r = hwReturn; hwReturn = null; if (r) studentDetailModal(r); else closeModal(); },
-  'hw-goal-see'() { closeModal(); S.section = 'profile'; render(); const gp = $('#goalsPanel'); if (gp) gp.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'hw-goal-see'() { closeModal(); goGoals(); },
   'hw-all'() { const boxes = $$('#hwForm input[name=pick], #hwCopyForm input[name=pick]'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); },
   async 'hw-toggle'(el) {
     const h = S.homework.find(x => x.id === el.dataset.id); if (!h) return;

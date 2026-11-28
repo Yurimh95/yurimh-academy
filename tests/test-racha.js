@@ -225,7 +225,7 @@ seed.homework_tasks.find(h => h.id === 'h1').due_date = ymd(0);
   ok(await msg.count() === 1 && /te acerca a tu objetivo/.test(await msg.innerText()) && /Tocar Wonderwall entera/.test(await msg.innerText()), 'Al marcarlo: "te acerca a tu objetivo: Tocar Wonderwall entera"');
   await shot(p, 'deber-objetivo.png');
   await p.click('[data-action="hw-goal-see"]'); await p.waitForTimeout(300);
-  ok(await p.locator('#goalsPanel').count() === 1 && await p.locator('.modal').count() === 0, '"Ver mis objetivos" lleva al Perfil');
+  ok(await p.locator('#goalsPanel').count() === 1 && await p.evaluate(() => S.section) === 'homework' && await p.locator('.modal').count() === 0, '"Ver mis objetivos" lleva a Deberes');
   // Un deber sin objetivo sigue con el aviso pequeño de siempre
   await goto(p, 'homework');
   await p.click('[data-action="hw-toggle"][data-id="h2"]'); await p.waitForTimeout(300);

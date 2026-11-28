@@ -88,11 +88,28 @@ const navTo = async (p, s) => {
   await p.hover(card+' .rxb.main'); await p.waitForTimeout(650);
   ok((await p.locator(card+' .rx-pick .rxb').allTextContents()).join('')==='👍🏼❤️😂😮😢😡', 'Los 6 emojis pedidos, en orden');
   await p.click(card+' .rx-pick [data-e=laugh]'); await p.waitForTimeout(200);
-  ok((await p.textContent(card+' .rx-list .rxb.mine')).includes('😂'), 'Reacción 😂 marcada como mía');
+  ok(await p.locator(card+' [data-rxwho] .rx-em[data-e=laugh]').count()===1 && (await p.textContent(card+' .rxb.main')).includes('1'), 'El 😂 sale al final de la fila y cuenta en el total del pulgar');
+  ok(await p.locator(card+' .rx-list .rxb:not(.main)').count()===0, 'Ya no hay chips de colores junto al pulgar');
   ok(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'&&r.emoji==='laugh')), 'Reacción guardada en BD');
-  await p.click(card+' .rx-list .rxb.mine'); await p.waitForTimeout(200);
-  ok((await p.locator(card+' .rx-list .rxb.mine').count())===0 && !(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'))), 'Quitar la reacción la borra');
-  ok((await p.textContent('.fpost:has-text("Joe Pass") .rx-list .rxb.mine')).includes('❤️'), 'Mi ❤️ previa sigue marcada');
+  await rxPick(p, card, 'laugh'); await p.waitForTimeout(200);
+  ok((await p.locator(card+' [data-rxwho]').count())===0 && !(await dbq(p,()=>window.__DB.reactions.some(r=>r.target_id==='f2'&&r.user_id==='s1'))), 'Quitar la reacción la borra');
+  const jp = '.fpost:has-text("Joe Pass")';
+  ok((await p.textContent(jp+' .rxb.main')).includes('2') && (await p.locator(jp+' [data-rxwho] .rx-em').allTextContents()).join('').length>0 && await p.locator(jp+' [data-rxwho] .rx-em').count()===2, 'Joe Pass: el pulgar cuenta las 2 reacciones (❤️ y 👍🏼) y salen los 2 emojis al final');
+  await p.mouse.move(0,0); await p.hover(jp+' [data-rxwho] .rx-em[data-e=love]'); await p.waitForTimeout(150);
+  const tip = (await p.textContent('#rxTip')||'').replace(/\s+/g,' ');
+  ok(tip.includes('Me encanta') && tip.includes('Tú') && !tip.includes('Lu'), 'Al pasar el ratón por el ❤️, burbuja "Me encanta · Tú": '+tip);
+  await p.mouse.move(0,0); await p.waitForTimeout(100);
+  ok(await p.locator('#rxTip').count()===0, 'Al salir, la burbuja se cierra');
+  // Aro de story en las fotos: solo si tiene story; en color sin ver, apagado ya vista; pulsar la abre
+  ok(await p.locator('.av.st-on, .av.st-seen').count()===0, 'Sin stories, ninguna foto lleva contorno (tampoco el profesor)');
+  await p.evaluate(()=>{ const n=Date.now(); S.stories.push({id:'stx',author_id:'s2',created_at:new Date(n-60000).toISOString(),expires_at:new Date(n+3600000).toISOString(),photo:{k:'kx',w:1080,h:1920}}); render(); });
+  ok(await p.locator(jp+' .fhead .av.st-on').count()===1 && await p.locator('.fpost:has-text("Bienvenidos") .fhead .av.st-on, .fpost:has-text("Bienvenidos") .fhead .av.st-seen').count()===0, 'Con story sin ver: la foto de Lu lleva el contorno en color; la de quien no tiene story, ninguno');
+  await p.evaluate(()=>{ S.storyViews.push({story_id:'stx',user_id:'s1',viewed_at:new Date().toISOString()}); avRingsRefresh(); });
+  ok(await p.locator(jp+' .fhead .av.st-seen').count()===1 && await p.locator(jp+' .fhead .av.st-on').count()===0, 'Ya vista: el contorno sigue, pero apagado');
+  await p.click(jp+' .fhead .av.st-seen'); await p.waitForTimeout(300);
+  ok(await p.locator('#lightbox.story').count()===1 && await p.locator('.modal').count()===0, 'Pulsar la foto con contorno abre la story (no el perfil)');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  await p.evaluate(()=>{ S.stories=S.stories.filter(s=>s.id!=='stx'); S.storyViews=S.storyViews.filter(v=>v.story_id!=='stx'); render(); });
   // comentarios
   await p.click('.fpost:has-text("Joe Pass") [data-action=open-fpost]'); await p.waitForTimeout(150);
   ok((await p.textContent('.modal .cm')).includes('Qué bueno, lo apunto'), 'Modal: comentario existente');
@@ -224,8 +241,10 @@ const navTo = async (p, s) => {
   ok((await p.locator('.fpost [data-action=feed-delete]').count())===3, 'Profe puede eliminar cualquier publicación');
   const lbl = (await p.textContent('.fpost:has-text("Joe Pass")')).replace(/\s+/g,' ');
   ok(lbl.includes('Lu (Luis)'), 'Profe ve el nombre real junto al apodo');
-  const tt = await p.locator('.fpost:has-text("Joe Pass") .rx-list .rxb.main').getAttribute('title');
-  ok(tt.includes('Lu (Luis)'), 'Tooltip de reacciones con quién ha reaccionado: '+tt);
+  await p.hover('.fpost:has-text("Joe Pass") [data-rxwho] .rx-em[data-e=like]'); await p.waitForTimeout(150);
+  const tt = (await p.textContent('#rxTip')||'');
+  ok(tt.includes('Me gusta') && tt.includes('Lu (Luis)'), 'Burbuja de reacciones con quién ha reaccionado: '+tt);
+  await p.mouse.move(0,0);
   await p.fill('#feedForm [name=body]','Aviso del profe en el feed'); await p.click('#feedForm button[type=submit]'); await p.waitForTimeout(300);
   ok(await dbq(p,()=>window.__DB.feed_posts.some(x=>x.body==='Aviso del profe en el feed'&&x.author_id==='t1')), 'El profesor también puede publicar');
   await p.click('.fpost:has-text("Joe Pass") [data-action=feed-delete]'); await p.waitForTimeout(300);
@@ -243,7 +262,7 @@ const navTo = async (p, s) => {
   ok(await m.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1), 'Móvil: feed sin scroll horizontal');
   // móvil: quién ha reaccionado (resumen pulsable → lista)
   const who = '.fpost:has-text("Joe Pass") [data-rxwho]';
-  ok((await m.textContent(who)).trim()==='Tú y Lu', 'Móvil: resumen de reacciones "Tú y Lu"');
+  ok(await m.locator(who+' .rx-em').count()===2, 'Móvil: al final de la fila, los emojis de las reacciones');
   await m.click(who); await m.waitForTimeout(200);
   const wl = (await m.textContent('#rxWhoBox')).replace(/\s+/g,' ');
   ok(wl.includes('Tú') && wl.includes('Lu') && wl.includes('❤️') && wl.includes('👍🏼'), 'Móvil: la lista dice quién y con qué emoji: '+wl);
