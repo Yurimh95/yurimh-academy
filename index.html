@@ -734,6 +734,8 @@ ol.rt-list li::marker{font-weight:600}
 @media (prefers-reduced-motion:reduce){.fmt-pop{animation:none}}
 .fmt-pop button{min-width:32px;height:32px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--text);font:inherit;font-size:14px;line-height:1;cursor:pointer}
 .fmt-pop button:hover,.fmt-pop button:focus-visible{background:var(--hover);color:var(--strong)}
+.fmt-pop button.on{background:rgba(var(--accent-rgb),.16);color:var(--accent);box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.45)}
+.fmt-pop button.on:hover{background:rgba(var(--accent-rgb),.24)}
 .fmt-pop .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 @media (hover:none){.fmt-pop button{min-width:38px;height:38px;font-size:15px}}
 .linkcard{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--text);transition:border-color .15s,background .15s}
@@ -2052,6 +2054,7 @@ function fmtOpen(ta) {
     document.body.appendChild(box);
   }
   FP = { ta };
+  fmtMarkButtons(ta); // remarca el formato que ya tiene lo seleccionado
   const tr = ta.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, touch = fmtTouch();
   const first = rs[0], last = rs[rs.length - 1];
   const cx = rs.length > 1 ? (Math.max(tr.left, Math.min(...rs.map(r => r.left))) + Math.min(tr.right, Math.max(...rs.map(r => r.right)))) / 2 : (first.left + first.right) / 2;
@@ -2106,6 +2109,42 @@ function fmtPut(ta, s, e, text, selS, selE) {
   ta.focus(); ta.setRangeText(text, s, e); ta.setSelectionRange(s + selS, s + selE);
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
+/* Qué formato tiene ya lo seleccionado, para remarcar su botón y para que pulsarlo lo quite.
+   Se buscan en la línea los tramos con marcas con las mismas reglas que rtFormat() (borde fuera, letra dentro);
+   cuenta si la selección cae dentro de uno (también una parte, o el tramo entero con sus marcas). */
+const FMT_MARKS = { b: ['**', '*'], i: ['_'], u: ['__'], s: ['~~', '~'], code: ['`'] };
+const fmtReCache = {};
+function fmtSpan(v, s, e, k) {
+  while (s < e && /\s/.test(v[s])) s++;
+  while (e > s && /\s/.test(v[e - 1])) e--;
+  if (v.slice(s, e).includes('\n')) return null;
+  const ls = v.lastIndexOf('\n', s - 1) + 1, le0 = v.indexOf('\n', e), le = le0 < 0 ? v.length : le0, line = v.slice(ls, le);
+  for (const m of FMT_MARKS[k] || []) {
+    const n = m.length, c = m[0], q = reEsc(m), qc = reEsc(c);
+    const re = fmtReCache[m] || (fmtReCache[m] = k === 'code' ? /`([^`\n]+)`/g
+      : new RegExp(`(?<=^|[${RT_EDGE}*_~\`]${n === 1 ? `)(?<!${qc})` : ')'}${q}(?=[^\\s${qc}])([^\\n]*?[^\\s])${q}(?=$|[${RT_EDGE}*_~\`])${n === 1 ? `(?!${qc})` : ''}`, 'g'));
+    for (const x of line.matchAll(re)) {
+      const open = ls + x.index, close = open + n + x[1].length;
+      if (s >= open && e <= close + n && e > open + n - (s === e ? 1 : 0) && s < close + (s === e ? 1 : 0)) return { open, close, n };
+    }
+  }
+  return null;
+}
+function fmtActive(ta) {
+  const v = ta.value, s = ta.selectionStart, e = ta.selectionEnd, on = new Set();
+  Object.keys(FMT_MARKS).forEach(k => { if (fmtSpan(v, s, e, k)) on.add(k); });
+  const ls = v.lastIndexOf('\n', s - 1) + 1, le0 = v.indexOf('\n', e > s ? e - 1 : e), lines = v.slice(ls, le0 < 0 ? v.length : le0).split('\n').filter(l => l.trim());
+  const every = re => lines.length && lines.every(l => re.test(l));
+  if (every(/^#{1,3} /)) on.add('h');
+  if (every(/^> /)) on.add('q');
+  if (every(/^[-*•] /)) on.add('ul');
+  if (/```/.test(v.slice(0, s)) && (v.slice(0, s).match(/```/g) || []).length % 2) on.add('code'); // dentro de un bloque ```
+  return on;
+}
+function fmtMarkButtons(ta) {
+  const on = fmtActive(ta);
+  document.querySelectorAll('#fmtPop [data-fmt]').forEach(b => { const a = on.has(b.dataset.fmt); b.classList.toggle('on', a); b.setAttribute('aria-pressed', a); });
+}
 function fmtApply(ta, k) {
   if (!ta) return;
   let s = ta.selectionStart, e = ta.selectionEnd; const v = ta.value;
@@ -2120,9 +2159,11 @@ function fmtApply(ta, k) {
   const m = k === 'code' ? '`' : FMT_MARK[k];
   while (s < e && /\s/.test(v[s])) s++; // la marca va pegada a la palabra, sin espacios dentro
   while (e > s && /\s/.test(v[e - 1])) e--;
-  const n = m.length;
-  if (v.slice(s - n, s) === m && v.slice(e, e + n) === m && (k !== 'i' || (v[s - n - 1] !== '_' && v[e + n] !== '_'))) // ya lo tiene: se quita
-    return fmtPut(ta, s - n, e + n, v.slice(s, e), 0, e - s);
+  const n = m.length, sp = fmtSpan(v, s, e, k);
+  if (sp) { // ya lo tiene (aunque solo hayas seleccionado una parte): se quitan sus dos marcas
+    const inner = v.slice(sp.open + sp.n, sp.close), a = Math.max(s, sp.open + sp.n) - sp.open - sp.n, b = Math.min(e, sp.close) - sp.open - sp.n;
+    return fmtPut(ta, sp.open, sp.close + sp.n, inner, Math.max(0, a), Math.max(0, b));
+  }
   if (s === e) return fmtPut(ta, s, e, m + m, n, n); // sin selección: las dos marcas y el cursor en medio
   const t = v.slice(s, e).split('\n').map(l => l.trim() ? m + l + m : l).join('\n');
   fmtPut(ta, s, e, t, t.includes('\n') ? 0 : n, t.includes('\n') ? t.length : t.length - n);
