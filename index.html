@@ -1619,6 +1619,8 @@ html[data-theme="light"] :is(.panel,.card,.dcard,.fpost){box-shadow:0 1px 2px rg
 .top-st .st-plus{top:auto;bottom:-2px;right:-3px;width:18px;height:18px;font-size:13px;line-height:14px}
 .top-st .st-ring.new{box-shadow:none}
 @media (min-width:761px){ .home>.stories{display:none} .sidebar{padding-top:8px} } /* el menú empieza a la altura de los paneles */
+/* Móvil: fila de stories más apretada arriba y abajo (Yuri, 2026-11-28) */
+@media (max-width:760px){ .home>.stories{margin:-6px 0 6px} .home>.stories .st-row{padding:2px 2px 0} .home>.stories .st-item{gap:2px} }
 @media (max-width:760px){ .top-st{display:none} }
 
 /* Cuadro de publicar como el de Facebook: dentro del campo, a la derecha, multimedia (fotos o vídeo) y emojis.
